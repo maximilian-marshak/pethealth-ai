@@ -6,13 +6,21 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pethealthai.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "PetHealth AI needs camera access to analyze pet photos for health symptoms and breed identification.",
+        "NSPhotoLibraryUsageDescription": "PetHealth AI needs photo library access to analyze pet images.",
+        "NSPhotoLibraryAddUsageDescription": "PetHealth AI needs permission to save analyzed photos to your library.",
+        "NSMicrophoneUsageDescription": "This app does not use the microphone."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -20,10 +28,27 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.pethealthai.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PetHealth AI needs access to your photos to analyze pet images.",
+          "cameraPermission": "PetHealth AI needs access to your camera to take pet photos for health analysis."
+        }
+      ]
+    ]
   }
 }

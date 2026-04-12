@@ -39,3 +39,37 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Environment variables
+.env
+.env.local
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Expo shared
+.expo-shared/
+
+# Build artifacts
+*.apk
+*.ipa
+*.aab
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Coverage
+coverage/
