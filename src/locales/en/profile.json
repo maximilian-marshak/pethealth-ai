@@ -1,0 +1,16 @@
+{
+    "title": "Profile",
+    "editProfile": "Edit Profile",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "language": "Language",
+    "notifications": "Notifications",
+    "logout": "Log Out",
+    "deleteAccount": "Delete Account",
+    "settings": "Settings",
+    "loyalty": "Loyalty Program",
+    "totalDonated": "Total Donated",
+    "badges": "My Badges"
+  }
+  

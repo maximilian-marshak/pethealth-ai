@@ -16,7 +16,7 @@ import ShelterCard from './ShelterCard'; // ✅ ДОБАВЛЕНО
 
 export default function CharityStoreScreen({ navigation }) {
   const { points, refreshPoints } = useLoyaltyPoints();
-  const { shelters, loading, makeDonation } = useCharity();
+  const { shelters, loading, makeDonation, refetch } = useCharity();
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [processing, setProcessing] = useState(false);
 
@@ -39,14 +39,21 @@ export default function CharityStoreScreen({ navigation }) {
     setProcessing(true);
 
     try {
-      const result = await makeDonation(shelter.id, amount);
+      // RPC make_donation принимает ровно (p_user_id, p_shelter_id, p_points).
+      await makeDonation(shelter.id, amount);
+
+      // RPC списывает amount Paws -> новый баланс считаем локально для алерта.
+      const newBalance = points - amount;
 
       setSelectedDonation(null);
-      await refreshPoints();
+      // Сразу обновляем и баланс (user_points), и агрегаты useCharity
+      // (shelters.total_donations + donations) — чтобы «Собрано»/суммы
+      // по приютам росли вживую, без ухода с экрана и возврата.
+      await Promise.all([refreshPoints(), refetch()]);
 
       Alert.alert(
         '🎉 Спасибо!',
-        `Вы пожертвовали ${amount} Paws приюту "${shelter.name}". Ваш новый баланс: ${result.new_balance} Paws`,
+        `Вы пожертвовали ${amount} Paws приюту "${shelter.name}". Ваш новый баланс: ${newBalance} Paws`,
         [{ text: 'OK' }]
       );
     } catch (error) {

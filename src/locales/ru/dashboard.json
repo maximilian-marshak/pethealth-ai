@@ -1,0 +1,76 @@
+{
+  "greeting": {
+    "morning": "Доброе утро",
+    "afternoon": "Добрый день",
+    "evening": "Добрый вечер"
+  },
+  "loading": "Загружаем ваших питомцев...",
+  "noPets": {
+    "title": "Питомцев пока нет!",
+    "subtitle": "Добавьте первого питомца, чтобы начать",
+    "addBtn": "Добавить питомца"
+  },
+  "petSelector": {
+    "addPet": "Добавить"
+  },
+  "petCard": {
+    "unknownBreed": "Порода неизвестна",
+    "unknownGender": "Неизвестно",
+    "ageUnknown": "Возраст неизвестен",
+    "newborn": "Новорождённый"
+  },
+  "paws": {
+    "title": "Paws Points",
+    "subtitle": "Помогайте животным в приютах",
+    "progressLabel": "Прогресс для помощи приюту",
+    "donateBtn": "Помочь приюту сейчас!",
+    "earnMore": "+ Заработать больше Paws"
+  },
+  "health": {
+    "sectionTitle": "Здоровье",
+    "vaccination": {
+      "title": "Вакцинации",
+      "noData": "Нет данных",
+      "overdue": "Вакцинация просрочена",
+      "dueSoon": "Вакцинация скоро",
+      "upToDate": "Всё в порядке",
+      "due": "Срок:",
+      "next": "Следующая:",
+      "coming": "Скоро",
+      "allGood": "Всё отлично!",
+      "checkSchedule": "Проверьте расписание"
+    },
+    "weight": {
+      "title": "Вес",
+      "notRecorded": "Не записан"
+    },
+    "checkup": {
+      "title": "Следующий осмотр",
+      "notScheduled": "Не запланирован"
+    }
+  },
+  "quickActions": {
+    "sectionTitle": "Быстрые действия",
+    "medical": "Медкарта",
+    "aiChat": "AI Чат",
+    "activity": "Активность",
+    "profile": "Профиль"
+  },
+  "vaccinations": {
+    "sectionTitle": "Предстоящие вакцинации",
+    "seeAll": "Все",
+    "empty": "Нет предстоящих вакцинаций",
+    "emptySubtext": "Всё в порядке!",
+    "due": "Срок",
+    "today": "Сегодня",
+    "oneDay": "1 день",
+    "days": "{{count}} дней"
+  },
+  "recentActivity": {
+    "sectionTitle": "Последние активности",
+    "seeAll": "Все",
+    "empty": "Нет последних активностей",
+    "emptySubtext": "Начните отслеживать активности питомца!",
+    "addFirst": "+ Добавить первую активность"
+  }
+}

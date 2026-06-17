@@ -90,7 +90,7 @@ export function useCharity() {
   }, [donations]);
 
   // ═══ MAKE DONATION (RPC CALL) ═══
-  const makeDonation = useCallback(async (shelterId, points, shelterName) => {
+  const makeDonation = useCallback(async (shelterId, points) => {
     if (!user?.id) {
       throw new Error('User not authenticated');
     }
@@ -99,7 +99,6 @@ export function useCharity() {
       p_user_id: user.id,
       p_shelter_id: shelterId,
       p_points: points,
-      p_shelter_name: shelterName,
     });
 
     try {
@@ -107,7 +106,6 @@ export function useCharity() {
         p_user_id: user.id,
         p_shelter_id: shelterId,
         p_points: points,
-        p_shelter_name: shelterName,
       });
 
       if (rpcError) {

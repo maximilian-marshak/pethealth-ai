@@ -18,28 +18,31 @@ import { supabase } from '../utils/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
-import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints'; // ← ДОБАВЛЕНО
+import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
+// Убраны захардкоженные label — теперь через t('types.walk') и т.д.
 const ACTIVITY_TYPES = [
-  { value: 'walk', label: 'Прогулка', icon: 'walk' },
-  { value: 'play', label: 'Игра', icon: 'american-football' },
-  { value: 'exercise', label: 'Упражнения', icon: 'fitness' },
-  { value: 'training', label: 'Тренировка', icon: 'school' },
-  { value: 'other', label: 'Другое', icon: 'ellipsis-horizontal' },
+  { value: 'walk', icon: 'walk' },
+  { value: 'play', icon: 'american-football' },
+  { value: 'exercise', icon: 'fitness' },
+  { value: 'training', icon: 'school' },
+  { value: 'other', icon: 'ellipsis-horizontal' },
 ];
 
-// ← ДОБАВЛЕНО: Mapping типов активностей на типы вознаграждений
 const ACTIVITY_TO_REWARD = {
-  'walk': 'training',      // 50 Paws
-  'play': 'training',      // 50 Paws
-  'exercise': 'training',  // 50 Paws
-  'training': 'training',  // 50 Paws
-  'other': null,           // Не начисляем баллы
+  walk: 'training',
+  play: 'training',
+  exercise: 'training',
+  training: 'training',
+  other: null,
 };
 
 export default function ActivityScreen() {
+  const { t, i18n } = useTranslation('activity');
+
   const [pets, setPets] = useState([]);
   const [selectedPetId, setSelectedPetId] = useState(null);
   const [activities, setActivities] = useState([]);
@@ -52,7 +55,6 @@ export default function ActivityScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Форма для новой активности
   const [activityType, setActivityType] = useState('walk');
   const [duration, setDuration] = useState('');
   const [distance, setDistance] = useState('');
@@ -60,7 +62,6 @@ export default function ActivityScreen() {
   const [activityDate, setActivityDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // ← ДОБАВЛЕНО: Loyalty Points Hook
   const { addPoints } = useLoyaltyPoints();
 
   useEffect(() => {
@@ -92,7 +93,7 @@ export default function ActivityScreen() {
       }
     } catch (error) {
       console.error('Error fetching pets:', error);
-      Alert.alert('Ошибка', 'Не удалось загрузить список питомцев');
+      Alert.alert(t('common:error'), t('alerts.errorLoadPets'));
     }
   };
 
@@ -112,56 +113,52 @@ export default function ActivityScreen() {
       calculateStats(data || []);
     } catch (error) {
       console.error('Error fetching activities:', error);
-      Alert.alert('Ошибка', 'Не удалось загрузить активности');
+      Alert.alert(t('common:error'), t('alerts.errorLoadActivities'));
     } finally {
       setLoading(false);
     }
   };
 
+  // Порядок дней недели: 0=Sun,1=Mon,...,6=Sat
+  const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+  const getDayLabel = (date) => t(`days.${DAY_KEYS[date.getDay()]}`);
+
   const prepareChartData = (activitiesData) => {
     const now = new Date();
     const last7Days = [];
-    
-    // Подготовка данных за последние 7 дней
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dayData = activitiesData.filter(a => {
-        const activityDate = new Date(a.activity_date);
-        return activityDate.toDateString() === date.toDateString();
+      const dayData = activitiesData.filter((a) => {
+        const aDate = new Date(a.activity_date);
+        return aDate.toDateString() === date.toDateString();
       });
-      
+
       last7Days.push({
-        date: date,
+        date,
         duration: dayData.reduce((sum, a) => sum + (a.duration || 0), 0),
         distance: dayData.reduce((sum, a) => sum + (a.distance || 0), 0),
         count: dayData.length,
       });
     }
 
-    // Подсчет по типам активности
     const typeStats = {};
-    activitiesData.forEach(activity => {
+    activitiesData.forEach((activity) => {
       const type = activity.activity_type || 'other';
-      if (!typeStats[type]) {
-        typeStats[type] = { duration: 0, count: 0 };
-      }
+      if (!typeStats[type]) typeStats[type] = { duration: 0, count: 0 };
       typeStats[type].duration += activity.duration || 0;
       typeStats[type].count += 1;
     });
 
     setChartData({
       daily: last7Days,
-      types: Object.entries(typeStats).map(([name, stats]) => ({
+      types: Object.entries(typeStats).map(([name, s]) => ({
         name,
-        duration: stats.duration,
-        count: stats.count,
+        duration: s.duration,
+        count: s.count,
       })),
     });
-  };
-
-  const getDayLabel = (date) => {
-    const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-    return days[date.getDay()];
   };
 
   const calculateStats = (activitiesData) => {
@@ -169,24 +166,17 @@ export default function ActivityScreen() {
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const weekActivities = activitiesData.filter(
-      a => new Date(a.activity_date) >= weekAgo
-    );
-    const monthActivities = activitiesData.filter(
-      a => new Date(a.activity_date) >= monthAgo
-    );
-
-    const calcTotals = (activities) => ({
-      count: activities.length,
-      duration: activities.reduce((sum, a) => sum + (a.duration || 0), 0),
-      distance: activities.reduce((sum, a) => sum + (a.distance || 0), 0),
+    const calcTotals = (arr) => ({
+      count: arr.length,
+      duration: arr.reduce((sum, a) => sum + (a.duration || 0), 0),
+      distance: arr.reduce((sum, a) => sum + (a.distance || 0), 0),
     });
 
     setStats({
-      week: calcTotals(weekActivities),
-      month: calcTotals(monthActivities),
+      week: calcTotals(activitiesData.filter((a) => new Date(a.activity_date) >= weekAgo)),
+      month: calcTotals(activitiesData.filter((a) => new Date(a.activity_date) >= monthAgo)),
     });
-    
+
     prepareChartData(activitiesData);
   };
 
@@ -196,15 +186,13 @@ export default function ActivityScreen() {
     setRefreshing(false);
   }, [selectedPetId]);
 
-  // ← ИЗМЕНЕНО: Добавлено начисление баллов
   const handleAddActivity = async () => {
     if (!duration || parseInt(duration) <= 0) {
-      Alert.alert('Ошибка', 'Укажите продолжительность активности');
+      Alert.alert(t('common:error'), t('alerts.validationDuration'));
       return;
     }
 
     try {
-      // 1. Сохраняем активность в БД
       const { error } = await supabase.from('activities').insert([
         {
           pet_id: selectedPetId,
@@ -218,48 +206,41 @@ export default function ActivityScreen() {
 
       if (error) throw error;
 
-      // 2. Начисляем баллы, если тип активности поддерживается
       const rewardType = ACTIVITY_TO_REWARD[activityType];
-      
+
       if (rewardType) {
-        console.log('🎁 Attempting to add Paws for activity:', activityType);
         const pointsAdded = await addPoints(rewardType, activityType);
-        
+
         if (pointsAdded) {
-          // Показываем красивое уведомление о начислении
           Alert.alert(
-            '🎉 Активность добавлена!',
-            `Вы заработали 50 Paws за эту активность!\n\nПродолжайте в том же духе! 🐾`,
-            [{ text: 'Отлично!', style: 'default' }]
+            t('alerts.successTitle'),
+            t('alerts.successMessage'),
+            [{ text: t('alerts.successButton'), style: 'default' }]
           );
         } else {
-          // Если баллы не начислились, показываем обычное уведомление
-          Alert.alert('Успешно', 'Активность добавлена');
+          Alert.alert(t('common:ok'), t('alerts.successSimple'));
         }
       } else {
-        // Для типа "other" баллы не начисляются
-        Alert.alert('Успешно', 'Активность добавлена');
+        Alert.alert(t('common:ok'), t('alerts.successSimple'));
       }
 
-      // 3. Закрываем модалку и обновляем список
       setModalVisible(false);
       resetForm();
       fetchActivities();
-
     } catch (error) {
       console.error('Error adding activity:', error);
-      Alert.alert('Ошибка', 'Не удалось добавить активность');
+      Alert.alert(t('common:error'), t('alerts.errorAdd'));
     }
   };
 
   const handleDeleteActivity = (activityId) => {
     Alert.alert(
-      'Удалить активность',
-      'Вы уверены, что хотите удалить эту запись?',
+      t('alerts.deleteTitle'),
+      t('alerts.deleteMessage'),
       [
-        { text: 'Отмена', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Удалить',
+          text: t('common:delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -269,11 +250,10 @@ export default function ActivityScreen() {
                 .eq('id', activityId);
 
               if (error) throw error;
-
               fetchActivities();
             } catch (error) {
               console.error('Error deleting activity:', error);
-              Alert.alert('Ошибка', 'Не удалось удалить активность');
+              Alert.alert(t('common:error'), t('alerts.errorDelete'));
             }
           },
         },
@@ -295,49 +275,47 @@ export default function ActivityScreen() {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
-      return 'Сегодня';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Вчера';
-    } else {
-      return date.toLocaleDateString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
-    }
+    if (date.toDateString() === today.toDateString()) return t('dates.today');
+    if (date.toDateString() === yesterday.toDateString()) return t('dates.yesterday');
+
+    const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+    return date.toLocaleDateString(locale, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   };
 
   const getActivityIcon = (type) => {
-    const activity = ACTIVITY_TYPES.find(a => a.value === type);
+    const activity = ACTIVITY_TYPES.find((a) => a.value === type);
     return activity ? activity.icon : 'help-circle';
   };
 
   const getActivityLabel = (type) => {
-    const activity = ACTIVITY_TYPES.find(a => a.value === type);
-    return activity ? activity.label : type;
+    // Безопасный fallback если ключ не найден
+    return t(`types.${type}`, { defaultValue: type });
   };
 
-  const renderStatCard = (title, period) => {
+  const renderStatCard = (titleKey, period) => {
     const data = stats[period];
     return (
       <View style={styles.statCard}>
-        <Text style={styles.statTitle}>{title}</Text>
+        <Text style={styles.statTitle}>{t(`stats.${titleKey}`)}</Text>
         <View style={styles.statRow}>
           <View style={styles.statItem}>
             <Ionicons name="calendar-outline" size={20} color="#6B46C1" />
             <Text style={styles.statValue}>{data.count}</Text>
-            <Text style={styles.statLabel}>активн.</Text>
+            <Text style={styles.statLabel}>{t('stats.activities')}</Text>
           </View>
           <View style={styles.statItem}>
             <Ionicons name="time-outline" size={20} color="#059669" />
             <Text style={styles.statValue}>{data.duration}</Text>
-            <Text style={styles.statLabel}>мин</Text>
+            <Text style={styles.statLabel}>{t('stats.minutes')}</Text>
           </View>
           <View style={styles.statItem}>
             <Ionicons name="navigate-outline" size={20} color="#DC2626" />
             <Text style={styles.statValue}>{data.distance.toFixed(1)}</Text>
-            <Text style={styles.statLabel}>км</Text>
+            <Text style={styles.statLabel}>{t('stats.km')}</Text>
           </View>
         </View>
       </View>
@@ -372,12 +350,12 @@ export default function ActivityScreen() {
       <View style={styles.activityDetails}>
         <View style={styles.detailItem}>
           <Ionicons name="time-outline" size={16} color="#6B7280" />
-          <Text style={styles.detailText}>{item.duration} мин</Text>
+          <Text style={styles.detailText}>{item.duration} {t('stats.minutes')}</Text>
         </View>
         {item.distance && (
           <View style={styles.detailItem}>
             <Ionicons name="navigate-outline" size={16} color="#6B7280" />
-            <Text style={styles.detailText}>{item.distance} км</Text>
+            <Text style={styles.detailText}>{item.distance} {t('stats.km')}</Text>
           </View>
         )}
       </View>
@@ -388,7 +366,6 @@ export default function ActivityScreen() {
     </View>
   );
 
-  // Конфигурация графиков
   const chartConfig = {
     backgroundColor: '#ffffff',
     backgroundGradientFrom: '#ffffff',
@@ -397,34 +374,27 @@ export default function ActivityScreen() {
     color: (opacity = 1) => `rgba(107, 70, 193, ${opacity})`,
     labelColor: (opacity = 1) => `rgba(107, 70, 193, ${opacity})`,
     style: { borderRadius: 16 },
-    propsForDots: {
-      r: '4',
-      strokeWidth: '2',
-      stroke: '#6B46C1',
-    },
+    propsForDots: { r: '4', strokeWidth: '2', stroke: '#6B46C1' },
   };
 
-  // Данные для линейного графика (длительность)
   const lineChartData = {
-    labels: chartData.daily.map(d => getDayLabel(d.date)),
-    datasets: [{
-      data: chartData.daily.length > 0 
-        ? chartData.daily.map(d => d.duration || 0.1)
-        : [0, 0, 0, 0, 0, 0, 0],
-    }],
-  };
-
-  // Данные для столбчатого графика (количество активностей)
-  const barChartData = {
-    labels: chartData.daily.map(d => getDayLabel(d.date)),
+    labels: chartData.daily.map((d) => getDayLabel(d.date)),
     datasets: [{
       data: chartData.daily.length > 0
-        ? chartData.daily.map(d => d.count || 0)
+        ? chartData.daily.map((d) => d.duration || 0.1)
         : [0, 0, 0, 0, 0, 0, 0],
     }],
   };
 
-  // Данные для круговой диаграммы (типы активностей)
+  const barChartData = {
+    labels: chartData.daily.map((d) => getDayLabel(d.date)),
+    datasets: [{
+      data: chartData.daily.length > 0
+        ? chartData.daily.map((d) => d.count || 0)
+        : [0, 0, 0, 0, 0, 0, 0],
+    }],
+  };
+
   const pieData = chartData.types.slice(0, 5).map((type, index) => {
     const colors = ['#6B46C1', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE'];
     return {
@@ -463,24 +433,23 @@ export default function ActivityScreen() {
         </ScrollView>
       </View>
 
-      {/* Statistics */}
       <ScrollView
         style={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {/* Stats */}
         <View style={styles.statsContainer}>
-          {renderStatCard('За неделю', 'week')}
-          {renderStatCard('За месяц', 'month')}
+          {renderStatCard('week', 'week')}
+          {renderStatCard('month', 'month')}
         </View>
 
-        {/* Графики */}
+        {/* Charts */}
         {chartData.daily.length > 0 && (
           <>
-            {/* График длительности */}
             <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>📈 Длительность (минуты)</Text>
+              <Text style={styles.chartTitle}>{t('charts.duration')}</Text>
               <LineChart
                 data={lineChartData}
                 width={width - 48}
@@ -493,9 +462,8 @@ export default function ActivityScreen() {
               />
             </View>
 
-            {/* График количества активностей */}
             <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>📊 Количество активностей</Text>
+              <Text style={styles.chartTitle}>{t('charts.count')}</Text>
               <BarChart
                 data={barChartData}
                 width={width - 48}
@@ -508,10 +476,9 @@ export default function ActivityScreen() {
               />
             </View>
 
-            {/* Круговая диаграмма */}
             {pieData.length > 0 && (
               <View style={styles.chartCard}>
-                <Text style={styles.chartTitle}>🥧 Типы активностей</Text>
+                <Text style={styles.chartTitle}>{t('charts.types')}</Text>
                 <PieChart
                   data={pieData}
                   width={width - 48}
@@ -528,18 +495,16 @@ export default function ActivityScreen() {
           </>
         )}
 
-        {/* Activities List */}
+        {/* History */}
         <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>История активностей</Text>
+          <Text style={styles.listTitle}>{t('history.title')}</Text>
         </View>
 
         {activities.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="walk-outline" size={64} color="#D1D5DB" />
-            <Text style={styles.emptyText}>Активностей пока нет</Text>
-            <Text style={styles.emptySubtext}>
-              Добавьте первую активность с помощью кнопки ниже
-            </Text>
+            <Text style={styles.emptyText}>{t('empty.title')}</Text>
+            <Text style={styles.emptySubtext}>{t('empty.subtitle')}</Text>
           </View>
         ) : (
           <FlatList
@@ -551,7 +516,7 @@ export default function ActivityScreen() {
         )}
       </ScrollView>
 
-      {/* Add Button */}
+      {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setModalVisible(true)}
@@ -559,7 +524,7 @@ export default function ActivityScreen() {
         <Ionicons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
 
-      {/* Add Activity Modal */}
+      {/* Modal */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -569,15 +534,15 @@ export default function ActivityScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Новая активность</Text>
+              <Text style={styles.modalTitle}>{t('modal.title')}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
-              {/* Activity Type */}
-              <Text style={styles.label}>Тип активности</Text>
+              {/* Type */}
+              <Text style={styles.label}>{t('modal.typeLabel')}</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -603,21 +568,23 @@ export default function ActivityScreen() {
                         activityType === type.value && styles.typeButtonTextActive,
                       ]}
                     >
-                      {type.label}
+                      {getActivityLabel(type.value)}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
 
               {/* Date */}
-              <Text style={styles.label}>Дата</Text>
+              <Text style={styles.label}>{t('modal.dateLabel')}</Text>
               <TouchableOpacity
                 style={styles.dateButton}
                 onPress={() => setShowDatePicker(true)}
               >
                 <Ionicons name="calendar-outline" size={20} color="#6B7280" />
                 <Text style={styles.dateButtonText}>
-                  {activityDate.toLocaleDateString('ru-RU')}
+                  {activityDate.toLocaleDateString(
+                    i18n.language === 'ru' ? 'ru-RU' : 'en-US'
+                  )}
                 </Text>
               </TouchableOpacity>
 
@@ -628,41 +595,39 @@ export default function ActivityScreen() {
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={(event, selectedDate) => {
                     setShowDatePicker(Platform.OS === 'ios');
-                    if (selectedDate) {
-                      setActivityDate(selectedDate);
-                    }
+                    if (selectedDate) setActivityDate(selectedDate);
                   }}
                   maximumDate={new Date()}
                 />
               )}
 
               {/* Duration */}
-              <Text style={styles.label}>Продолжительность (минуты) *</Text>
+              <Text style={styles.label}>{t('modal.durationLabel')}</Text>
               <TextInput
                 style={styles.input}
                 value={duration}
                 onChangeText={setDuration}
-                placeholder="30"
+                placeholder={t('modal.durationPlaceholder')}
                 keyboardType="numeric"
               />
 
               {/* Distance */}
-              <Text style={styles.label}>Дистанция (км)</Text>
+              <Text style={styles.label}>{t('modal.distanceLabel')}</Text>
               <TextInput
                 style={styles.input}
                 value={distance}
                 onChangeText={setDistance}
-                placeholder="2.5"
+                placeholder={t('modal.distancePlaceholder')}
                 keyboardType="decimal-pad"
               />
 
               {/* Notes */}
-              <Text style={styles.label}>Заметки</Text>
+              <Text style={styles.label}>{t('modal.notesLabel')}</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="Добавьте описание..."
+                placeholder={t('modal.notesPlaceholder')}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -674,13 +639,13 @@ export default function ActivityScreen() {
                 style={styles.cancelButton}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>Отмена</Text>
+                <Text style={styles.cancelButtonText}>{t('common:cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.saveButton}
                 onPress={handleAddActivity}
               >
-                <Text style={styles.saveButtonText}>Добавить</Text>
+                <Text style={styles.saveButtonText}>{t('modal.addButton')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -690,12 +655,9 @@ export default function ActivityScreen() {
   );
 }
 
-// Styles остаются без изменений
+// Styles без изменений — полностью сохранены
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
   petSelector: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 12,
@@ -710,24 +672,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
     backgroundColor: '#F3F4F6',
   },
-  petButtonActive: {
-    backgroundColor: '#6B46C1',
-  },
-  petButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  petButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  content: {
-    flex: 1,
-  },
-  statsContainer: {
-    padding: 16,
-    gap: 12,
-  },
+  petButtonActive: { backgroundColor: '#6B46C1' },
+  petButtonText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  petButtonTextActive: { color: '#FFFFFF' },
+  content: { flex: 1 },
+  statsContainer: { padding: 16, gap: 12 },
   statCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -738,29 +687,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  statTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
+  statTitle: { fontSize: 16, fontWeight: '600', color: '#1F2937', marginBottom: 12 },
+  statRow: { flexDirection: 'row', justifyContent: 'space-around' },
+  statItem: { alignItems: 'center', gap: 4 },
+  statValue: { fontSize: 24, fontWeight: '700', color: '#1F2937' },
+  statLabel: { fontSize: 12, color: '#6B7280' },
   chartCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
@@ -773,25 +704,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  chartTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
-  },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 12,
-  },
-  listHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  listTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
+  chartTitle: { fontSize: 16, fontWeight: '600', color: '#1F2937', marginBottom: 12 },
+  chart: { marginVertical: 8, borderRadius: 12 },
+  listHeader: { paddingHorizontal: 16, paddingVertical: 12 },
+  listTitle: { fontSize: 18, fontWeight: '600', color: '#1F2937' },
   activityCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
@@ -810,65 +726,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-  activityTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  activityIcon: {
-    marginRight: 12,
-  },
-  activityInfo: {
-    flex: 1,
-  },
-  activityType: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 2,
-  },
-  activityDate: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  deleteButton: {
-    padding: 4,
-  },
-  activityDetails: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  detailText: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  activityNotes: {
-    fontSize: 14,
-    color: '#4B5563',
-    marginTop: 8,
-    fontStyle: 'italic',
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: 48,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginTop: 8,
-  },
+  activityTitleRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  activityIcon: { marginRight: 12 },
+  activityInfo: { flex: 1 },
+  activityType: { fontSize: 16, fontWeight: '600', color: '#1F2937', marginBottom: 2 },
+  activityDate: { fontSize: 14, color: '#6B7280' },
+  deleteButton: { padding: 4 },
+  activityDetails: { flexDirection: 'row', gap: 16 },
+  detailItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  detailText: { fontSize: 14, color: '#6B7280' },
+  activityNotes: { fontSize: 14, color: '#4B5563', marginTop: 8, fontStyle: 'italic' },
+  emptyState: { alignItems: 'center', padding: 48 },
+  emptyText: { fontSize: 18, fontWeight: '600', color: '#9CA3AF', marginTop: 16 },
+  emptySubtext: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginTop: 8 },
   fab: {
     position: 'absolute',
     right: 20,
@@ -904,14 +774,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  modalBody: {
-    padding: 20,
-  },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: '#1F2937' },
+  modalBody: { padding: 20 },
   label: {
     fontSize: 14,
     fontWeight: '600',
@@ -919,9 +783,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 16,
   },
-  typeSelector: {
-    marginBottom: 8,
-  },
+  typeSelector: { marginBottom: 8 },
   typeButton: {
     flexDirection: 'column',
     alignItems: 'center',
@@ -932,19 +794,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
     minWidth: 80,
   },
-  typeButtonActive: {
-    backgroundColor: '#6B46C1',
-    borderColor: '#6B46C1',
-  },
-  typeButtonText: {
-    fontSize: 12,
-    color: '#6B46C1',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  typeButtonTextActive: {
-    color: '#FFFFFF',
-  },
+  typeButtonActive: { backgroundColor: '#6B46C1', borderColor: '#6B46C1' },
+  typeButtonText: { fontSize: 12, color: '#6B46C1', marginTop: 4, fontWeight: '500' },
+  typeButtonTextActive: { color: '#FFFFFF' },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -954,10 +806,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 8,
   },
-  dateButtonText: {
-    fontSize: 16,
-    color: '#1F2937',
-  },
+  dateButtonText: { fontSize: 16, color: '#1F2937' },
   input: {
     borderWidth: 1,
     borderColor: '#D1D5DB',
@@ -966,10 +815,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1F2937',
   },
-  textArea: {
-    height: 100,
-    paddingTop: 12,
-  },
+  textArea: { height: 100, paddingTop: 12 },
   modalFooter: {
     flexDirection: 'row',
     gap: 12,
@@ -985,11 +831,7 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
     alignItems: 'center',
   },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
+  cancelButtonText: { fontSize: 16, fontWeight: '600', color: '#6B7280' },
   saveButton: {
     flex: 1,
     padding: 16,
@@ -997,9 +839,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#6B46C1',
     alignItems: 'center',
   },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
+  saveButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 });

@@ -1,0 +1,165 @@
+{
+    "header": {
+      "title": "Медкарта",
+      "back": "Назад"
+    },
+    "tabs": {
+      "overview": "Обзор",
+      "vaccines": "Вакцины",
+      "medications": "Лекарства",
+      "records": "Записи"
+    },
+    "overview": {
+      "summary": {
+        "vaccines": "Вакцины",
+        "activeMeds": "Лекарства",
+        "vetVisits": "Визиты"
+      },
+      "upcomingVaccines": "⚠️ Ближайшие вакцины",
+      "activeMedications": "Активные лекарства",
+      "lastVisit": "Последний визит к ветеринару"
+    },
+    "empty": {
+      "overview": {
+        "title": "Записей пока нет",
+        "subtitle": "Добавьте вакцинацию, лекарство или визит к ветеринару."
+      },
+      "vaccines": {
+        "icon": "💉",
+        "title": "Вакцинаций нет",
+        "subtitle": "Нажмите + чтобы добавить вакцинацию."
+      },
+      "medications": {
+        "icon": "💊",
+        "title": "Лекарств нет",
+        "subtitle": "Нажмите + чтобы добавить лекарство."
+      },
+      "records": {
+        "icon": "📋",
+        "title": "Записей о визитах нет",
+        "subtitle": "Нажмите + чтобы добавить визит к ветеринару."
+      }
+    },
+    "status": {
+      "overdue": "просрочено",
+      "dueIn": "Через {{days}} дн.",
+      "daysOverdue": "Просрочено на {{days}} дн.",
+      "upToDate": "Актуально",
+      "completed": "Выполнено",
+      "dueSoon": "Скоро",
+      "active": "Активно",
+      "inactive": "Неактивно",
+      "visit": "Визит"
+    },
+    "card": {
+      "given": "Введено: {{date}}",
+      "nextDue": "Следующее: {{date}}",
+      "by": "Кем: {{name}}",
+      "dosage": "Доза: {{value}}",
+      "frequency": "Частота: {{value}}",
+      "started": "Начато: {{date}}",
+      "ends": "Окончание: {{date}}",
+      "prescribedBy": "Назначено: {{name}}",
+      "vet": "Ветеринар: д-р {{name}}",
+      "clinic": "Клиника: {{name}}",
+      "diagnosis": "Диагноз: {{value}}",
+      "treatment": "Лечение: {{value}}",
+      "cost": "Стоимость: ${{value}}",
+      "edit": "Изменить",
+      "delete": "Удалить"
+    },
+    "modal": {
+      "vaccine": {
+        "addTitle": "Добавить вакцину",
+        "editTitle": "Изменить вакцину",
+        "namePlaceholder": "напр. Бешенство, DHPP",
+        "nameLabel": "Название вакцины *",
+        "dateGivenLabel": "Дата введения",
+        "dateGivenPlaceholder": "Выберите дату введения",
+        "nextDueLabel": "Следующая дата",
+        "nextDuePlaceholder": "Выберите следующую дату",
+        "adminByLabel": "Кем введено",
+        "adminByPlaceholder": "Д-р Иванов",
+        "notesLabel": "Заметки",
+        "notesPlaceholder": "Дополнительная информация...",
+        "required": "Пожалуйста, введите название вакцины."
+      },
+      "medication": {
+        "addTitle": "Добавить лекарство",
+        "editTitle": "Изменить лекарство",
+        "nameLabel": "Название лекарства *",
+        "namePlaceholder": "напр. Apoquel, Heartgard",
+        "dosageLabel": "Дозировка",
+        "dosagePlaceholder": "напр. 16 мг, 1 таблетка",
+        "frequencyLabel": "Частота приёма",
+        "frequencyPlaceholder": "напр. Раз в день",
+        "startDateLabel": "Дата начала",
+        "startDatePlaceholder": "Выберите дату начала",
+        "endDateLabel": "Дата окончания (пусто — если постоянно)",
+        "endDatePlaceholder": "Выберите дату окончания (необязательно)",
+        "prescriberLabel": "Назначил",
+        "prescriberPlaceholder": "Д-р Иванов",
+        "notesLabel": "Заметки",
+        "notesPlaceholder": "Дополнительная информация...",
+        "activeLabel": "Активное лекарство",
+        "required": "Пожалуйста, введите название лекарства."
+      },
+      "record": {
+        "addTitle": "Добавить запись",
+        "editTitle": "Изменить запись",
+        "visitDateLabel": "Дата визита *",
+        "visitDatePlaceholder": "Выберите дату визита",
+        "recordTypeLabel": "Тип записи",
+        "vetNameLabel": "Ветеринар",
+        "vetNamePlaceholder": "Д-р Иванов",
+        "clinicLabel": "Название клиники",
+        "clinicPlaceholder": "Клиника Счастливые лапки",
+        "diagnosisLabel": "Диагноз",
+        "diagnosisPlaceholder": "напр. Отит",
+        "treatmentLabel": "Лечение",
+        "treatmentPlaceholder": "напр. Назначены антибиотики",
+        "costLabel": "Стоимость ($)",
+        "costPlaceholder": "150.00",
+        "notesLabel": "Заметки",
+        "notesPlaceholder": "Дополнительная информация...",
+        "required": "Пожалуйста, выберите дату визита."
+      },
+      "cancel": "Отмена",
+      "save": "Сохранить",
+      "requiredTitle": "Обязательное поле",
+      "errorTitle": "Ошибка"
+    },
+    "delete": {
+      "vaccine": {
+        "title": "Удалить вакцинацию",
+        "message": "Вы уверены, что хотите удалить эту запись?"
+      },
+      "medication": {
+        "title": "Удалить лекарство",
+        "message": "Вы уверены, что хотите удалить эту запись?"
+      },
+      "record": {
+        "title": "Удалить запись о визите",
+        "message": "Вы уверены, что хотите удалить эту запись?"
+      },
+      "confirm": "Удалить",
+      "cancel": "Отмена"
+    },
+    "recordTypes": {
+      "checkup": "Осмотр",
+      "surgery": "Операция",
+      "emergency": "Экстренный",
+      "dental": "Стоматология",
+      "grooming": "Груминг",
+      "other": "Другое"
+    },
+    "errors": {
+      "loadPets": "Не удалось загрузить питомцев.",
+      "loadData": "Не удалось загрузить медданные."
+    },
+    "hub": {
+      "title": "Медицинский центр 🏥"
+    },
+    "dateFormat": "ru-RU"
+  }
+  

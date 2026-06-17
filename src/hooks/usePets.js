@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
-import imageUploadService from '../services/imageUploadService';
+import * as imageUploadService from '../services/imageUploadService';
 
 export const usePets = () => {
   const { user } = useAuth();
@@ -125,12 +125,9 @@ export const usePets = () => {
       const oldPet = pets.find(p => p.id === petId);
       if (oldPet?.avatar_url && oldPet.avatar_url.includes('supabase.co/storage')) {
         try {
-          // Извлекаем путь из URL (например: "user-id/pet-123-1776011722122.jpg")
-          const urlParts = oldPet.avatar_url.split('/pets/');
-          if (urlParts[1]) {
-            await imageUploadService.deleteFromStorage(urlParts[1], 'pets');
-            console.log('🗑️ Old photo deleted:', urlParts[1]);
-          }
+          // deleteFromStorage принимает полный URL и сам извлекает путь после "pets/"
+          await imageUploadService.deleteFromStorage(oldPet.avatar_url);
+          console.log('🗑️ Old photo deleted:', oldPet.avatar_url);
         } catch (deleteError) {
           console.warn('⚠️ Could not delete old photo:', deleteError);
           // Продолжаем выполнение даже если удаление не удалось
@@ -190,9 +187,8 @@ export const usePets = () => {
 
       // ✅ НОВОЕ: Удаляем фото из Storage (опционально, если хотите сохранять историю - закомментируйте)
       if (pet?.avatar_url && pet.avatar_url.includes('supabase')) {
-        const urlParts = pet.avatar_url.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-        await imageUploadService.deleteFromStorage(`pets/${user.id}/${fileName}`);
+        // Передаём полный URL — путь извлекается внутри deleteFromStorage
+        await imageUploadService.deleteFromStorage(pet.avatar_url);
       }
 
       await fetchPets(); // Refresh pets list

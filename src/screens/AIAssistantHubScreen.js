@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════
-// src/screens/AIAssistantHubScreen.js (ФИНАЛЬНАЯ ВЕРСИЯ)
+// src/screens/AIAssistantHubScreen.js
 // ══════════════════════════════════════════════════
 
 import React from 'react';
@@ -9,88 +9,90 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { usePetContext } from '../context/PetContext';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function AIAssistantHubScreen({ navigation }) {
   const { selectedPet } = usePetContext();
+  const { t } = useTranslation('ai');
 
-  // ═══ КАТЕГОРИИ (без изменений) ═══
+  // ═══ КАТЕГОРИИ ═══
   const categories = [
     {
       id: 'health',
-      title: 'Health & Wellness',
+      title: t('hub.categories.health.title'),
       icon: 'medical',
       color: '#FF6B6B',
-      description: 'Medical advice, symptoms, and preventive care',
+      description: t('hub.categories.health.description'),
       questions: [
-        'What are signs of illness in dogs?',
-        'How often should I visit the vet?',
-        'Common health issues in cats',
+        t('hub.categories.health.q1'),
+        t('hub.categories.health.q2'),
+        t('hub.categories.health.q3'),
       ],
     },
     {
       id: 'nutrition',
-      title: 'Nutrition & Diet',
+      title: t('hub.categories.nutrition.title'),
       icon: 'restaurant',
       color: '#4ECDC4',
-      description: 'Feeding guidelines, recipes, and dietary needs',
+      description: t('hub.categories.nutrition.description'),
       questions: [
-        'Best diet for puppies',
-        'How much should my pet eat?',
-        'Foods toxic to pets',
+        t('hub.categories.nutrition.q1'),
+        t('hub.categories.nutrition.q2'),
+        t('hub.categories.nutrition.q3'),
       ],
     },
     {
       id: 'behavior',
-      title: 'Behavior & Training',
+      title: t('hub.categories.behavior.title'),
       icon: 'school',
       color: '#FFD93D',
-      description: 'Training tips, behavioral issues, and socialization',
+      description: t('hub.categories.behavior.description'),
       questions: [
-        'How to stop excessive barking?',
-        'Litter training for kittens',
-        'Socializing an anxious dog',
+        t('hub.categories.behavior.q1'),
+        t('hub.categories.behavior.q2'),
+        t('hub.categories.behavior.q3'),
       ],
     },
     {
       id: 'grooming',
-      title: 'Grooming & Care',
+      title: t('hub.categories.grooming.title'),
       icon: 'cut',
       color: '#A8E6CF',
-      description: 'Bathing, nail care, and hygiene tips',
+      description: t('hub.categories.grooming.description'),
       questions: [
-        'How often to bathe my dog?',
-        'Nail trimming best practices',
-        'Brushing techniques for long hair',
+        t('hub.categories.grooming.q1'),
+        t('hub.categories.grooming.q2'),
+        t('hub.categories.grooming.q3'),
       ],
     },
     {
       id: 'emergency',
-      title: 'Emergency Guide',
+      title: t('hub.categories.emergency.title'),
       icon: 'alert-circle',
       color: '#FF8B94',
-      description: 'First aid and emergency response',
+      description: t('hub.categories.emergency.description'),
       questions: [
-        'What to do if my pet is choking?',
-        'Signs of poisoning',
-        'Emergency vet contacts',
+        t('hub.categories.emergency.q1'),
+        t('hub.categories.emergency.q2'),
+        t('hub.categories.emergency.q3'),
       ],
     },
     {
       id: 'general',
-      title: 'General Questions',
+      title: t('hub.categories.general.title'),
       icon: 'help-circle',
       color: '#B4A7D6',
-      description: 'Ask anything about pet care',
+      description: t('hub.categories.general.description'),
       questions: [
-        'Travel tips with pets',
-        'Introducing a new pet to home',
-        'Senior pet care',
+        t('hub.categories.general.q1'),
+        t('hub.categories.general.q2'),
+        t('hub.categories.general.q3'),
       ],
     },
   ];
@@ -116,44 +118,33 @@ export default function AIAssistantHubScreen({ navigation }) {
   const handleStartFreeChat = () => {
     navigation.navigate('AIAssistantChat', {
       category: 'free-chat',
-      title: 'AI Chat',
+      title: t('chat.defaultTitle'),
       color: '#6C63FF',
     });
   };
 
-  // ✨ ИСПРАВЛЕНО: Открыть меню выбора фото
   const handlePhotoAnalysis = async () => {
     Alert.alert(
-      '📸 Photo Analysis',
-      'Choose photo source',
+      t('hub.photoSourceTitle'),
+      t('hub.photoSourceMessage'),
       [
-        {
-          text: '📷 Take Photo',
-          onPress: () => takePhoto(),
-        },
-        {
-          text: '🖼️ Choose from Gallery',
-          onPress: () => pickImage(),
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: t('hub.takePhoto'), onPress: () => takePhoto() },
+        { text: t('hub.chooseGallery'), onPress: () => pickImage() },
+        { text: t('hub.cancel'), style: 'cancel' },
       ],
       { cancelable: true }
     );
   };
 
-  // ✨ ИСПРАВЛЕНО: Сделать фото (mediaTypes как массив)
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Camera access is needed to take photos');
+      Alert.alert(t('hub.permissionRequired'), t('hub.cameraPermission'));
       return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'], // ✅ ИСПРАВЛЕНО: массив вместо MediaTypeOptions
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
       aspect: [4, 3],
@@ -162,7 +153,7 @@ export default function AIAssistantHubScreen({ navigation }) {
     if (!result.canceled) {
       navigation.navigate('AIAssistantChat', {
         category: 'photo-analysis',
-        title: 'Photo Analysis',
+        title: t('chat.titleSymptoms'),
         color: '#FF6B6B',
         photoUri: result.assets[0].uri,
         analysisType: 'symptoms',
@@ -170,16 +161,15 @@ export default function AIAssistantHubScreen({ navigation }) {
     }
   };
 
-  // ✨ ИСПРАВЛЕНО: Выбрать из галереи (mediaTypes как массив)
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Gallery access is needed to choose photos');
+      Alert.alert(t('hub.permissionRequired'), t('hub.galleryPermission'));
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'], // ✅ ИСПРАВЛЕНО: массив вместо MediaTypeOptions
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
       aspect: [4, 3],
@@ -187,19 +177,19 @@ export default function AIAssistantHubScreen({ navigation }) {
 
     if (!result.canceled) {
       Alert.alert(
-        'Analysis Type',
-        'What would you like to analyze?',
+        t('hub.analysisTypeTitle'),
+        t('hub.analysisTypeMessage'),
         [
           {
-            text: '🩺 Check Symptoms',
+            text: t('hub.checkSymptoms'),
             onPress: () => navigateToPhotoAnalysis(result.assets[0].uri, 'symptoms'),
           },
           {
-            text: '🏷️ Identify Breed',
+            text: t('hub.identifyBreed'),
             onPress: () => navigateToPhotoAnalysis(result.assets[0].uri, 'breed'),
           },
           {
-            text: '🔍 General Analysis',
+            text: t('hub.generalAnalysis'),
             onPress: () => navigateToPhotoAnalysis(result.assets[0].uri, 'general'),
           },
         ],
@@ -209,14 +199,15 @@ export default function AIAssistantHubScreen({ navigation }) {
   };
 
   const navigateToPhotoAnalysis = (photoUri, analysisType) => {
-    console.log('📸 Photo URI received:', photoUri);
-    console.log('📋 Analysis type:', analysisType);
-    
+    const titleMap = {
+      symptoms: t('chat.titleSymptoms'),
+      breed: t('chat.titleBreed'),
+      general: t('chat.titleGeneral'),
+    };
+
     navigation.navigate('AIAssistantChat', {
       category: 'photo-analysis',
-      title: analysisType === 'symptoms' ? 'Symptom Check' : 
-             analysisType === 'breed' ? 'Breed Identification' : 
-             'Photo Analysis',
+      title: titleMap[analysisType] || titleMap.general,
       color: '#FF6B6B',
       photoUri,
       analysisType,
@@ -243,11 +234,11 @@ export default function AIAssistantHubScreen({ navigation }) {
               <Ionicons name="camera" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.headerTitle}>AI Pet Assistant</Text>
+          <Text style={styles.headerTitle}>{t('hub.title')}</Text>
           <Text style={styles.headerSubtitle}>
             {selectedPet
-              ? `Ask me anything about ${selectedPet.name}'s care`
-              : 'Ask me anything about pet care'}
+              ? t('hub.subtitleWithPet', { name: selectedPet.name })
+              : t('hub.subtitleNoPet')}
           </Text>
         </View>
 
@@ -258,7 +249,7 @@ export default function AIAssistantHubScreen({ navigation }) {
             <View style={styles.petInfoText}>
               <Text style={styles.petName}>{selectedPet.name}</Text>
               <Text style={styles.petDetails}>
-                {selectedPet.breed} • {selectedPet.age || 'Unknown age'}
+                {selectedPet.breed} • {selectedPet.age || t('chat.unknownAge')}
               </Text>
             </View>
           </View>
@@ -274,8 +265,8 @@ export default function AIAssistantHubScreen({ navigation }) {
             <Ionicons name="chatbubble-ellipses" size={28} color="#FFFFFF" />
           </View>
           <View style={styles.freeChatContent}>
-            <Text style={styles.freeChatTitle}>Start Free Chat</Text>
-            <Text style={styles.freeChatSubtitle}>Ask me anything about your pet</Text>
+            <Text style={styles.freeChatTitle}>{t('hub.freeChat')}</Text>
+            <Text style={styles.freeChatSubtitle}>{t('hub.freeChatSubtitle')}</Text>
           </View>
           <Ionicons name="arrow-forward-circle" size={32} color="#6C63FF" />
         </TouchableOpacity>
@@ -290,16 +281,14 @@ export default function AIAssistantHubScreen({ navigation }) {
             <Ionicons name="camera" size={28} color="#FFFFFF" />
           </View>
           <View style={styles.photoAnalysisContent}>
-            <Text style={styles.photoAnalysisTitle}>Photo Analysis</Text>
-            <Text style={styles.photoAnalysisSubtitle}>
-              Check symptoms or identify breed
-            </Text>
+            <Text style={styles.photoAnalysisTitle}>{t('hub.photoAnalysis')}</Text>
+            <Text style={styles.photoAnalysisSubtitle}>{t('hub.photoAnalysisSubtitle')}</Text>
           </View>
           <Ionicons name="arrow-forward-circle" size={32} color="#FF6B6B" />
         </TouchableOpacity>
 
         {/* ═══ CATEGORIES GRID ═══ */}
-        <Text style={styles.sectionTitle}>Browse by Category</Text>
+        <Text style={styles.sectionTitle}>{t('hub.browseByCategory')}</Text>
         <View style={styles.categoriesGrid}>
           {categories.map((category) => (
             <TouchableOpacity
@@ -321,7 +310,7 @@ export default function AIAssistantHubScreen({ navigation }) {
         </View>
 
         {/* ═══ QUICK QUESTIONS ═══ */}
-        <Text style={styles.sectionTitle}>Popular Questions</Text>
+        <Text style={styles.sectionTitle}>{t('hub.popularQuestions')}</Text>
         {categories.slice(0, 3).map((category) => (
           <View key={category.id} style={styles.quickQuestionsSection}>
             <Text style={[styles.quickQuestionsHeader, { color: category.color }]}>
@@ -357,7 +346,7 @@ export default function AIAssistantHubScreen({ navigation }) {
   );
 }
 
-// ═══ STYLES (без изменений) ═══
+// ═══ STYLES ═══
 const styles = StyleSheet.create({
   container: {
     flex: 1,
