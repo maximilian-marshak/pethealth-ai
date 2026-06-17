@@ -159,7 +159,7 @@ export default function ProfileScreen({ navigation }) {
   const { t } = useTranslation(['profile', 'common', 'pets']);
 
   // ─── Хуки данных ────────────────────────────────────────
-  const { points, loading: loadingPoints, refetch: refetchPoints } = useLoyaltyPoints();
+  const { points, loading: loadingPoints, refreshPoints } = useLoyaltyPoints();
   const { totalDonated, shelterCount, loading: loadingCharity, refetch: refetchCharity } = useCharity();
   const { badges, nextBadge, unlockedCount, totalBadges, progressToNext, loading: loadingBadges } = useBadges();
   const { pets, loading: loadingPets, refetch: refetchPets } = usePets();
@@ -194,7 +194,7 @@ export default function ProfileScreen({ navigation }) {
     try {
       await Promise.all([
         refetchPets(),
-        refetchPoints(),
+        refreshPoints(),
         refetchCharity(),
         refetchProfile(),
       ]);
