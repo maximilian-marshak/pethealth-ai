@@ -161,7 +161,7 @@ export default function ProfileScreen({ navigation }) {
   // ─── Хуки данных ────────────────────────────────────────
   const { points, loading: loadingPoints, refetch: refetchPoints } = useLoyaltyPoints();
   const { totalDonated, shelterCount, loading: loadingCharity, refetch: refetchCharity } = useCharity();
-  const { badges, nextBadge, loading: loadingBadges } = useBadges();
+  const { badges, nextBadge, unlockedCount, totalBadges, progressToNext, loading: loadingBadges } = useBadges();
   const { pets, loading: loadingPets, refetch: refetchPets } = usePets();
   const { profile, loading: loadingProfile, updateAvatar, refetch: refetchProfile } = useUserProfile();
 
@@ -180,19 +180,13 @@ export default function ProfileScreen({ navigation }) {
 
   // ─── Вычисляемые значения ───────────────────────────────
   const currentBalance = points || 0;
-  const unlockedCount = badges.filter(b => b.earned).length;
-  const totalBadges = badges.length;
-
-  const progressToNext = useMemo(() => {
-    if (!nextBadge || nextBadge.earned) return 100;
-    if (typeof nextBadge.progress === 'number' && !isNaN(nextBadge.progress)) {
-      return Math.round(nextBadge.progress * 100);
-    }
-    if (nextBadge.required && typeof nextBadge.current === 'number') {
-      return Math.round(Math.min((nextBadge.current / nextBadge.required) * 100, 100));
-    }
-    return 0;
-  }, [nextBadge]);
+  // unlockedCount / totalBadges / progressToNext берём из useBadges
+  // (контракт хука: badge.unlocked + badge.threshold) — не пересчитываем
+  // по несуществующим полям earned/required/current/progress.
+  // Очки до следующего бейджа выводим из threshold и процента прогресса.
+  const pointsToNextBadge = nextBadge
+    ? Math.max(0, Math.round(nextBadge.threshold * (1 - progressToNext / 100)))
+    : 0;
 
   // ─── Рефетч ─────────────────────────────────────────────
   const onRefresh = async () => {
@@ -354,10 +348,10 @@ export default function ProfileScreen({ navigation }) {
           )}
         </View>
 
-        {nextBadge && !nextBadge.earned && (
+        {nextBadge && !nextBadge.unlocked && (
           <View style={styles.nextBadgeCard}>
             <Text style={styles.nextBadgeLabel}>
-              {t('dashboard:nextLevel', { points: nextBadge.required - (nextBadge.current || 0) })}
+              {t('dashboard:nextLevel', { points: pointsToNextBadge })}
             </Text>
             <Text style={styles.nextBadgeName}>
               {nextBadge.icon} {nextBadge.title}
