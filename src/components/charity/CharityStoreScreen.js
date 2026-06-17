@@ -16,7 +16,7 @@ import ShelterCard from './ShelterCard'; // ✅ ДОБАВЛЕНО
 
 export default function CharityStoreScreen({ navigation }) {
   const { points, refreshPoints } = useLoyaltyPoints();
-  const { shelters, loading, makeDonation } = useCharity();
+  const { shelters, loading, makeDonation, refetch } = useCharity();
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [processing, setProcessing] = useState(false);
 
@@ -46,8 +46,10 @@ export default function CharityStoreScreen({ navigation }) {
       const newBalance = points - amount;
 
       setSelectedDonation(null);
-      // Обновляем баланс через контракт useLoyaltyPoints (refetch user_points).
-      await refreshPoints();
+      // Сразу обновляем и баланс (user_points), и агрегаты useCharity
+      // (shelters.total_donations + donations) — чтобы «Собрано»/суммы
+      // по приютам росли вживую, без ухода с экрана и возврата.
+      await Promise.all([refreshPoints(), refetch()]);
 
       Alert.alert(
         '🎉 Спасибо!',
