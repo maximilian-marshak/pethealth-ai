@@ -39,14 +39,20 @@ export default function CharityStoreScreen({ navigation }) {
     setProcessing(true);
 
     try {
-      const result = await makeDonation(shelter.id, amount);
+      // RPC make_donation ждёт (p_user_id, p_shelter_id, p_points, p_shelter_name).
+      // useCharity.makeDonation(shelterId, points, shelterName) — передаём имя приюта.
+      await makeDonation(shelter.id, amount, shelter.name);
+
+      // RPC списывает amount Paws -> новый баланс считаем локально для алерта.
+      const newBalance = points - amount;
 
       setSelectedDonation(null);
+      // Обновляем баланс через контракт useLoyaltyPoints (refetch user_points).
       await refreshPoints();
 
       Alert.alert(
         '🎉 Спасибо!',
-        `Вы пожертвовали ${amount} Paws приюту "${shelter.name}". Ваш новый баланс: ${result.new_balance} Paws`,
+        `Вы пожертвовали ${amount} Paws приюту "${shelter.name}". Ваш новый баланс: ${newBalance} Paws`,
         [{ text: 'OK' }]
       );
     } catch (error) {
