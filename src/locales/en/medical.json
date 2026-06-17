@@ -1,0 +1,165 @@
+{
+    "header": {
+      "title": "Medical Records",
+      "back": "Back"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "vaccines": "Vaccines",
+      "medications": "Medications",
+      "records": "Records"
+    },
+    "overview": {
+      "summary": {
+        "vaccines": "Vaccines",
+        "activeMeds": "Active Meds",
+        "vetVisits": "Vet Visits"
+      },
+      "upcomingVaccines": "⚠️ Upcoming Vaccines",
+      "activeMedications": "Active Medications",
+      "lastVisit": "Last Vet Visit"
+    },
+    "empty": {
+      "overview": {
+        "title": "No Medical Records Yet",
+        "subtitle": "Start by adding a vaccination, medication, or vet visit."
+      },
+      "vaccines": {
+        "icon": "💉",
+        "title": "No Vaccinations Recorded",
+        "subtitle": "Tap the + button to add a vaccination."
+      },
+      "medications": {
+        "icon": "💊",
+        "title": "No Medications Recorded",
+        "subtitle": "Tap the + button to add a medication."
+      },
+      "records": {
+        "icon": "📋",
+        "title": "No Vet Records Yet",
+        "subtitle": "Tap the + button to log a vet visit."
+      }
+    },
+    "status": {
+      "overdue": "overdue",
+      "dueIn": "Due in {{days}}d",
+      "daysOverdue": "{{days}}d overdue",
+      "upToDate": "Up to Date",
+      "completed": "Completed",
+      "dueSoon": "Due Soon",
+      "active": "Active",
+      "inactive": "Inactive",
+      "visit": "Visit"
+    },
+    "card": {
+      "given": "Given: {{date}}",
+      "nextDue": "Next due: {{date}}",
+      "by": "By: {{name}}",
+      "dosage": "Dosage: {{value}}",
+      "frequency": "Frequency: {{value}}",
+      "started": "Started: {{date}}",
+      "ends": "Ends: {{date}}",
+      "prescribedBy": "Prescribed by: {{name}}",
+      "vet": "Vet: Dr. {{name}}",
+      "clinic": "Clinic: {{name}}",
+      "diagnosis": "Diagnosis: {{value}}",
+      "treatment": "Treatment: {{value}}",
+      "cost": "Cost: ${{value}}",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "modal": {
+      "vaccine": {
+        "addTitle": "Add Vaccine",
+        "editTitle": "Edit Vaccine",
+        "namePlaceholder": "e.g. Rabies, DHPP",
+        "nameLabel": "Vaccine Name *",
+        "dateGivenLabel": "Date Given",
+        "dateGivenPlaceholder": "Select date given",
+        "nextDueLabel": "Next Due Date",
+        "nextDuePlaceholder": "Select next due date",
+        "adminByLabel": "Administered By",
+        "adminByPlaceholder": "Dr. Smith",
+        "notesLabel": "Notes",
+        "notesPlaceholder": "Any additional notes...",
+        "required": "Please enter a vaccine name."
+      },
+      "medication": {
+        "addTitle": "Add Medication",
+        "editTitle": "Edit Medication",
+        "nameLabel": "Medication Name *",
+        "namePlaceholder": "e.g. Apoquel, Heartgard",
+        "dosageLabel": "Dosage",
+        "dosagePlaceholder": "e.g. 16mg, 1 tablet",
+        "frequencyLabel": "Frequency",
+        "frequencyPlaceholder": "e.g. Once daily",
+        "startDateLabel": "Start Date",
+        "startDatePlaceholder": "Select start date",
+        "endDateLabel": "End Date (leave empty if ongoing)",
+        "endDatePlaceholder": "Select end date (optional)",
+        "prescriberLabel": "Prescribed By",
+        "prescriberPlaceholder": "Dr. Smith",
+        "notesLabel": "Notes",
+        "notesPlaceholder": "Any additional notes...",
+        "activeLabel": "Active Medication",
+        "required": "Please enter a medication name."
+      },
+      "record": {
+        "addTitle": "Add Vet Record",
+        "editTitle": "Edit Record",
+        "visitDateLabel": "Visit Date *",
+        "visitDatePlaceholder": "Select visit date",
+        "recordTypeLabel": "Record Type",
+        "vetNameLabel": "Vet Name",
+        "vetNamePlaceholder": "Dr. Smith",
+        "clinicLabel": "Clinic Name",
+        "clinicPlaceholder": "Happy Paws Clinic",
+        "diagnosisLabel": "Diagnosis",
+        "diagnosisPlaceholder": "e.g. Ear infection",
+        "treatmentLabel": "Treatment",
+        "treatmentPlaceholder": "e.g. Prescribed antibiotics",
+        "costLabel": "Cost ($)",
+        "costPlaceholder": "150.00",
+        "notesLabel": "Notes",
+        "notesPlaceholder": "Any additional notes...",
+        "required": "Please select a visit date."
+      },
+      "cancel": "Cancel",
+      "save": "Save",
+      "requiredTitle": "Required",
+      "errorTitle": "Error"
+    },
+    "delete": {
+      "vaccine": {
+        "title": "Delete Vaccination",
+        "message": "Are you sure you want to delete this record?"
+      },
+      "medication": {
+        "title": "Delete Medication",
+        "message": "Are you sure you want to delete this record?"
+      },
+      "record": {
+        "title": "Delete Vet Record",
+        "message": "Are you sure you want to delete this record?"
+      },
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "recordTypes": {
+      "checkup": "Checkup",
+      "surgery": "Surgery",
+      "emergency": "Emergency",
+      "dental": "Dental",
+      "grooming": "Grooming",
+      "other": "Other"
+    },
+    "errors": {
+      "loadPets": "Could not load pets.",
+      "loadData": "Could not load medical data."
+    },
+    "hub": {
+      "title": "Medical Hub 🏥"
+    },
+    "dateFormat": "en-US"
+  }
+  

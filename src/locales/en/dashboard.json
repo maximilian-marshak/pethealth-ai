@@ -1,0 +1,76 @@
+{
+  "greeting": {
+    "morning": "Good Morning",
+    "afternoon": "Good Afternoon",
+    "evening": "Good Evening"
+  },
+  "loading": "Loading your pets...",
+  "noPets": {
+    "title": "No pets yet!",
+    "subtitle": "Add your first pet to get started",
+    "addBtn": "Add Your Pet"
+  },
+  "petSelector": {
+    "addPet": "Add Pet"
+  },
+  "petCard": {
+    "unknownBreed": "Unknown breed",
+    "unknownGender": "Unknown",
+    "ageUnknown": "Age unknown",
+    "newborn": "Newborn"
+  },
+  "paws": {
+    "title": "Paws Points",
+    "subtitle": "Help shelter animals",
+    "progressLabel": "Progress to Help Shelter",
+    "donateBtn": "Help a Shelter Now!",
+    "earnMore": "+ Earn More Paws"
+  },
+  "health": {
+    "sectionTitle": "Health Overview",
+    "vaccination": {
+      "title": "Vaccinations",
+      "noData": "No data",
+      "overdue": "Vaccination Overdue",
+      "dueSoon": "Vaccination Due Soon",
+      "upToDate": "Up to Date",
+      "due": "Due:",
+      "next": "Next:",
+      "coming": "Coming up",
+      "allGood": "All good!",
+      "checkSchedule": "Check schedule"
+    },
+    "weight": {
+      "title": "Weight",
+      "notRecorded": "Not recorded"
+    },
+    "checkup": {
+      "title": "Next Checkup",
+      "notScheduled": "Not scheduled"
+    }
+  },
+  "quickActions": {
+    "sectionTitle": "Quick Actions",
+    "medical": "Medical",
+    "aiChat": "AI Chat",
+    "activity": "Activity",
+    "profile": "Profile"
+  },
+  "vaccinations": {
+    "sectionTitle": "Upcoming Vaccinations",
+    "seeAll": "See All",
+    "empty": "No upcoming vaccinations",
+    "emptySubtext": "All up to date!",
+    "due": "Due",
+    "today": "Today",
+    "oneDay": "1 day",
+    "days": "{{count}} days"
+  },
+  "recentActivity": {
+    "sectionTitle": "Recent Activity",
+    "seeAll": "See All",
+    "empty": "No recent activity",
+    "emptySubtext": "Start tracking your pet's activities!",
+    "addFirst": "+ Add First Activity"
+  }
+}

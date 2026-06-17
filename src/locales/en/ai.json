@@ -1,0 +1,106 @@
+{
+    "hub": {
+      "title": "AI Pet Assistant",
+      "subtitleWithPet": "Ask me anything about {{name}}'s care",
+      "subtitleNoPet": "Ask me anything about pet care",
+      "freeChat": "Start Free Chat",
+      "freeChatSubtitle": "Ask me anything about your pet",
+      "photoAnalysis": "Photo Analysis",
+      "photoAnalysisSubtitle": "Check symptoms or identify breed",
+      "browseByCategory": "Browse by Category",
+      "popularQuestions": "Popular Questions",
+      "photoSourceTitle": "📸 Photo Analysis",
+      "photoSourceMessage": "Choose photo source",
+      "takePhoto": "📷 Take Photo",
+      "chooseGallery": "🖼️ Choose from Gallery",
+      "cancel": "Cancel",
+      "permissionRequired": "Permission Required",
+      "cameraPermission": "Camera access is needed to take photos",
+      "galleryPermission": "Gallery access is needed to choose photos",
+      "analysisTypeTitle": "Analysis Type",
+      "analysisTypeMessage": "What would you like to analyze?",
+      "checkSymptoms": "🩺 Check Symptoms",
+      "identifyBreed": "🏷️ Identify Breed",
+      "generalAnalysis": "🔍 General Analysis",
+      "categories": {
+        "health": {
+          "title": "Health & Wellness",
+          "description": "Medical advice, symptoms, and preventive care",
+          "q1": "What are signs of illness in dogs?",
+          "q2": "How often should I visit the vet?",
+          "q3": "Common health issues in cats"
+        },
+        "nutrition": {
+          "title": "Nutrition & Diet",
+          "description": "Feeding guidelines, recipes, and dietary needs",
+          "q1": "Best diet for puppies",
+          "q2": "How much should my pet eat?",
+          "q3": "Foods toxic to pets"
+        },
+        "behavior": {
+          "title": "Behavior & Training",
+          "description": "Training tips, behavioral issues, and socialization",
+          "q1": "How to stop excessive barking?",
+          "q2": "Litter training for kittens",
+          "q3": "Socializing an anxious dog"
+        },
+        "grooming": {
+          "title": "Grooming & Care",
+          "description": "Bathing, nail care, and hygiene tips",
+          "q1": "How often to bathe my dog?",
+          "q2": "Nail trimming best practices",
+          "q3": "Brushing techniques for long hair"
+        },
+        "emergency": {
+          "title": "Emergency Guide",
+          "description": "First aid and emergency response",
+          "q1": "What to do if my pet is choking?",
+          "q2": "Signs of poisoning",
+          "q3": "Emergency vet contacts"
+        },
+        "general": {
+          "title": "General Questions",
+          "description": "Ask anything about pet care",
+          "q1": "Travel tips with pets",
+          "q2": "Introducing a new pet to home",
+          "q3": "Senior pet care"
+        }
+      }
+    },
+    "chat": {
+      "defaultTitle": "AI Assistant",
+      "petHeader": "{{name}} • {{breed}} • {{age}}",
+      "unknownAge": "Unknown age",
+      "clearChat": "Clear Chat",
+      "clearChatMessage": "Are you sure you want to clear this conversation?",
+      "clear": "Clear",
+      "inputPlaceholder": "Ask me anything about pet care...",
+      "analyzingPhoto": "AI is analyzing...",
+      "emptyTitle": "AI Pet Assistant",
+      "emptyTitleWithPet": "{{name}}'s AI Assistant",
+      "emptyWelcome": "Hi! I'm your AI pet care assistant. Ask me anything about your pet's health, nutrition, behavior, or general care.",
+      "emptyWelcomeWithPet": "Hi! I'm your AI assistant for {{name}}. How can I help you today?",
+      "tryAsking": "Try asking:",
+      "suggestedQ1": "What are the signs of illness in pets?",
+      "suggestedQ2": "How often should I feed my pet?",
+      "suggestedQ3": "What vaccinations does my pet need?",
+      "suggestedQ4": "How to train a puppy?",
+      "promptSymptoms": "🔍 Analyzing photo for health symptoms...",
+      "promptBreed": "🐾 Identifying pet breed...",
+      "promptGeneral": "📸 Analyzing photo...",
+      "visionBadge": "Vision Analysis",
+      "urgentAlertTitle": "🚨 Urgent Health Alert",
+      "urgentAlertMessage": "The AI detected potential urgent health concerns. Please consult a veterinarian immediately!",
+      "findVet": "Find Vet",
+      "emergencyAlert": "⚠️ Emergency Detected",
+      "emergencyMessage": "Please contact a veterinarian immediately!",
+      "errorPrefix": "❌ Sorry, I couldn't analyze the image.",
+      "errorRetry": "Please try again or use a different photo.",
+      "errorChat": "❌ Sorry, I encountered an error:",
+      "errorChatRetry": "Please try again.",
+      "titleSymptoms": "Symptom Check",
+      "titleBreed": "Breed Identification",
+      "titleGeneral": "Photo Analysis"
+    }
+  }
+  

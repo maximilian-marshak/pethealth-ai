@@ -13,48 +13,164 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useCharity } from '../hooks/useCharity';
 import { useBadges } from '../hooks/useBadges';
 import { usePets } from '../hooks/usePets';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { useLanguage } from '../hooks/useLanguage';
 import BadgeCard from '../components/BadgeCard';
 import ProgressBar from '../components/ProgressBar';
 
+// ─── Language Switcher Component ──────────────────────────────────────────────
+const LanguageSwitcher = () => {
+  const { currentLanguage, switchLanguage } = useLanguage();
+  const { t } = useTranslation('common');
+  const [switching, setSwitching] = useState(false);
+
+  const handleSwitch = async (lang) => {
+    if (lang === currentLanguage || switching) return;
+    try {
+      setSwitching(true);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await switchLanguage(lang);
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  return (
+    <View style={switcherStyles.container}>
+      <View style={switcherStyles.labelRow}>
+        <Ionicons name="language" size={20} color="#6C63FF" />
+        <Text style={switcherStyles.label}>{t('language')}</Text>
+      </View>
+
+      <View style={switcherStyles.toggle}>
+        {/* EN кнопка */}
+        <TouchableOpacity
+          style={[
+            switcherStyles.langBtn,
+            currentLanguage === 'en' && switcherStyles.langBtnActive,
+          ]}
+          onPress={() => handleSwitch('en')}
+          disabled={switching}
+        >
+          <Text style={[
+            switcherStyles.langText,
+            currentLanguage === 'en' && switcherStyles.langTextActive,
+          ]}>
+            🇬🇧 EN
+          </Text>
+        </TouchableOpacity>
+
+        {/* RU кнопка */}
+        <TouchableOpacity
+          style={[
+            switcherStyles.langBtn,
+            currentLanguage === 'ru' && switcherStyles.langBtnActive,
+          ]}
+          onPress={() => handleSwitch('ru')}
+          disabled={switching}
+        >
+          <Text style={[
+            switcherStyles.langText,
+            currentLanguage === 'ru' && switcherStyles.langTextActive,
+          ]}>
+            🇷🇺 RU
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {switching && (
+        <ActivityIndicator
+          size="small"
+          color="#6C63FF"
+          style={switcherStyles.spinner}
+        />
+      )}
+    </View>
+  );
+};
+
+const switcherStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  label: {
+    fontSize: 15,
+    color: '#1A1A2E',
+    fontWeight: '500',
+  },
+  toggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F0FF',
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
+  },
+  langBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  langBtnActive: {
+    backgroundColor: '#6C63FF',
+    shadowColor: '#6C63FF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  langText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6C63FF',
+  },
+  langTextActive: {
+    color: '#fff',
+  },
+  spinner: {
+    marginLeft: 8,
+  },
+});
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen({ navigation }) {
   const { user, signOut } = useAuth();
-  
-  // ✅ Данные из хуков
+  const { t } = useTranslation(['profile', 'common', 'pets']);
+
+  // ─── Хуки данных ────────────────────────────────────────
   const { points, loading: loadingPoints, refetch: refetchPoints } = useLoyaltyPoints();
-  const { 
-    totalDonated,
-    shelterCount,
-    loading: loadingCharity, 
-    refetch: refetchCharity 
-  } = useCharity();
-  const { 
-    badges, 
-    nextBadge, 
-    loading: loadingBadges 
-  } = useBadges();
+  const { totalDonated, shelterCount, loading: loadingCharity, refetch: refetchCharity } = useCharity();
+  const { badges, nextBadge, loading: loadingBadges } = useBadges();
   const { pets, loading: loadingPets, refetch: refetchPets } = usePets();
-  
-  // ✅ ДОБАВЛЕНО: Хук для управления профилем пользователя
-  const { 
-    profile, 
-    loading: loadingProfile, 
-    updateAvatar,
-    refetch: refetchProfile 
-  } = useUserProfile();
-  
+  const { profile, loading: loadingProfile, updateAvatar, refetch: refetchProfile } = useUserProfile();
+
   const [refreshing, setRefreshing] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // ✅ Автообновление данных при возврате на экран
+  // ─── Фокус ──────────────────────────────────────────────
   useFocusEffect(
     useCallback(() => {
-      console.log('🔄 ProfileScreen focused - refreshing all data');
       Promise.all([
         refetchPets(),
         refetchProfile(),
@@ -62,34 +178,25 @@ export default function ProfileScreen({ navigation }) {
     }, [refetchPets, refetchProfile])
   );
 
-  // ✅ Текущий баланс для прогресс-бара
+  // ─── Вычисляемые значения ───────────────────────────────
   const currentBalance = points || 0;
-  
-  // ✅ Рассчитываем данные на основе полученных значений
   const unlockedCount = badges.filter(b => b.earned).length;
   const totalBadges = badges.length;
-  
-  // ✅ Безопасный расчет прогресса к следующему бейджу
+
   const progressToNext = useMemo(() => {
     if (!nextBadge || nextBadge.earned) return 100;
-    
     if (typeof nextBadge.progress === 'number' && !isNaN(nextBadge.progress)) {
       return Math.round(nextBadge.progress * 100);
     }
-    
     if (nextBadge.required && typeof nextBadge.current === 'number') {
-      const calculated = (nextBadge.current / nextBadge.required) * 100;
-      return Math.round(Math.min(calculated, 100));
+      return Math.round(Math.min((nextBadge.current / nextBadge.required) * 100, 100));
     }
-    
     return 0;
   }, [nextBadge]);
 
-  // ✅ Рефетч всех данных
+  // ─── Рефетч ─────────────────────────────────────────────
   const onRefresh = async () => {
     setRefreshing(true);
-    console.log('🔄 Manual refresh triggered');
-    
     try {
       await Promise.all([
         refetchPets(),
@@ -97,7 +204,6 @@ export default function ProfileScreen({ navigation }) {
         refetchCharity(),
         refetchProfile(),
       ]);
-      console.log('✅ All data refreshed successfully');
     } catch (error) {
       console.error('❌ Error during refresh:', error);
     } finally {
@@ -105,41 +211,36 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  // ✅ ДОБАВЛЕНО: Обработчик обновления аватара пользователя
+  // ─── Аватар ─────────────────────────────────────────────
   const handleUpdateAvatar = async () => {
     try {
       setUploadingAvatar(true);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
       const { pickAndUploadUserAvatar } = await import('../services/imageUploadService');
-      
-      const newAvatarUrl = await pickAndUploadUserAvatar(
-        user.id,
-        profile?.avatar_url
-      );
-
+      const newAvatarUrl = await pickAndUploadUserAvatar(user.id, profile?.avatar_url);
       if (newAvatarUrl) {
         await updateAvatar(newAvatarUrl);
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Успех', 'Фото профиля обновлено');
+        Alert.alert(t('common:ok'), t('profile:editProfile'));
       }
     } catch (error) {
       console.error('❌ Error updating avatar:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Ошибка', 'Не удалось обновить фото');
+      Alert.alert(t('common:error'), error.message);
     } finally {
       setUploadingAvatar(false);
     }
   };
 
+  // ─── Логаут ─────────────────────────────────────────────
   const handleLogout = () => {
     Alert.alert(
-      'Выход',
-      'Вы уверены, что хотите выйти из аккаунта?',
+      t('profile:logout'),
+      `${t('profile:logout')}?`,
       [
-        { text: 'Отмена', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Выйти',
+          text: t('profile:logout'),
           style: 'destructive',
           onPress: async () => {
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -152,72 +253,58 @@ export default function ProfileScreen({ navigation }) {
 
   const navigateToSettings = (screen) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert('Coming Soon', `${screen} будет доступен в следующей версии`);
+    Alert.alert('Coming Soon', `${screen}`);
   };
 
-  // ✅ ОБНОВЛЕНО: Получаем имя из profile или user
+  // ─── Имя и аватар ───────────────────────────────────────
   const getUserName = () => {
     if (profile?.full_name) return profile.full_name;
     if (user?.user_metadata?.full_name) return user.user_metadata.full_name;
     if (user?.email) {
-      const namePart = user.email.split('@')[0];
-      return namePart
+      return user.email.split('@')[0]
         .split(/[._]/)
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ');
     }
     return 'Pet Parent';
   };
 
-  // ✅ ОБНОВЛЕНО: Получаем URL аватара из profile
   const getAvatarUrl = () => {
     if (profile?.avatar_url) return profile.avatar_url;
     if (user?.user_metadata?.avatar_url) return user.user_metadata.avatar_url;
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.email || 'User')}&size=200&background=6C63FF&color=fff`;
   };
 
+  // ─── Render ─────────────────────────────────────────────
   return (
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor="#6C63FF"
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C63FF" />
       }
     >
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
-          <Image
-            source={{ uri: getAvatarUrl() }}
-            style={styles.avatar}
-          />
-          
-          {/* ✅ ДОБАВЛЕНО: Кнопка редактирования аватара */}
+          <Image source={{ uri: getAvatarUrl() }} style={styles.avatar} />
           <TouchableOpacity
             style={styles.avatarEditButton}
             onPress={handleUpdateAvatar}
             disabled={uploadingAvatar}
           >
-            {uploadingAvatar ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Ionicons name="camera" size={16} color="#fff" />
-            )}
+            {uploadingAvatar
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name="camera" size={16} color="#fff" />
+            }
           </TouchableOpacity>
-
           {profile?.is_premium && (
             <View style={styles.premiumBadge}>
               <Text style={styles.premiumIcon}>👑</Text>
             </View>
           )}
         </View>
-
         <Text style={styles.userName}>{getUserName()}</Text>
         <Text style={styles.userEmail}>{user?.email}</Text>
-
         {profile?.is_premium && (
           <View style={styles.subscriptionBadge}>
             <Text style={styles.subscriptionText}>👑 Premium Member</Text>
@@ -231,38 +318,34 @@ export default function ProfileScreen({ navigation }) {
           <View style={[styles.statIcon, { backgroundColor: '#F3F0FF' }]}>
             <Ionicons name="paw" size={24} color="#6C63FF" />
           </View>
-          <Text style={styles.statValue}>
-            {loadingPoints ? '...' : currentBalance}
-          </Text>
-          <Text style={styles.statLabel}>Текущие Paws</Text>
+          <Text style={styles.statValue}>{loadingPoints ? '...' : currentBalance}</Text>
+          <Text style={styles.statLabel}>{t('profile:loyalty')}</Text>
         </View>
 
         <View style={styles.statCard}>
           <View style={[styles.statIcon, { backgroundColor: '#FFE8E8' }]}>
             <Ionicons name="heart" size={24} color="#FF6B6B" />
           </View>
-          <Text style={styles.statValue}>
-            {loadingCharity ? '...' : totalDonated}
-          </Text>
-          <Text style={styles.statLabel}>Всего Paws</Text>
+          <Text style={styles.statValue}>{loadingCharity ? '...' : totalDonated}</Text>
+          <Text style={styles.statLabel}>{t('profile:totalDonated')}</Text>
         </View>
 
         <View style={styles.statCard}>
           <View style={[styles.statIcon, { backgroundColor: '#E8FFE8' }]}>
             <Ionicons name="home" size={24} color="#51CF66" />
           </View>
-          <Text style={styles.statValue}>
-            {loadingCharity ? '...' : shelterCount}
+          <Text style={styles.statValue}>{loadingCharity ? '...' : shelterCount}</Text>
+          <Text style={styles.statLabel}>
+            {t('profile:settings')}
           </Text>
-          <Text style={styles.statLabel}>Приютов</Text>
         </View>
       </View>
 
-      {/* ACHIEVEMENTS SECTION */}
+      {/* ACHIEVEMENTS */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
-            🏆 Достижения ({unlockedCount}/{totalBadges})
+            🏆 {t('profile:badges')} ({unlockedCount}/{totalBadges})
           </Text>
           {badges.length > 6 && (
             <TouchableOpacity onPress={() => navigateToSettings('Все достижения')}>
@@ -273,7 +356,9 @@ export default function ProfileScreen({ navigation }) {
 
         {nextBadge && !nextBadge.earned && (
           <View style={styles.nextBadgeCard}>
-            <Text style={styles.nextBadgeLabel}>Следующий бейдж:</Text>
+            <Text style={styles.nextBadgeLabel}>
+              {t('dashboard:nextLevel', { points: nextBadge.required - (nextBadge.current || 0) })}
+            </Text>
             <Text style={styles.nextBadgeName}>
               {nextBadge.icon} {nextBadge.title}
             </Text>
@@ -288,51 +373,44 @@ export default function ProfileScreen({ navigation }) {
 
         {loadingBadges ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>Загрузка достижений...</Text>
+            <Text style={styles.emptyText}>{t('common:loading')}</Text>
           </View>
         ) : (
           <View style={styles.badgesGrid}>
-            {badges.slice(0, 6).map((badge) => (
+            {badges.slice(0, 6).map(badge => (
               <BadgeCard key={badge.id} badge={badge} />
             ))}
           </View>
         )}
       </View>
 
-      {/* PETS SECTION */}
+      {/* PETS */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🐾 Мои питомцы</Text>
-          <TouchableOpacity
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              navigation.navigate('AddPet');
-            }}
-          >
-            <Text style={styles.seeAll}>+ Добавить</Text>
+          <Text style={styles.sectionTitle}>🐾 {t('pets:title')}</Text>
+          <TouchableOpacity onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('AddPet');
+          }}>
+            <Text style={styles.seeAll}>+ {t('pets:addPet')}</Text>
           </TouchableOpacity>
         </View>
 
         {loadingPets ? (
           <View style={styles.emptyCard}>
             <ActivityIndicator size="large" color="#6C63FF" />
-            <Text style={styles.emptyText}>Загрузка...</Text>
+            <Text style={styles.emptyText}>{t('common:loading')}</Text>
           </View>
         ) : pets.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyEmoji}>🐕</Text>
-            <Text style={styles.emptyText}>Нет питомцев</Text>
-            <Text style={styles.emptySubtext}>Добавьте первого питомца</Text>
+            <Text style={styles.emptyText}>{t('pets:noPets')}</Text>
+            <Text style={styles.emptySubtext}>{t('pets:addPet')}</Text>
           </View>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.petsScroll}
-          >
-            {pets.map((pet) => {
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.petsScroll}>
+            {pets.map(pet => {
               const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(pet.name)}&size=200&background=6C63FF&color=fff`;
-
               return (
                 <TouchableOpacity
                   key={pet.id}
@@ -342,15 +420,10 @@ export default function ProfileScreen({ navigation }) {
                     navigation.navigate('PetDetail', { petId: pet.id });
                   }}
                 >
-                  <Image
-                    source={{ uri: pet.avatar_url || fallbackUrl }}
-                    style={styles.petAvatar}
-                  />
-                  <Text style={styles.petName} numberOfLines={1}>
-                    {pet.name}
-                  </Text>
+                  <Image source={{ uri: pet.avatar_url || fallbackUrl }} style={styles.petAvatar} />
+                  <Text style={styles.petName} numberOfLines={1}>{pet.name}</Text>
                   <Text style={styles.petBreed} numberOfLines={1}>
-                    {pet.breed || pet.species || 'Питомец'}
+                    {pet.breed || pet.species || t('pets:other')}
                   </Text>
                 </TouchableOpacity>
               );
@@ -359,44 +432,46 @@ export default function ProfileScreen({ navigation }) {
         )}
       </View>
 
-      {/* CHARITY SECTION */}
+      {/* CHARITY */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>💝 Благотворительность</Text>
-          <TouchableOpacity
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              navigation.navigate('CharityHistory');
-            }}
-          >
+          <Text style={styles.sectionTitle}>💝 {t('profile:totalDonated')}</Text>
+          <TouchableOpacity onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('CharityHistory');
+          }}>
             <Text style={styles.seeAll}>История →</Text>
           </TouchableOpacity>
         </View>
-
         <View style={styles.charityCard}>
           <View style={styles.charityHeader}>
-            <Text style={styles.charityTitle}>До следующего пожертвования</Text>
+            <Text style={styles.charityTitle}>{t('profile:loyalty')}</Text>
             <Text style={styles.charityGoal}>{currentBalance}/500 Paws</Text>
           </View>
           <ProgressBar current={currentBalance % 500} goal={500} height={12} />
           <Text style={styles.charityHint}>
-            Каждые 500 Paws = одно пожертвование в приют
+            {t('dashboard:nextLevel', { points: 500 - (currentBalance % 500) })}
           </Text>
         </View>
       </View>
 
-      {/* SETTINGS SECTION */}
+      {/* SETTINGS */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>⚙️ Настройки</Text>
+        <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>
+          ⚙️ {t('profile:settings')}
+        </Text>
+
+        {/* ─── Language Switcher ─── */}
+        <LanguageSwitcher />
 
         <TouchableOpacity
           style={styles.settingItem}
-          onPress={() => navigateToSettings('Уведомления')}
+          onPress={() => navigateToSettings('Notifications')}
         >
           <View style={[styles.settingIcon, { backgroundColor: '#E8F4FD' }]}>
             <Ionicons name="notifications" size={20} color="#4ECDC4" />
           </View>
-          <Text style={styles.settingText}>Уведомления</Text>
+          <Text style={styles.settingText}>{t('profile:notifications')}</Text>
           <Ionicons name="chevron-forward" size={20} color="#CCC" />
         </TouchableOpacity>
 
@@ -407,7 +482,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={[styles.settingIcon, { backgroundColor: '#FFF4E6' }]}>
             <Ionicons name="diamond" size={20} color="#FFA500" />
           </View>
-          <Text style={styles.settingText}>Подписка Premium</Text>
+          <Text style={styles.settingText}>Premium</Text>
           <Ionicons name="chevron-forward" size={20} color="#CCC" />
         </TouchableOpacity>
 
@@ -418,7 +493,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={[styles.settingIcon, { backgroundColor: '#F3F0FF' }]}>
             <Ionicons name="help-circle" size={20} color="#6C63FF" />
           </View>
-          <Text style={styles.settingText}>Помощь и FAQ</Text>
+          <Text style={styles.settingText}>FAQ</Text>
           <Ionicons name="chevron-forward" size={20} color="#CCC" />
         </TouchableOpacity>
 
@@ -429,7 +504,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={[styles.settingIcon, { backgroundColor: '#FFE8E8' }]}>
             <Ionicons name="log-out" size={20} color="#FF6B6B" />
           </View>
-          <Text style={[styles.settingText, styles.logoutText]}>Выйти</Text>
+          <Text style={[styles.settingText, styles.logoutText]}>{t('profile:logout')}</Text>
           <Ionicons name="chevron-forward" size={20} color="#CCC" />
         </TouchableOpacity>
       </View>
@@ -448,10 +523,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     backgroundColor: '#fff',
   },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
+  avatarContainer: { position: 'relative', marginBottom: 16 },
   avatar: {
     width: 100,
     height: 100,
@@ -459,7 +531,6 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: '#6C63FF',
   },
-  // ✅ ДОБАВЛЕНО: Стили для кнопки редактирования аватара
   avatarEditButton: {
     position: 'absolute',
     bottom: 0,
@@ -487,12 +558,7 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
   },
   premiumIcon: { fontSize: 14 },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A1A2E',
-    marginBottom: 4,
-  },
+  userName: { fontSize: 24, fontWeight: 'bold', color: '#1A1A2E', marginBottom: 4 },
   userEmail: { fontSize: 14, color: '#888', marginBottom: 12 },
   subscriptionBadge: {
     backgroundColor: '#F3F0FF',
@@ -500,11 +566,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  subscriptionText: {
-    fontSize: 13,
-    color: '#6C63FF',
-    fontWeight: '600',
-  },
+  subscriptionText: { fontSize: 13, color: '#6C63FF', fontWeight: '600' },
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -532,28 +594,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  statValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1A1A2E',
-    marginBottom: 4,
-  },
-  statLabel: { fontSize: 12, color: '#888' },
-  section: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
+  statValue: { fontSize: 22, fontWeight: 'bold', color: '#1A1A2E', marginBottom: 4 },
+  statLabel: { fontSize: 12, color: '#888', textAlign: 'center' },
+  section: { paddingHorizontal: 20, marginTop: 24 },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A1A2E',
-  },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1A2E' },
   seeAll: { fontSize: 14, color: '#6C63FF', fontWeight: '600' },
   nextBadgeCard: {
     backgroundColor: '#fff',
@@ -566,39 +616,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  nextBadgeLabel: { 
-    fontSize: 12, 
-    color: '#888', 
-    marginBottom: 4 
-  },
-  nextBadgeName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A2E',
-    marginBottom: 12,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    width: '100%',
-  },
-  progressPercent: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#4CAF50',
-    minWidth: 35,
-    textAlign: 'right',
-  },
-  badgesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  petsScroll: {
-    paddingRight: 20,
-    gap: 12,
-  },
+  nextBadgeLabel: { fontSize: 12, color: '#888', marginBottom: 4 },
+  nextBadgeName: { fontSize: 16, fontWeight: '600', color: '#1A1A2E', marginBottom: 12 },
+  progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' },
+  progressPercent: { fontSize: 12, fontWeight: '600', color: '#4CAF50', minWidth: 35, textAlign: 'right' },
+  badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  petsScroll: { paddingRight: 20, gap: 12 },
   petCard: {
     width: 110,
     backgroundColor: '#fff',
@@ -611,18 +634,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  petAvatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    marginBottom: 8,
-  },
-  petName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1A1A2E',
-    marginBottom: 2,
-  },
+  petAvatar: { width: 70, height: 70, borderRadius: 35, marginBottom: 8 },
+  petName: { fontSize: 14, fontWeight: '600', color: '#1A1A2E', marginBottom: 2 },
   petBreed: { fontSize: 12, color: '#888' },
   charityCard: {
     backgroundColor: '#fff',
@@ -642,13 +655,7 @@ const styles = StyleSheet.create({
   },
   charityTitle: { fontSize: 14, color: '#666' },
   charityGoal: { fontSize: 16, fontWeight: 'bold', color: '#6C63FF' },
-  charityHint: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
-    marginTop: 12,
-    fontStyle: 'italic',
-  },
+  charityHint: { fontSize: 12, color: '#999', textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -670,16 +677,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  settingText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1A1A2E',
-    fontWeight: '500',
-  },
-  logoutItem: {
-    borderWidth: 1,
-    borderColor: '#FFE8E8',
-  },
+  settingText: { flex: 1, fontSize: 15, color: '#1A1A2E', fontWeight: '500' },
+  logoutItem: { borderWidth: 1, borderColor: '#FFE8E8' },
   logoutText: { color: '#FF6B6B' },
   emptyCard: {
     backgroundColor: '#fff',
@@ -695,11 +694,6 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 40, marginBottom: 8 },
   emptyText: { fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
   emptySubtext: { fontSize: 13, color: '#888', marginTop: 4 },
-  versionText: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: '#999',
-    marginTop: 32,
-  },
+  versionText: { textAlign: 'center', fontSize: 12, color: '#999', marginTop: 32 },
   bottomPadding: { height: 100 },
 });

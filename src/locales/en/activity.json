@@ -1,0 +1,77 @@
+{
+    "title": "Activity",
+  
+    "stats": {
+      "week": "This Week",
+      "month": "This Month",
+      "activities": "sessions",
+      "minutes": "min",
+      "km": "km"
+    },
+  
+    "charts": {
+      "duration": "📈 Duration (minutes)",
+      "count": "📊 Number of Activities",
+      "types": "🥧 Activity Types"
+    },
+  
+    "history": {
+      "title": "Activity History"
+    },
+  
+    "empty": {
+      "title": "No activities yet",
+      "subtitle": "Add your first activity using the button below"
+    },
+  
+    "types": {
+      "walk": "Walk",
+      "play": "Play",
+      "exercise": "Exercise",
+      "training": "Training",
+      "other": "Other"
+    },
+  
+    "days": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
+  
+    "dates": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+  
+    "modal": {
+      "title": "New Activity",
+      "typeLabel": "Activity Type",
+      "dateLabel": "Date",
+      "durationLabel": "Duration (minutes) *",
+      "durationPlaceholder": "30",
+      "distanceLabel": "Distance (km)",
+      "distancePlaceholder": "2.5",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Add a description...",
+      "addButton": "Add"
+    },
+  
+    "alerts": {
+      "errorLoadPets": "Failed to load pets list",
+      "errorLoadActivities": "Failed to load activities",
+      "errorAdd": "Failed to add activity",
+      "errorDelete": "Failed to delete activity",
+      "validationDuration": "Please enter the activity duration",
+      "successTitle": "🎉 Activity Added!",
+      "successMessage": "You earned 50 Paws for this activity!\n\nKeep it up! 🐾",
+      "successButton": "Great!",
+      "successSimple": "Activity added",
+      "deleteTitle": "Delete Activity",
+      "deleteMessage": "Are you sure you want to delete this record?"
+    }
+  }
+  

@@ -1,7 +1,5 @@
 // ══════════════════════════════════════════════════
 // src/screens/AIAssistantChatScreen.js
-// ПОЛНАЯ ВЕРСИЯ: Vision Analysis + Streaming + Pet Context
-// ✨ ИСПРАВЛЕНО: Отображение фото через expo-image
 // ══════════════════════════════════════════════════
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -14,30 +12,29 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Alert,
   Animated,
 } from 'react-native';
-import { Image } from 'expo-image'; // ✨ ИСПРАВЛЕНО: expo-image вместо react-native
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
-// ═══ ИМПОРТЫ ═══
 import { usePetContext } from '../context/PetContext';
 import { sendMessageToOpenAI } from '../services/openAIService';
 import { analyzeImageWithVision, formatVisionResponse } from '../services/visionService';
 
 export default function AIAssistantChatScreen({ route, navigation }) {
-  // ═══ ROUTE PARAMS ═══
-  const { 
-    category, 
-    initialQuestion, 
-    title, 
+  const {
+    category,
+    initialQuestion,
+    title,
     color,
-    photoUri,        // ✨ URI фото для анализа
-    analysisType     // ✨ тип анализа (symptoms/breed/general)
+    photoUri,
+    analysisType,
   } = route.params || {};
-  
+
   const { selectedPet } = usePetContext();
+  const { t } = useTranslation('ai');
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -45,77 +42,55 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   const flatListRef = useRef(null);
   const dotAnimation = useRef(new Animated.Value(0)).current;
 
-  // ═══ НАСТРОЙКА ЗАГОЛОВКА ═══
+  // ═══ ЗАГОЛОВОК ═══
   useEffect(() => {
     navigation.setOptions({
       headerShown: true,
-      headerTitle: title || 'AI Assistant',
-      headerTitleStyle: {
-        fontWeight: 'bold',
-        fontSize: 18,
-      },
-      headerStyle: {
-        backgroundColor: color || '#6C63FF',
-      },
+      headerTitle: title || t('chat.defaultTitle'),
+      headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
+      headerStyle: { backgroundColor: color || '#6C63FF' },
       headerTintColor: '#FFFFFF',
       headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ marginLeft: 10 }}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 10 }}>
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       ),
       headerRight: () => (
         <TouchableOpacity
-          onPress={() => {
+          onPress={() =>
             Alert.alert(
-              'Clear Chat',
-              'Are you sure you want to clear this conversation?',
+              t('chat.clearChat'),
+              t('chat.clearChatMessage'),
               [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Clear',
-                  style: 'destructive',
-                  onPress: () => setMessages([]),
-                },
+                { text: t('hub.cancel'), style: 'cancel' },
+                { text: t('chat.clear'), style: 'destructive', onPress: () => setMessages([]) },
               ]
-            );
-          }}
+            )
+          }
           style={{ marginRight: 10 }}
         >
           <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
         </TouchableOpacity>
       ),
     });
-  }, [navigation, category, title, color]);
+  }, [navigation, title, color, t]);
 
-  // ═══ ИНИЦИАЛИЗАЦИЯ ЧАТА ═══
+  // ═══ ИНИЦИАЛИЗАЦИЯ ═══
   useEffect(() => {
     if (photoUri && analysisType) {
-      // ✨ Автоматический анализ фото
       handlePhotoAnalysis(photoUri, analysisType);
     } else if (initialQuestion) {
-      // Быстрый вопрос
       handleSendMessage(initialQuestion, true);
     }
   }, [photoUri, analysisType]);
 
-  // ✨ АНИМАЦИЯ ТОЧЕК ЗАГРУЗКИ
+  // ═══ АНИМАЦИЯ ТОЧЕК ═══
   useEffect(() => {
     if (isLoading) {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(dotAnimation, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(dotAnimation, {
-            toValue: 0,
-            duration: 600,
-            useNativeDriver: true,
-          }),
+          Animated.timing(dotAnimation, { toValue: 1, duration: 600, useNativeDriver: true }),
+          Animated.timing(dotAnimation, { toValue: 0, duration: 600, useNativeDriver: true }),
         ])
       ).start();
     } else {
@@ -123,14 +98,10 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     }
   }, [isLoading]);
 
-  // ═══ ✨ АНАЛИЗ ФОТО ═══
+  // ═══ АНАЛИЗ ФОТО ═══
   const handlePhotoAnalysis = async (uri, type) => {
-    console.log('📸 Photo URI received:', uri); // ✨ ДИАГНОСТИКА
-    console.log('📋 Analysis type:', type);
-    
     setIsLoading(true);
 
-    // Создаем сообщение пользователя с фото
     const userMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -139,15 +110,10 @@ export default function AIAssistantChatScreen({ route, navigation }) {
       imageUri: uri,
     };
 
-    console.log('💬 User message created:', userMessage); // ✨ ДИАГНОСТИКА
-
     setMessages([userMessage]);
 
     try {
-      // Вызываем Vision API
       const visionResult = await analyzeImageWithVision(uri, type);
-      
-      // Форматируем ответ
       const formattedResponse = formatVisionResponse(visionResult);
 
       const assistantMessage = {
@@ -156,59 +122,46 @@ export default function AIAssistantChatScreen({ route, navigation }) {
         content: formattedResponse,
         timestamp: new Date().toISOString(),
         isVisionAnalysis: true,
-        visionResult: visionResult,
+        visionResult,
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Проверяем на экстренные случаи (красный уровень)
-      if (visionResult.success && 
-          visionResult.result.urgency === 'red') {
+      if (visionResult.success && visionResult.result.urgency === 'red') {
         Alert.alert(
-          '🚨 Urgent Health Alert',
-          'The AI detected potential urgent health concerns. Please consult a veterinarian immediately!',
+          t('chat.urgentAlertTitle'),
+          t('chat.urgentAlertMessage'),
           [
             { text: 'OK', style: 'default' },
-            { 
-              text: 'Find Vet', 
-              style: 'default',
-              onPress: () => {
-                // TODO: Можно добавить навигацию к списку ветеринаров
-                console.log('Navigate to veterinarians');
-              }
-            }
+            { text: t('chat.findVet'), style: 'default', onPress: () => {} },
           ]
         );
       }
-
     } catch (error) {
-      console.error('Vision Analysis Error:', error);
-      
       const errorMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `❌ Sorry, I couldn't analyze the image. ${error.message}\n\nPlease try again or use a different photo.`,
+        content: `${t('chat.errorPrefix')} ${error.message}\n\n${t('chat.errorRetry')}`,
         timestamp: new Date().toISOString(),
         isError: true,
       };
-      
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ═══ ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: ПРОМПТ ДЛЯ АНАЛИЗА ═══
+  // ═══ ПРОМПТ ДЛЯ АНАЛИЗА ═══
   const getAnalysisPrompt = (type) => {
     const prompts = {
-      symptoms: '🔍 Analyzing photo for health symptoms...',
-      breed: '🐾 Identifying pet breed...',
-      general: '📸 Analyzing photo...',
+      symptoms: t('chat.promptSymptoms'),
+      breed: t('chat.promptBreed'),
+      general: t('chat.promptGeneral'),
     };
     return prompts[type] || prompts.general;
   };
 
-  // ═══ ОТПРАВКА ТЕКСТОВОГО СООБЩЕНИЯ ═══
+  // ═══ ОТПРАВКА СООБЩЕНИЯ ═══
   const handleSendMessage = async (text = inputText, isInitial = false) => {
     if (!text.trim() && !isInitial) return;
 
@@ -219,16 +172,12 @@ export default function AIAssistantChatScreen({ route, navigation }) {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
 
     try {
-      const response = await sendMessageToOpenAI(
-        text.trim(),
-        messages,
-        { selectedPet, category }
-      );
+      const response = await sendMessageToOpenAI(text.trim(), messages, { selectedPet, category });
 
       const assistantMessage = {
         id: (Date.now() + 1).toString(),
@@ -238,23 +187,20 @@ export default function AIAssistantChatScreen({ route, navigation }) {
         isEmergency: response.isEmergency,
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, assistantMessage]);
 
       if (response.isEmergency) {
-        Alert.alert('⚠️ Emergency Detected', 'Please contact a veterinarian immediately!');
+        Alert.alert(t('chat.emergencyAlert'), t('chat.emergencyMessage'));
       }
     } catch (error) {
-      console.error('Chat Error:', error);
-      
       const errorMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `❌ Sorry, I encountered an error: ${error.message}\n\nPlease try again.`,
+        content: `${t('chat.errorChat')} ${error.message}\n\n${t('chat.errorChatRetry')}`,
         timestamp: new Date().toISOString(),
         isError: true,
       };
-      
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -262,34 +208,30 @@ export default function AIAssistantChatScreen({ route, navigation }) {
 
   // ═══ EMPTY STATE ═══
   const renderEmptyState = () => {
-    const welcomeMessage = selectedPet
-      ? `Hi! I'm your AI assistant for ${selectedPet.name}. How can I help you today?`
-      : `Hi! I'm your AI pet care assistant. Ask me anything about your pet's health, nutrition, behavior, or general care.`;
-
     const suggestedQuestions = [
-      'What are the signs of illness in pets?',
-      'How often should I feed my pet?',
-      'What vaccinations does my pet need?',
-      'How to train a puppy?',
+      t('chat.suggestedQ1'),
+      t('chat.suggestedQ2'),
+      t('chat.suggestedQ3'),
+      t('chat.suggestedQ4'),
     ];
 
     return (
       <View style={styles.emptyStateContainer}>
         <View style={[styles.emptyStateIcon, { backgroundColor: color || '#6C63FF' }]}>
-          <Ionicons
-            name={selectedPet ? 'paw' : 'chatbubbles'}
-            size={48}
-            color="#FFFFFF"
-          />
+          <Ionicons name={selectedPet ? 'paw' : 'chatbubbles'} size={48} color="#FFFFFF" />
         </View>
-
         <Text style={styles.emptyStateTitle}>
-          {selectedPet ? `${selectedPet.name}'s AI Assistant` : 'AI Pet Assistant'}
+          {selectedPet
+            ? t('chat.emptyTitleWithPet', { name: selectedPet.name })
+            : t('chat.emptyTitle')}
         </Text>
-        <Text style={styles.emptyStateSubtitle}>{welcomeMessage}</Text>
-
+        <Text style={styles.emptyStateSubtitle}>
+          {selectedPet
+            ? t('chat.emptyWelcomeWithPet', { name: selectedPet.name })
+            : t('chat.emptyWelcome')}
+        </Text>
         <View style={styles.suggestedQuestionsContainer}>
-          <Text style={styles.suggestedQuestionsTitle}>Try asking:</Text>
+          <Text style={styles.suggestedQuestionsTitle}>{t('chat.tryAsking')}</Text>
           {suggestedQuestions.map((question, index) => (
             <TouchableOpacity
               key={index}
@@ -305,64 +247,57 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     );
   };
 
-  // ═══ ✨ ОБНОВЛЕННЫЙ РЕНДЕР СООБЩЕНИЯ (с улучшенным отображением фото) ═══
+  // ═══ РЕНДЕР СООБЩЕНИЯ ═══
   const renderMessage = ({ item }) => {
     const isUser = item.role === 'user';
-    const isEmergency = item.isEmergency;
-    const isError = item.isError;
 
     return (
       <View
         style={[
           styles.messageContainer,
           isUser ? styles.userMessage : styles.assistantMessage,
-          isEmergency && styles.emergencyMessage,
-          isError && styles.errorMessage,
+          item.isEmergency && styles.emergencyMessage,
+          item.isError && styles.errorMessage,
         ]}
       >
-        {/* ✨ ОТОБРАЖЕНИЕ ФОТО (исправленная версия) */}
         {item.imageUri && (
           <View style={styles.imageContainer}>
-            <Image 
-              source={{ uri: item.imageUri }} 
+            <Image
+              source={{ uri: item.imageUri }}
               style={styles.messageImage}
               contentFit="cover"
               transition={200}
               placeholder={require('../../assets/icon.png')}
             />
-            {/* Иконка камеры для индикации */}
             <View style={styles.imageOverlay}>
               <Ionicons name="camera" size={16} color="#fff" />
             </View>
           </View>
         )}
 
-        {/* ТЕКСТ СООБЩЕНИЯ */}
         <Text
           style={[
             styles.messageText,
             isUser ? styles.userText : styles.assistantText,
-            isEmergency && styles.emergencyText,
-            isError && styles.errorText,
+            item.isEmergency && styles.emergencyText,
+            item.isError && styles.errorText,
           ]}
         >
           {item.content}
         </Text>
 
-        {/* TIMESTAMP */}
         <Text style={styles.timestamp}>
-          {new Date(item.timestamp).toLocaleTimeString('en-US', {
+          {new Date(item.timestamp).toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
           })}
         </Text>
 
-        {/* ✨ ИНДИКАТОР VISION ANALYSIS */}
         {item.isVisionAnalysis && item.visionResult?.success && (
           <View style={styles.visionBadge}>
             <Ionicons name="eye" size={12} color="#6C63FF" />
             <Text style={styles.visionBadgeText}>
-              Vision Analysis • {item.visionResult.model?.split('/')[1] || 'AI'}
+              {t('chat.visionBadge')} • {item.visionResult.model?.split('/')[1] || 'AI'}
             </Text>
           </View>
         )}
@@ -392,7 +327,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
           <Animated.View style={[styles.typingDot, { opacity: dot2Opacity }]} />
           <Animated.View style={[styles.typingDot, { opacity: dot3Opacity }]} />
         </View>
-        <Text style={styles.typingText}>AI is analyzing...</Text>
+        <Text style={styles.typingText}>{t('chat.analyzingPhoto')}</Text>
       </View>
     );
   };
@@ -403,17 +338,19 @@ export default function AIAssistantChatScreen({ route, navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      {/* PET CONTEXT HEADER */}
       {selectedPet && (
         <View style={[styles.petHeader, { backgroundColor: color || '#6C63FF' }]}>
           <Ionicons name="paw" size={20} color="#FFFFFF" />
           <Text style={styles.petHeaderText}>
-            {selectedPet.name} • {selectedPet.breed} • {selectedPet.age || 'Unknown age'}
+            {t('chat.petHeader', {
+              name: selectedPet.name,
+              breed: selectedPet.breed,
+              age: selectedPet.age || t('chat.unknownAge'),
+            })}
           </Text>
         </View>
       )}
 
-      {/* MESSAGES LIST */}
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -425,16 +362,14 @@ export default function AIAssistantChatScreen({ route, navigation }) {
         onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
       />
 
-      {/* TYPING INDICATOR */}
       {isLoading && renderTypingIndicator()}
 
-      {/* INPUT BAR */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
           value={inputText}
           onChangeText={setInputText}
-          placeholder="Ask me anything about pet care..."
+          placeholder={t('chat.inputPlaceholder')}
           placeholderTextColor="#999"
           multiline
           maxLength={1000}
@@ -451,7 +386,6 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     </KeyboardAvoidingView>
   );
 }
-
 // ═══════════════════════════════════════════════════════════════
 // STYLES
 // ═══════════════════════════════════════════════════════════════
