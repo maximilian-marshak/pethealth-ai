@@ -6,76 +6,120 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  RefreshControl,
   Modal,
   TextInput,
   Alert,
   Platform,
-  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../utils/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useTranslation } from 'react-i18next';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const formatDate = (dateStr) => {
+const formatDate = (dateStr, locale = 'en-US') => {
   if (!dateStr) return 'N/A';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', {
+  return d.toLocaleDateString(locale, {
     month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+    day:   'numeric',
+    year:  'numeric',
   });
 };
 
 const getDaysUntil = (dateStr) => {
   if (!dateStr) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr);
-  target.setHours(0, 0, 0, 0);
+  const today  = new Date(); today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr); target.setHours(0, 0, 0, 0);
   return Math.round((target - today) / (1000 * 60 * 60 * 24));
 };
 
 const getVaccineStatus = (nextDueDate) => {
-  if (!nextDueDate) return { label: 'Completed', color: '#10B981', bg: '#D1FAE5' };
+  if (!nextDueDate) return 'completed';
   const days = getDaysUntil(nextDueDate);
-  if (days < 0)   return { label: 'Overdue',    color: '#EF4444', bg: '#FEE2E2' };
-  if (days <= 30) return { label: 'Due Soon',   color: '#F59E0B', bg: '#FEF3C7' };
-  return             { label: 'Up to Date', color: '#10B981', bg: '#D1FAE5' };
+  if (days < 0)   return 'overdue';
+  if (days <= 30) return 'due_soon';
+  return 'up_to_date';
 };
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const RECORD_TYPES = [
-  'checkup',
-  'surgery',
-  'emergency',
-  'dental',
-  'grooming',
-  'other',
+const RECORD_TYPE_KEYS = [
+  'checkup', 'surgery', 'emergency', 'dental', 'grooming', 'other',
 ];
 
-const FREQUENCIES = [
-  'Once daily',
-  'Twice daily',
-  'Three times daily',
-  'Every other day',
-  'Weekly',
-  'As needed',
-];
+// ─── DatePicker Field ─────────────────────────────────────────────────────────
+
+const DatePickerField = ({ label, value, onChange, placeholder }) => {
+  const [show, setShow] = useState(false);
+  const dateValue = value ? new Date(value + 'T00:00:00') : new Date();
+
+  const handleChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') setShow(false);
+    if (event.type === 'dismissed') { setShow(false); return; }
+    if (selectedDate) {
+      const y = selectedDate.getFullYear();
+      const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const d = String(selectedDate.getDate()).padStart(2, '0');
+      onChange(`${y}-${m}-${d}`);
+    }
+    if (Platform.OS === 'ios') setShow(false);
+  };
+
+  return (
+    <View style={dpStyles.container}>
+      <Text style={mStyles.label}>{label}</Text>
+      <TouchableOpacity
+        style={dpStyles.field}
+        onPress={() => setShow(true)}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name="calendar-outline"
+          size={18}
+          color={value ? '#6366F1' : '#9CA3AF'}
+          style={dpStyles.icon}
+        />
+        <Text style={[dpStyles.text, !value && dpStyles.placeholder]}>
+          {value ? formatDate(value) : placeholder || 'Select date'}
+        </Text>
+        {value ? (
+          <TouchableOpacity
+            onPress={() => onChange('')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+        ) : (
+          <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
+        )}
+      </TouchableOpacity>
+      {show && (
+        <DateTimePicker
+          value={dateValue}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleChange}
+          maximumDate={new Date(2100, 11, 31)}
+          minimumDate={new Date(2000, 0, 1)}
+        />
+      )}
+    </View>
+  );
+};
 
 // ─── Vaccine Modal ────────────────────────────────────────────────────────────
 
 const VaccineModal = ({ visible, onClose, onSave, editData }) => {
-  const [name, setName]         = useState('');
+  const { t } = useTranslation('medical');
+
+  const [name,      setName]      = useState('');
   const [dateGiven, setDateGiven] = useState('');
-  const [nextDue, setNextDue]   = useState('');
-  const [vet, setVet]           = useState('');
-  const [notes, setNotes]       = useState('');
-  const [saving, setSaving]     = useState(false);
+  const [nextDue,   setNextDue]   = useState('');
+  const [vet,       setVet]       = useState('');
+  const [notes,     setNotes]     = useState('');
+  const [saving,    setSaving]    = useState(false);
 
   useEffect(() => {
     if (editData) {
@@ -85,28 +129,27 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
       setVet(editData.vet_name || editData.administered_by || '');
       setNotes(editData.notes || '');
     } else {
-      setName(''); setDateGiven(''); setNextDue('');
-      setVet(''); setNotes('');
+      setName(''); setDateGiven(''); setNextDue(''); setVet(''); setNotes('');
     }
   }, [editData, visible]);
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Please enter a vaccine name.');
+      Alert.alert(t('modal.requiredTitle'), t('modal.vaccine.required'));
       return;
     }
     setSaving(true);
     try {
       await onSave({
-        vaccine_name:   name.trim(),
-        date_given:     dateGiven || null,
-        next_due_date:  nextDue || null,
-        vet_name:       vet.trim() || null,
+        vaccine_name:    name.trim(),
+        date_given:      dateGiven || null,
+        next_due_date:   nextDue   || null,
+        vet_name:        vet.trim() || null,
         administered_by: vet.trim() || null,
-        notes:          notes.trim() || null,
+        notes:           notes.trim() || null,
       });
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('modal.errorTitle'), err.message);
     } finally {
       setSaving(false);
     }
@@ -117,51 +160,47 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
       <View style={mStyles.overlay}>
         <View style={mStyles.sheet}>
           <Text style={mStyles.title}>
-            {editData ? 'Edit Vaccine' : 'Add Vaccine'}
+            {editData ? t('modal.vaccine.editTitle') : t('modal.vaccine.addTitle')}
           </Text>
 
-          <Text style={mStyles.label}>Vaccine Name *</Text>
+          <Text style={mStyles.label}>{t('modal.vaccine.nameLabel')}</Text>
           <TextInput
             style={mStyles.input}
             value={name}
             onChangeText={setName}
-            placeholder="e.g. Rabies, DHPP"
+            placeholder={t('modal.vaccine.namePlaceholder')}
             placeholderTextColor="#9CA3AF"
           />
 
-          <Text style={mStyles.label}>Date Given (YYYY-MM-DD)</Text>
-          <TextInput
-            style={mStyles.input}
+          <DatePickerField
+            label={t('modal.vaccine.dateGivenLabel')}
             value={dateGiven}
-            onChangeText={setDateGiven}
-            placeholder="2024-01-15"
-            placeholderTextColor="#9CA3AF"
+            onChange={setDateGiven}
+            placeholder={t('modal.vaccine.dateGivenPlaceholder')}
           />
 
-          <Text style={mStyles.label}>Next Due Date (YYYY-MM-DD)</Text>
-          <TextInput
-            style={mStyles.input}
+          <DatePickerField
+            label={t('modal.vaccine.nextDueLabel')}
             value={nextDue}
-            onChangeText={setNextDue}
-            placeholder="2025-01-15"
-            placeholderTextColor="#9CA3AF"
+            onChange={setNextDue}
+            placeholder={t('modal.vaccine.nextDuePlaceholder')}
           />
 
-          <Text style={mStyles.label}>Administered By</Text>
+          <Text style={mStyles.label}>{t('modal.vaccine.adminByLabel')}</Text>
           <TextInput
             style={mStyles.input}
             value={vet}
             onChangeText={setVet}
-            placeholder="Dr. Smith"
+            placeholder={t('modal.vaccine.adminByPlaceholder')}
             placeholderTextColor="#9CA3AF"
           />
 
-          <Text style={mStyles.label}>Notes</Text>
+          <Text style={mStyles.label}>{t('modal.vaccine.notesLabel')}</Text>
           <TextInput
             style={[mStyles.input, mStyles.textArea]}
             value={notes}
             onChangeText={setNotes}
-            placeholder="Any additional notes..."
+            placeholder={t('modal.vaccine.notesPlaceholder')}
             placeholderTextColor="#9CA3AF"
             multiline
             numberOfLines={3}
@@ -172,7 +211,7 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
               style={[mStyles.btn, mStyles.btnCancel]}
               onPress={onClose}
             >
-              <Text style={mStyles.btnCancelText}>Cancel</Text>
+              <Text style={mStyles.btnCancelText}>{t('modal.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[mStyles.btn, mStyles.btnSave]}
@@ -181,7 +220,7 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
             >
               {saving
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={mStyles.btnSaveText}>Save</Text>
+                : <Text style={mStyles.btnSaveText}>{t('modal.save')}</Text>
               }
             </TouchableOpacity>
           </View>
@@ -194,15 +233,17 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
 // ─── Medication Modal ─────────────────────────────────────────────────────────
 
 const MedicationModal = ({ visible, onClose, onSave, editData }) => {
-  const [name, setName]             = useState('');
-  const [dosage, setDosage]         = useState('');
-  const [frequency, setFrequency]   = useState('');
-  const [startDate, setStartDate]   = useState('');
-  const [endDate, setEndDate]       = useState('');
+  const { t } = useTranslation('medical');
+
+  const [name,       setName]       = useState('');
+  const [dosage,     setDosage]     = useState('');
+  const [frequency,  setFrequency]  = useState('');
+  const [startDate,  setStartDate]  = useState('');
+  const [endDate,    setEndDate]    = useState('');
   const [prescriber, setPrescriber] = useState('');
-  const [notes, setNotes]           = useState('');
-  const [isActive, setIsActive]     = useState(true);
-  const [saving, setSaving]         = useState(false);
+  const [notes,      setNotes]      = useState('');
+  const [isActive,   setIsActive]   = useState(true);
+  const [saving,     setSaving]     = useState(false);
 
   useEffect(() => {
     if (editData) {
@@ -223,23 +264,23 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Please enter a medication name.');
+      Alert.alert(t('modal.requiredTitle'), t('modal.medication.required'));
       return;
     }
     setSaving(true);
     try {
       await onSave({
         medication_name: name.trim(),
-        dosage:          dosage.trim() || null,
-        frequency:       frequency.trim() || null,
-        start_date:      startDate || null,
-        end_date:        endDate || null,
+        dosage:          dosage.trim()     || null,
+        frequency:       frequency.trim()  || null,
+        start_date:      startDate         || null,
+        end_date:        endDate           || null,
         prescribed_by:   prescriber.trim() || null,
-        notes:           notes.trim() || null,
+        notes:           notes.trim()      || null,
         is_active:       isActive,
       });
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('modal.errorTitle'), err.message);
     } finally {
       setSaving(false);
     }
@@ -251,69 +292,67 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
         <View style={mStyles.sheet}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={mStyles.title}>
-              {editData ? 'Edit Medication' : 'Add Medication'}
+              {editData
+                ? t('modal.medication.editTitle')
+                : t('modal.medication.addTitle')}
             </Text>
 
-            <Text style={mStyles.label}>Medication Name *</Text>
+            <Text style={mStyles.label}>{t('modal.medication.nameLabel')}</Text>
             <TextInput
               style={mStyles.input}
               value={name}
               onChangeText={setName}
-              placeholder="e.g. Apoquel, Heartgard"
+              placeholder={t('modal.medication.namePlaceholder')}
               placeholderTextColor="#9CA3AF"
             />
 
-            <Text style={mStyles.label}>Dosage</Text>
+            <Text style={mStyles.label}>{t('modal.medication.dosageLabel')}</Text>
             <TextInput
               style={mStyles.input}
               value={dosage}
               onChangeText={setDosage}
-              placeholder="e.g. 16mg, 1 tablet"
+              placeholder={t('modal.medication.dosagePlaceholder')}
               placeholderTextColor="#9CA3AF"
             />
 
-            <Text style={mStyles.label}>Frequency</Text>
+            <Text style={mStyles.label}>{t('modal.medication.frequencyLabel')}</Text>
             <TextInput
               style={mStyles.input}
               value={frequency}
               onChangeText={setFrequency}
-              placeholder="e.g. Once daily"
+              placeholder={t('modal.medication.frequencyPlaceholder')}
               placeholderTextColor="#9CA3AF"
             />
 
-            <Text style={mStyles.label}>Start Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={mStyles.input}
+            <DatePickerField
+              label={t('modal.medication.startDateLabel')}
               value={startDate}
-              onChangeText={setStartDate}
-              placeholder="2024-01-15"
-              placeholderTextColor="#9CA3AF"
+              onChange={setStartDate}
+              placeholder={t('modal.medication.startDatePlaceholder')}
             />
 
-            <Text style={mStyles.label}>End Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={mStyles.input}
+            <DatePickerField
+              label={t('modal.medication.endDateLabel')}
               value={endDate}
-              onChangeText={setEndDate}
-              placeholder="2024-06-15 (leave blank if ongoing)"
-              placeholderTextColor="#9CA3AF"
+              onChange={setEndDate}
+              placeholder={t('modal.medication.endDatePlaceholder')}
             />
 
-            <Text style={mStyles.label}>Prescribed By</Text>
+            <Text style={mStyles.label}>{t('modal.medication.prescriberLabel')}</Text>
             <TextInput
               style={mStyles.input}
               value={prescriber}
               onChangeText={setPrescriber}
-              placeholder="Dr. Smith"
+              placeholder={t('modal.medication.prescriberPlaceholder')}
               placeholderTextColor="#9CA3AF"
             />
 
-            <Text style={mStyles.label}>Notes</Text>
+            <Text style={mStyles.label}>{t('modal.medication.notesLabel')}</Text>
             <TextInput
               style={[mStyles.input, mStyles.textArea]}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Any additional notes..."
+              placeholder={t('modal.medication.notesPlaceholder')}
               placeholderTextColor="#9CA3AF"
               multiline
               numberOfLines={3}
@@ -323,7 +362,7 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
               style={mStyles.toggleRow}
               onPress={() => setIsActive(!isActive)}
             >
-              <Text style={mStyles.label}>Active Medication</Text>
+              <Text style={mStyles.label}>{t('modal.medication.activeLabel')}</Text>
               <View style={[
                 mStyles.toggle,
                 isActive ? mStyles.toggleOn : mStyles.toggleOff,
@@ -340,7 +379,7 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
                 style={[mStyles.btn, mStyles.btnCancel]}
                 onPress={onClose}
               >
-                <Text style={mStyles.btnCancelText}>Cancel</Text>
+                <Text style={mStyles.btnCancelText}>{t('modal.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[mStyles.btn, mStyles.btnSave]}
@@ -349,7 +388,7 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
               >
                 {saving
                   ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={mStyles.btnSaveText}>Save</Text>
+                  : <Text style={mStyles.btnSaveText}>{t('modal.save')}</Text>
                 }
               </TouchableOpacity>
             </View>
@@ -363,42 +402,43 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
 // ─── Record Modal ─────────────────────────────────────────────────────────────
 
 const RecordModal = ({ visible, onClose, onSave, editData }) => {
-  const [visitDate, setVisitDate]   = useState('');
-  const [recordType, setRecordType] = useState('checkup');
-  const [vetName, setVetName]       = useState('');
-  const [clinic, setClinic]         = useState('');
-  const [diagnosis, setDiagnosis]   = useState('');
-  const [treatment, setTreatment]   = useState('');
-  const [cost, setCost]             = useState('');
-  const [notes, setNotes]           = useState('');
-  const [saving, setSaving]         = useState(false);
+  const { t } = useTranslation('medical');
+
+  const [visitDate,   setVisitDate]   = useState('');
+  const [recordType,  setRecordType]  = useState('checkup');
+  const [vetName,     setVetName]     = useState('');
+  const [clinic,      setClinic]      = useState('');
+  const [diagnosis,   setDiagnosis]   = useState('');
+  const [treatment,   setTreatment]   = useState('');
+  const [cost,        setCost]        = useState('');
+  const [notes,       setNotes]       = useState('');
+  const [saving,      setSaving]      = useState(false);
 
   useEffect(() => {
     if (editData) {
-      setVisitDate(editData.visit_date || '');
+      setVisitDate(editData.visit_date   || '');
       setRecordType(editData.record_type || 'checkup');
-      setVetName(editData.vet_name || '');
-      setClinic(editData.clinic_name || '');
-      setDiagnosis(editData.diagnosis || '');
-      setTreatment(editData.treatment || '');
+      setVetName(editData.vet_name       || '');
+      setClinic(editData.clinic_name     || '');
+      setDiagnosis(editData.diagnosis    || '');
+      setTreatment(editData.treatment    || '');
       setCost(editData.cost ? String(editData.cost) : '');
-      setNotes(editData.notes || '');
+      setNotes(editData.notes            || '');
     } else {
       setVisitDate(''); setRecordType('checkup'); setVetName('');
-      setClinic(''); setDiagnosis(''); setTreatment('');
-      setCost(''); setNotes('');
+      setClinic(''); setDiagnosis(''); setTreatment(''); setCost(''); setNotes('');
     }
   }, [editData, visible]);
 
   const handleSave = async () => {
-    if (!visitDate.trim()) {
-      Alert.alert('Required', 'Please enter a visit date.');
+    if (!visitDate) {
+      Alert.alert(t('modal.requiredTitle'), t('modal.record.required'));
       return;
     }
     setSaving(true);
     try {
       await onSave({
-        visit_date:  visitDate.trim(),
+        visit_date:  visitDate,
         record_type: recordType,
         vet_name:    vetName.trim()   || null,
         clinic_name: clinic.trim()    || null,
@@ -408,7 +448,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
         notes:       notes.trim()     || null,
       });
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('modal.errorTitle'), err.message);
     } finally {
       setSaving(false);
     }
@@ -420,25 +460,25 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
         <View style={mStyles.sheet}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={mStyles.title}>
-              {editData ? 'Edit Record' : 'Add Vet Record'}
+              {editData
+                ? t('modal.record.editTitle')
+                : t('modal.record.addTitle')}
             </Text>
 
-            <Text style={mStyles.label}>Visit Date * (YYYY-MM-DD)</Text>
-            <TextInput
-              style={mStyles.input}
+            <DatePickerField
+              label={t('modal.record.visitDateLabel')}
               value={visitDate}
-              onChangeText={setVisitDate}
-              placeholder="2024-01-15"
-              placeholderTextColor="#9CA3AF"
+              onChange={setVisitDate}
+              placeholder={t('modal.record.visitDatePlaceholder')}
             />
 
-            <Text style={mStyles.label}>Record Type</Text>
+            <Text style={mStyles.label}>{t('modal.record.recordTypeLabel')}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               style={{ marginBottom: 12 }}
             >
-              {RECORD_TYPES.map((type) => (
+              {RECORD_TYPE_KEYS.map((type) => (
                 <TouchableOpacity
                   key={type}
                   style={[
@@ -451,66 +491,66 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
                     mStyles.chipText,
                     recordType === type && mStyles.chipTextActive,
                   ]}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                    {t(`recordTypes.${type}`)}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
-            <Text style={mStyles.label}>Vet Name</Text>
+            <Text style={mStyles.label}>{t('modal.record.vetNameLabel')}</Text>
             <TextInput
               style={mStyles.input}
               value={vetName}
               onChangeText={setVetName}
-              placeholder="Dr. Smith"
+              placeholder={t('modal.record.vetNamePlaceholder')}
               placeholderTextColor="#9CA3AF"
             />
 
-            <Text style={mStyles.label}>Clinic Name</Text>
+            <Text style={mStyles.label}>{t('modal.record.clinicLabel')}</Text>
             <TextInput
               style={mStyles.input}
               value={clinic}
               onChangeText={setClinic}
-              placeholder="Happy Paws Clinic"
+              placeholder={t('modal.record.clinicPlaceholder')}
               placeholderTextColor="#9CA3AF"
             />
 
-            <Text style={mStyles.label}>Diagnosis</Text>
+            <Text style={mStyles.label}>{t('modal.record.diagnosisLabel')}</Text>
             <TextInput
               style={mStyles.input}
               value={diagnosis}
               onChangeText={setDiagnosis}
-              placeholder="e.g. Ear infection"
+              placeholder={t('modal.record.diagnosisPlaceholder')}
               placeholderTextColor="#9CA3AF"
             />
 
-            <Text style={mStyles.label}>Treatment</Text>
+            <Text style={mStyles.label}>{t('modal.record.treatmentLabel')}</Text>
             <TextInput
               style={[mStyles.input, mStyles.textArea]}
               value={treatment}
               onChangeText={setTreatment}
-              placeholder="e.g. Prescribed antibiotics"
+              placeholder={t('modal.record.treatmentPlaceholder')}
               placeholderTextColor="#9CA3AF"
               multiline
               numberOfLines={3}
             />
 
-            <Text style={mStyles.label}>Cost ($)</Text>
+            <Text style={mStyles.label}>{t('modal.record.costLabel')}</Text>
             <TextInput
               style={mStyles.input}
               value={cost}
               onChangeText={setCost}
-              placeholder="150.00"
+              placeholder={t('modal.record.costPlaceholder')}
               placeholderTextColor="#9CA3AF"
               keyboardType="decimal-pad"
             />
 
-            <Text style={mStyles.label}>Notes</Text>
+            <Text style={mStyles.label}>{t('modal.record.notesLabel')}</Text>
             <TextInput
               style={[mStyles.input, mStyles.textArea]}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Any additional notes..."
+              placeholder={t('modal.record.notesPlaceholder')}
               placeholderTextColor="#9CA3AF"
               multiline
               numberOfLines={3}
@@ -521,7 +561,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
                 style={[mStyles.btn, mStyles.btnCancel]}
                 onPress={onClose}
               >
-                <Text style={mStyles.btnCancelText}>Cancel</Text>
+                <Text style={mStyles.btnCancelText}>{t('modal.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[mStyles.btn, mStyles.btnSave]}
@@ -530,7 +570,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               >
                 {saving
                   ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={mStyles.btnSaveText}>Save</Text>
+                  : <Text style={mStyles.btnSaveText}>{t('modal.save')}</Text>
                 }
               </TouchableOpacity>
             </View>
@@ -545,26 +585,29 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
 
 export default function MedicalScreen() {
   const navigation = useNavigation();
+  const { t, i18n } = useTranslation('medical');
 
-  const [pets, setPets]               = useState([]);
+  // Локаль для formatDate
+  const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+  const fmt    = (dateStr) => formatDate(dateStr, locale);
+
+  const [pets,        setPets]        = useState([]);
   const [selectedPet, setSelectedPet] = useState(null);
   const [petsLoading, setPetsLoading] = useState(true);
-
-  const [activeTab, setActiveTab] = useState('overview');
-
-  const [vaccines, setVaccines]       = useState([]);
+  const [activeTab,   setActiveTab]   = useState('overview');
+  const [vaccines,    setVaccines]    = useState([]);
   const [medications, setMedications] = useState([]);
-  const [records, setRecords]         = useState([]);
-  const [loading, setLoading]         = useState(false);
+  const [records,     setRecords]     = useState([]);
+  const [loading,     setLoading]     = useState(false);
 
   const [vaccineModal, setVaccineModal] = useState(false);
-  const [medModal, setMedModal]         = useState(false);
-  const [recordModal, setRecordModal]   = useState(false);
-  const [editVaccine, setEditVaccine]   = useState(null);
-  const [editMed, setEditMed]           = useState(null);
-  const [editRecord, setEditRecord]     = useState(null);
+  const [medModal,     setMedModal]     = useState(false);
+  const [recordModal,  setRecordModal]  = useState(false);
+  const [editVaccine,  setEditVaccine]  = useState(null);
+  const [editMed,      setEditMed]      = useState(null);
+  const [editRecord,   setEditRecord]   = useState(null);
 
-  // ─── Load Pets ────────────────────────────────────────────────────────────
+  // ─── Load Pets ──────────────────────────────────────────────────────────
 
   const loadPets = useCallback(async () => {
     try {
@@ -579,106 +622,86 @@ export default function MedicalScreen() {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-
       setPets(data || []);
-      if (data && data.length > 0) {
-        setSelectedPet(prev => prev ?? data[0]);
-      }
+      if (data?.length > 0) setSelectedPet(prev => prev ?? data[0]);
     } catch (err) {
-      console.error('loadPets error:', err.message);
-      Alert.alert('Error', 'Could not load pets.');
+      console.error('loadPets:', err.message);
+      Alert.alert('Error', t('errors.loadPets'));
     } finally {
       setPetsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { loadPets(); }, [loadPets]);
 
-  // ─── Load Medical Data ────────────────────────────────────────────────────
+  // ─── Load Medical Data ──────────────────────────────────────────────────
 
   const loadMedicalData = useCallback(async () => {
     if (!selectedPet) return;
     try {
       setLoading(true);
-
       const [vaccRes, medRes, recRes] = await Promise.all([
-        supabase
-          .from('vaccinations')
-          .select('*')
-          .eq('pet_id', selectedPet.id)
+        supabase.from('vaccinations').select('*').eq('pet_id', selectedPet.id)
           .order('next_due_date', { ascending: true }),
-        supabase
-          .from('medications')
-          .select('*')
-          .eq('pet_id', selectedPet.id)
+        supabase.from('medications').select('*').eq('pet_id', selectedPet.id)
           .order('start_date', { ascending: false }),
-        supabase
-          .from('vet_records')
-          .select('*')
-          .eq('pet_id', selectedPet.id)
+        supabase.from('vet_records').select('*').eq('pet_id', selectedPet.id)
           .order('visit_date', { ascending: false }),
       ]);
-
       if (vaccRes.error) throw vaccRes.error;
       if (medRes.error)  throw medRes.error;
       if (recRes.error)  throw recRes.error;
-
       setVaccines(vaccRes.data   || []);
       setMedications(medRes.data || []);
       setRecords(recRes.data     || []);
     } catch (err) {
-      console.error('loadMedicalData error:', err.message);
-      Alert.alert('Error', 'Could not load medical data.');
+      console.error('loadMedicalData:', err.message);
+      Alert.alert('Error', t('errors.loadData'));
     } finally {
       setLoading(false);
     }
-  }, [selectedPet]);
+  }, [selectedPet, t]);
 
   useEffect(() => { loadMedicalData(); }, [loadMedicalData]);
 
-  // ─── Vaccine CRUD ─────────────────────────────────────────────────────────
+  // ─── Vaccine CRUD ───────────────────────────────────────────────────────
 
   const saveVaccine = async (formData) => {
     try {
       if (editVaccine) {
-        const { error } = await supabase
-          .from('vaccinations')
+        const { error } = await supabase.from('vaccinations')
           .update({ ...formData, updated_at: new Date().toISOString() })
           .eq('id', editVaccine.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('vaccinations')
+        const { error } = await supabase.from('vaccinations')
           .insert({ ...formData, pet_id: selectedPet.id });
         if (error) throw error;
       }
-      setVaccineModal(false);
-      setEditVaccine(null);
+      setVaccineModal(false); setEditVaccine(null);
       await loadMedicalData();
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('modal.errorTitle'), err.message);
     }
   };
 
   const deleteVaccine = (id) => {
     Alert.alert(
-      'Delete Vaccination',
-      'Are you sure you want to delete this record?',
+      t('delete.vaccine.title'),
+      t('delete.vaccine.message'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('delete.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('delete.confirm'),
           style: 'destructive',
           onPress: async () => {
             try {
               const { error } = await supabase
-                .from('vaccinations')
-                .delete()
-                .eq('id', id);
+                .from('vaccinations').delete().eq('id', id);
               if (error) throw error;
               await loadMedicalData();
             } catch (err) {
-              Alert.alert('Error', err.message);
+              Alert.alert(t('modal.errorTitle'), err.message);
             }
           },
         },
@@ -686,49 +709,44 @@ export default function MedicalScreen() {
     );
   };
 
-  // ─── Medication CRUD ──────────────────────────────────────────────────────
+  // ─── Medication CRUD ────────────────────────────────────────────────────
 
   const saveMedication = async (formData) => {
     try {
       if (editMed) {
-        const { error } = await supabase
-          .from('medications')
+        const { error } = await supabase.from('medications')
           .update({ ...formData, updated_at: new Date().toISOString() })
           .eq('id', editMed.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('medications')
+        const { error } = await supabase.from('medications')
           .insert({ ...formData, pet_id: selectedPet.id });
         if (error) throw error;
       }
-      setMedModal(false);
-      setEditMed(null);
+      setMedModal(false); setEditMed(null);
       await loadMedicalData();
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('modal.errorTitle'), err.message);
     }
   };
 
   const deleteMedication = (id) => {
     Alert.alert(
-      'Delete Medication',
-      'Are you sure you want to delete this record?',
+      t('delete.medication.title'),
+      t('delete.medication.message'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('delete.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('delete.confirm'),
           style: 'destructive',
           onPress: async () => {
             try {
               const { error } = await supabase
-                .from('medications')
-                .delete()
-                .eq('id', id);
+                .from('medications').delete().eq('id', id);
               if (error) throw error;
               await loadMedicalData();
             } catch (err) {
-              Alert.alert('Error', err.message);
+              Alert.alert(t('modal.errorTitle'), err.message);
             }
           },
         },
@@ -736,7 +754,7 @@ export default function MedicalScreen() {
     );
   };
 
-  // ─── Vet Record CRUD ──────────────────────────────────────────────────────
+  // ─── Vet Record CRUD ────────────────────────────────────────────────────
 
   const saveRecord = async (formData) => {
     try {
@@ -746,51 +764,48 @@ export default function MedicalScreen() {
       const payload = {
         visit_date:  formData.visit_date,
         reason:      formData.record_type || null,
+        vet_name:    formData.vet_name    || null,
+        clinic_name: formData.clinic_name || null,
         diagnosis:   formData.diagnosis   || null,
         treatment:   formData.treatment   || null,
+        cost:        formData.cost ?? null,
         notes:       formData.notes       || null,
       };
 
       if (editRecord) {
-        const { error } = await supabase
-          .from('vet_records')
+        const { error } = await supabase.from('vet_records')
           .update({ ...payload, updated_at: new Date().toISOString() })
           .eq('id', editRecord.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('vet_records')
+        const { error } = await supabase.from('vet_records')
           .insert({ ...payload, pet_id: selectedPet.id, user_id: user.id });
         if (error) throw error;
       }
-
-      setRecordModal(false);
-      setEditRecord(null);
+      setRecordModal(false); setEditRecord(null);
       await loadMedicalData();
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('modal.errorTitle'), err.message);
     }
   };
 
   const deleteRecord = (id) => {
     Alert.alert(
-      'Delete Vet Record',
-      'Are you sure you want to delete this record?',
+      t('delete.record.title'),
+      t('delete.record.message'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('delete.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('delete.confirm'),
           style: 'destructive',
           onPress: async () => {
             try {
               const { error } = await supabase
-                .from('vet_records')
-                .delete()
-                .eq('id', id);
+                .from('vet_records').delete().eq('id', id);
               if (error) throw error;
               await loadMedicalData();
             } catch (err) {
-              Alert.alert('Error', err.message);
+              Alert.alert(t('modal.errorTitle'), err.message);
             }
           },
         },
@@ -798,209 +813,172 @@ export default function MedicalScreen() {
     );
   };
 
-  // ─── Overview Tab ─────────────────────────────────────────────────────────
+  // ─── Status Badge Helpers ───────────────────────────────────────────────
 
-  // ===== ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ (добавить ПЕРЕД renderOverview) =====
+  const getStatusBadgeText = (statusKey, days) => {
+    switch (statusKey) {
+      case 'overdue':    return t('status.daysOverdue', { days: Math.abs(days) });
+      case 'due_soon':   return t('status.dueIn', { days });
+      case 'up_to_date': return t('status.upToDate');
+      case 'completed':  return t('status.completed');
+      default:           return '';
+    }
+  };
 
-const SummaryCard = ({ count, label, color }) => (
-  <View style={[styles.summaryCard, { backgroundColor: color }]}>
-    <Text style={styles.summaryNum}>{count}</Text>
-    <Text style={styles.summaryLabel}>{label}</Text>
-  </View>
-);
+  // ─── Render Overview ────────────────────────────────────────────────────
 
-const SummaryCards = ({ vaccineCount, activeMedCount, recordCount }) => (
-  <View style={styles.summaryRow}>
-    <SummaryCard count={vaccineCount} label="Vaccines" color="#EEF2FF" />
-    <SummaryCard count={activeMedCount} label="Active Meds" color="#F0FDF4" />
-    <SummaryCard count={recordCount} label="Vet Visits" color="#FFF7ED" />
-  </View>
-);
+  const renderOverview = () => {
+    const activeMeds   = medications.filter(m => m.is_active);
+    const recentRecord = records[0];
+    const isEmpty =
+      vaccines.length === 0 &&
+      medications.length === 0 &&
+      records.length === 0;
 
-const AttentionSection = ({ vaccines, getVaccineStatus, getDaysUntil, styles }) => (
-  <View style={styles.alertBox}>
-    <Text style={styles.alertTitle}>⚠️ Attention Required</Text>
-    <Text style={styles.sectionTitle}>Upcoming Vaccines</Text>
-    {vaccines.map(v => {
-      const status = getVaccineStatus(v.next_due_date);
-      const days = getDaysUntil(v.next_due_date);
-      const isOverdue = status.label === 'Overdue';
-      
+    if (isEmpty) {
       return (
-        <View key={v.id} style={styles.alertRow}>
-          <Text style={styles.alertName}>{v.vaccine_name}</Text>
-          <Text style={[
-            styles.alertBadge,
-            isOverdue ? styles.badgeRed : styles.badgeYellow,
-          ]}>
-            {isOverdue ? `${Math.abs(days)}d overdue` : `Due in ${days}d`}
-          </Text>
-        </View>
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>🏥</Text>
+            <Text style={styles.emptyTitle}>{t('empty.overview.title')}</Text>
+            <Text style={styles.emptySub}>{t('empty.overview.subtitle')}</Text>
+          </View>
+        </ScrollView>
       );
-    })}
-  </View>
-);
+    }
 
-const ActiveMedicationsSection = ({ medications, styles }) => (
-  <View style={styles.section}>
-    <Text style={styles.sectionTitle}>Active Medications</Text>
-    {medications.map(m => (
-      <View key={m.id} style={styles.overviewCard}>
-        <Text style={styles.overviewCardName}>{m.medication_name}</Text>
-        <Text style={styles.overviewCardSub}>
-          {m.dosage} · {m.frequency}
-        </Text>
-      </View>
-    ))}
-  </View>
-);
-
-const LastVisitSection = ({ record, formatDate, styles }) => (
-  <View style={styles.section}>
-    <Text style={styles.sectionTitle}>Last Vet Visit</Text>
-    <View style={styles.overviewCard}>
-      <Text style={styles.overviewCardName}>
-        {formatDate(record.visit_date)}
-      </Text>
-      {record.vet_name && (
-        <Text style={styles.overviewCardSub}>
-          Dr. {record.vet_name}
-          {record.clinic_name ? ` · ${record.clinic_name}` : ''}
-        </Text>
-      )}
-      {record.diagnosis && (
-        <Text style={styles.overviewCardNote}>{record.diagnosis}</Text>
-      )}
-    </View>
-  </View>
-);
-
-// ===== ОСНОВНАЯ ФУНКЦИЯ renderOverview =====
-const renderOverview = () => {
-  // ВРЕМЕННО: расширяем окно до 365 дней для тестирования
-  const dueVaccines = vaccines.filter(v => {
-    if (!v.next_due_date) return false;
-    const days = getDaysUntil(v.next_due_date);
-    return days >= -30 && days <= 365; // от 30 дней просрочки до 365 дней вперед
-  });
-  
-  const activeMeds = medications.filter(m => m.is_active);
-  const recentRecord = records[0];
-
-  const isEmpty = vaccines.length === 0 && medications.length === 0 && records.length === 0;
-
-  if (isEmpty) {
     return (
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.tabContent}>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>🏥</Text>
-          <Text style={styles.emptyTitle}>No Medical Records Yet</Text>
-          <Text style={styles.emptySub}>
-            Start by adding a vaccination, medication, or vet visit.
-          </Text>
+      <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+        {/* Summary Cards */}
+        <View style={styles.summaryRow}>
+          <View style={[styles.summaryCard, { backgroundColor: '#EEF2FF' }]}>
+            <Text style={styles.summaryNum}>{vaccines.length}</Text>
+            <Text style={styles.summaryLabel}>{t('overview.summary.vaccines')}</Text>
+          </View>
+          <View style={[styles.summaryCard, { backgroundColor: '#F0FDF4' }]}>
+            <Text style={styles.summaryNum}>{activeMeds.length}</Text>
+            <Text style={styles.summaryLabel}>{t('overview.summary.activeMeds')}</Text>
+          </View>
+          <View style={[styles.summaryCard, { backgroundColor: '#FFF7ED' }]}>
+            <Text style={styles.summaryNum}>{records.length}</Text>
+            <Text style={styles.summaryLabel}>{t('overview.summary.vetVisits')}</Text>
+          </View>
         </View>
+
+        {/* Upcoming Vaccines */}
+        {vaccines.length > 0 && (
+          <View style={styles.alertBox}>
+            <Text style={styles.alertTitle}>{t('overview.upcomingVaccines')}</Text>
+            {vaccines.map(v => {
+              const statusKey = getVaccineStatus(v.next_due_date);
+              const days      = getDaysUntil(v.next_due_date);
+              return (
+                <View key={v.id} style={styles.alertRow}>
+                  <Text style={styles.alertName}>{v.vaccine_name}</Text>
+                  <View style={styles.alertRight}>
+                    <Text style={styles.alertDate}>{fmt(v.next_due_date)}</Text>
+                    <Text style={[
+                      styles.alertBadge,
+                      statusKey === 'overdue'   ? styles.badgeRed    :
+                      statusKey === 'due_soon'  ? styles.badgeYellow :
+                      styles.badgeGreen,
+                    ]}>
+                      {getStatusBadgeText(statusKey, days)}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Active Medications */}
+        {activeMeds.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('overview.activeMedications')}</Text>
+            {activeMeds.map(m => (
+              <View key={m.id} style={styles.overviewCard}>
+                <Text style={styles.overviewCardName}>{m.medication_name}</Text>
+                <Text style={styles.overviewCardSub}>
+                  {m.dosage} · {m.frequency}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Last Visit */}
+        {recentRecord && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('overview.lastVisit')}</Text>
+            <View style={styles.overviewCard}>
+              <Text style={styles.overviewCardName}>
+                {fmt(recentRecord.visit_date)}
+              </Text>
+              {recentRecord.vet_name && (
+                <Text style={styles.overviewCardSub}>
+                  {t('card.vet', { name: recentRecord.vet_name })}
+                  {recentRecord.clinic_name
+                    ? ` · ${recentRecord.clinic_name}`
+                    : ''}
+                </Text>
+              )}
+              {recentRecord.diagnosis && (
+                <Text style={styles.overviewCardNote}>
+                  {recentRecord.diagnosis}
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
     );
-  }
+  };
 
-  return (
-    <ScrollView showsVerticalScrollIndicator={false} style={styles.tabContent}>
-      <SummaryCards 
-        vaccineCount={vaccines.length}
-        activeMedCount={activeMeds.length}
-        recordCount={records.length}
-      />
-
-      {/* DEBUG: Всегда показываем секцию вакцин если они есть */}
-      {vaccines.length > 0 && (
-        <View style={styles.alertBox}>
-          <Text style={styles.alertTitle}>⚠️ Upcoming Vaccines</Text>
-          {vaccines.map(v => {
-            const status = getVaccineStatus(v.next_due_date);
-            const days = getDaysUntil(v.next_due_date);
-            
-            return (
-              <View key={v.id} style={styles.alertRow}>
-                <Text style={styles.alertName}>{v.vaccine_name}</Text>
-                <View style={styles.alertRight}>
-                  <Text style={styles.alertDate}>{formatDate(v.next_due_date)}</Text>
-                  <Text style={[
-                    styles.alertBadge,
-                    status.label === 'Overdue' ? styles.badgeRed :
-                    status.label === 'Due Soon' ? styles.badgeYellow :
-                    styles.badgeGreen
-                  ]}>
-                    {status.label === 'Overdue' ? `${Math.abs(days)}d overdue` :
-                     status.label === 'Due Soon' ? `Due in ${days}d` :
-                     `In ${days}d`}
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
-
-      {activeMeds.length > 0 && (
-        <ActiveMedicationsSection medications={activeMeds} styles={styles} />
-      )}
-
-      {recentRecord && (
-        <LastVisitSection record={recentRecord} formatDate={formatDate} styles={styles} />
-      )}
-    </ScrollView>
-  );
-};
-  // ─── Vaccines Tab ─────────────────────────────────────────────────────────
+  // ─── Render Vaccines ────────────────────────────────────────────────────
 
   const renderVaccines = () => (
-    <ScrollView showsVerticalScrollIndicator={false} style={styles.tabContent}>
+    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
       {vaccines.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>💉</Text>
-          <Text style={styles.emptyTitle}>No Vaccinations Recorded</Text>
-          <Text style={styles.emptySub}>
-            Tap the + button to add a vaccination.
-          </Text>
+          <Text style={styles.emptyIcon}>{t('empty.vaccines.icon')}</Text>
+          <Text style={styles.emptyTitle}>{t('empty.vaccines.title')}</Text>
+          <Text style={styles.emptySub}>{t('empty.vaccines.subtitle')}</Text>
         </View>
       ) : (
         vaccines.map(v => {
-          const status = getVaccineStatus(v.next_due_date);
-          const days   = getDaysUntil(v.next_due_date);
+          const statusKey = getVaccineStatus(v.next_due_date);
+          const days      = getDaysUntil(v.next_due_date);
           return (
             <View key={v.id} style={styles.card}>
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>{v.vaccine_name}</Text>
                 <View style={[
                   styles.statusBadge,
-                  status.label === 'Overdue'     && styles.badgeRed,
-                  status.label === 'Due Soon'    && styles.badgeYellow,
-                  status.label === 'Up to Date'  && styles.badgeGreen,
-                  status.label === 'Completed'   && styles.badgeGreen,
+                  statusKey === 'overdue'    && styles.badgeRed,
+                  statusKey === 'due_soon'   && styles.badgeYellow,
+                  (statusKey === 'up_to_date' ||
+                   statusKey === 'completed') && styles.badgeGreen,
                 ]}>
                   <Text style={styles.statusText}>
-                    {status.label === 'Overdue'
-                      ? `${Math.abs(days)}d overdue`
-                      : status.label === 'Due Soon'
-                      ? `Due in ${days}d`
-                      : status.label}
+                    {getStatusBadgeText(statusKey, days)}
                   </Text>
                 </View>
               </View>
 
               {v.date_given && (
                 <Text style={styles.cardMeta}>
-                  Given: {formatDate(v.date_given)}
+                  {t('card.given', { date: fmt(v.date_given) })}
                 </Text>
               )}
               {v.next_due_date && (
                 <Text style={styles.cardMeta}>
-                  Next due: {formatDate(v.next_due_date)}
+                  {t('card.nextDue', { date: fmt(v.next_due_date) })}
                 </Text>
               )}
               {v.administered_by && (
                 <Text style={styles.cardMeta}>
-                  By: {v.administered_by}
+                  {t('card.by', { name: v.administered_by })}
                 </Text>
               )}
               {v.notes && (
@@ -1010,18 +988,15 @@ const renderOverview = () => {
               <View style={styles.cardActions}>
                 <TouchableOpacity
                   style={styles.actionBtn}
-                  onPress={() => {
-                    setEditVaccine(v);
-                    setVaccineModal(true);
-                  }}
+                  onPress={() => { setEditVaccine(v); setVaccineModal(true); }}
                 >
-                  <Text style={styles.actionEdit}>Edit</Text>
+                  <Text style={styles.actionEdit}>{t('card.edit')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.actionBtn}
                   onPress={() => deleteVaccine(v.id)}
                 >
-                  <Text style={styles.actionDelete}>Delete</Text>
+                  <Text style={styles.actionDelete}>{t('card.delete')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1031,17 +1006,15 @@ const renderOverview = () => {
     </ScrollView>
   );
 
-  // ─── Medications Tab ──────────────────────────────────────────────────────
+  // ─── Render Medications ─────────────────────────────────────────────────
 
   const renderMedications = () => (
-    <ScrollView showsVerticalScrollIndicator={false} style={styles.tabContent}>
+    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
       {medications.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>💊</Text>
-          <Text style={styles.emptyTitle}>No Medications Recorded</Text>
-          <Text style={styles.emptySub}>
-            Tap the + button to add a medication.
-          </Text>
+          <Text style={styles.emptyIcon}>{t('empty.medications.icon')}</Text>
+          <Text style={styles.emptyTitle}>{t('empty.medications.title')}</Text>
+          <Text style={styles.emptySub}>{t('empty.medications.subtitle')}</Text>
         </View>
       ) : (
         medications.map(m => (
@@ -1053,30 +1026,34 @@ const renderOverview = () => {
                 m.is_active ? styles.badgeGreen : styles.badgeGray,
               ]}>
                 <Text style={styles.statusText}>
-                  {m.is_active ? 'Active' : 'Inactive'}
+                  {m.is_active ? t('status.active') : t('status.inactive')}
                 </Text>
               </View>
             </View>
 
             {m.dosage && (
-              <Text style={styles.cardMeta}>Dosage: {m.dosage}</Text>
+              <Text style={styles.cardMeta}>
+                {t('card.dosage', { value: m.dosage })}
+              </Text>
             )}
             {m.frequency && (
-              <Text style={styles.cardMeta}>Frequency: {m.frequency}</Text>
+              <Text style={styles.cardMeta}>
+                {t('card.frequency', { value: m.frequency })}
+              </Text>
             )}
             {m.start_date && (
               <Text style={styles.cardMeta}>
-                Started: {formatDate(m.start_date)}
+                {t('card.started', { date: fmt(m.start_date) })}
               </Text>
             )}
             {m.end_date && (
               <Text style={styles.cardMeta}>
-                Ends: {formatDate(m.end_date)}
+                {t('card.ends', { date: fmt(m.end_date) })}
               </Text>
             )}
             {m.prescribed_by && (
               <Text style={styles.cardMeta}>
-                Prescribed by: {m.prescribed_by}
+                {t('card.prescribedBy', { name: m.prescribed_by })}
               </Text>
             )}
             {m.notes && (
@@ -1086,18 +1063,15 @@ const renderOverview = () => {
             <View style={styles.cardActions}>
               <TouchableOpacity
                 style={styles.actionBtn}
-                onPress={() => {
-                  setEditMed(m);
-                  setMedModal(true);
-                }}
+                onPress={() => { setEditMed(m); setMedModal(true); }}
               >
-                <Text style={styles.actionEdit}>Edit</Text>
+                <Text style={styles.actionEdit}>{t('card.edit')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={() => deleteMedication(m.id)}
               >
-                <Text style={styles.actionDelete}>Delete</Text>
+                <Text style={styles.actionDelete}>{t('card.delete')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1106,50 +1080,56 @@ const renderOverview = () => {
     </ScrollView>
   );
 
-  // ─── Records Tab ──────────────────────────────────────────────────────────
-  // ✅ ИСПРАВЛЕНО: был сломан JSX — <Textrecords.map ...> и неверная структура
+  // ─── Render Records ─────────────────────────────────────────────────────
 
   const renderRecords = () => (
-    <ScrollView showsVerticalScrollIndicator={false} style={styles.tabContent}>
+    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
       {records.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>📋</Text>
-          <Text style={styles.emptyTitle}>No Vet Records Yet</Text>
-          <Text style={styles.emptySub}>
-            Tap the + button to log a vet visit.
-          </Text>
+          <Text style={styles.emptyIcon}>{t('empty.records.icon')}</Text>
+          <Text style={styles.emptyTitle}>{t('empty.records.title')}</Text>
+          <Text style={styles.emptySub}>{t('empty.records.subtitle')}</Text>
         </View>
       ) : (
         records.map(r => (
           <View key={r.id} style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>
-                {formatDate(r.visit_date)}
-              </Text>
+              <Text style={styles.cardTitle}>{fmt(r.visit_date)}</Text>
               <View style={[styles.statusBadge, styles.badgePurple]}>
                 <Text style={styles.statusText}>
                   {r.reason
-                    ? r.reason.charAt(0).toUpperCase() + r.reason.slice(1)
-                    : 'Visit'}
+                    ? t(`recordTypes.${r.reason}`, {
+                        defaultValue:
+                          r.reason.charAt(0).toUpperCase() + r.reason.slice(1),
+                      })
+                    : t('status.visit')}
                 </Text>
               </View>
             </View>
 
             {r.vet_name && (
-              <Text style={styles.cardMeta}>Vet: Dr. {r.vet_name}</Text>
+              <Text style={styles.cardMeta}>
+                {t('card.vet', { name: r.vet_name })}
+              </Text>
             )}
             {r.clinic_name && (
-              <Text style={styles.cardMeta}>Clinic: {r.clinic_name}</Text>
+              <Text style={styles.cardMeta}>
+                {t('card.clinic', { name: r.clinic_name })}
+              </Text>
             )}
             {r.diagnosis && (
-              <Text style={styles.cardMeta}>Diagnosis: {r.diagnosis}</Text>
+              <Text style={styles.cardMeta}>
+                {t('card.diagnosis', { value: r.diagnosis })}
+              </Text>
             )}
             {r.treatment && (
-              <Text style={styles.cardNote}>Treatment: {r.treatment}</Text>
+              <Text style={styles.cardNote}>
+                {t('card.treatment', { value: r.treatment })}
+              </Text>
             )}
             {r.cost && (
               <Text style={styles.cardMeta}>
-                Cost: ${Number(r.cost).toFixed(2)}
+                {t('card.cost', { value: Number(r.cost).toFixed(2) })}
               </Text>
             )}
             {r.notes && (
@@ -1159,18 +1139,15 @@ const renderOverview = () => {
             <View style={styles.cardActions}>
               <TouchableOpacity
                 style={styles.actionBtn}
-                onPress={() => {
-                  setEditRecord(r);
-                  setRecordModal(true);
-                }}
+                onPress={() => { setEditRecord(r); setRecordModal(true); }}
               >
-                <Text style={styles.actionEdit}>Edit</Text>
+                <Text style={styles.actionEdit}>{t('card.edit')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={() => deleteRecord(r.id)}
               >
-                <Text style={styles.actionDelete}>Delete</Text>
+                <Text style={styles.actionDelete}>{t('card.delete')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1179,7 +1156,9 @@ const renderOverview = () => {
     </ScrollView>
   );
 
-  // ─── JSX Return ───────────────────────────────────────────────────────────
+  // ─── JSX Return ─────────────────────────────────────────────────────────
+
+  const TABS = ['overview', 'vaccines', 'medications', 'records'];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1191,19 +1170,16 @@ const renderOverview = () => {
         >
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Medical Records</Text>
+        <Text style={styles.headerTitle}>{t('header.title')}</Text>
         <TouchableOpacity
           style={styles.addBtn}
           onPress={() => {
             if (activeTab === 'vaccines') {
-              setEditVaccine(null);
-              setVaccineModal(true);
+              setEditVaccine(null); setVaccineModal(true);
             } else if (activeTab === 'medications') {
-              setEditMed(null);
-              setMedModal(true);
+              setEditMed(null); setMedModal(true);
             } else if (activeTab === 'records') {
-              setEditRecord(null);
-              setRecordModal(true);
+              setEditRecord(null); setRecordModal(true);
             }
           }}
         >
@@ -1245,7 +1221,7 @@ const renderOverview = () => {
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        {['overview', 'vaccines', 'medications', 'records'].map(tab => (
+        {TABS.map(tab => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -1255,19 +1231,15 @@ const renderOverview = () => {
               styles.tabText,
               activeTab === tab && styles.tabTextActive,
             ]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {t(`tabs.${tab}`)}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Tab Content */}
+      {/* Content */}
       {loading ? (
-        <ActivityIndicator
-          style={{ marginTop: 40 }}
-          size="large"
-          color="#6366F1"
-        />
+        <ActivityIndicator style={{ marginTop: 40 }} size="large" color="#6366F1" />
       ) : (
         <>
           {activeTab === 'overview'    && renderOverview()}
@@ -1300,477 +1272,97 @@ const renderOverview = () => {
   );
 }
 
-// ─── Main StyleSheet ──────────────────────────────────────────────────────────
+// ─── Styles (без изменений) ───────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backArrow: {
-    fontSize: 22,
-    color: '#6366F1',
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  addBtn: {
-    width: 36,
-    height: 36,
-    backgroundColor: '#6366F1',
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtnText: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '300',
-    lineHeight: 28,
-  },
-  petSwitcher: {
-    maxHeight: 52,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  petSwitcherContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  petChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  petChipActive: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
-  },
-  petChipText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  petChipTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingBottom: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabActive: {
-    borderBottomColor: '#6366F1',
-  },
-  tabText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#9CA3AF',
-  },
-  tabTextActive: {
-    color: '#6366F1',
-    fontWeight: '700',
-  },
-  tabContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  summaryCard: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-  },
-  summaryNum: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  summaryLabel: {
-    fontSize: 11,
-    color: '#6B7280',
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  alertBox: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#F59E0B',
-  },
-  alertTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#92400E',
-    marginBottom: 8,
-  },
-  alertRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  alertRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  alertDate: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  badgeGreen: {
-    backgroundColor: '#D1FAE5',
-    color: '#065F46',
-  },  
-  alertName: {
-    fontSize: 13,
-    color: '#78350F',
-    fontWeight: '500',
-  },
-  alertBadge: {
-    fontSize: 11,
-    fontWeight: '700',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  overviewCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  overviewCardName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  overviewCardSub: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 3,
-  },
-  overviewCardNote: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    marginTop: 4,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
-    flex: 1,
-    marginRight: 8,
-  },
-  cardMeta: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 3,
-  },
-  cardNote: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  cardActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 16,
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  actionBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  actionEdit: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6366F1',
-  },
-  actionDelete: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#EF4444',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  badgeRed: {
-    backgroundColor: '#FEE2E2',
-  },
-  badgeYellow: {
-    backgroundColor: '#FEF3C7',
-  },
-  badgeGreen: {
-    backgroundColor: '#D1FAE5',
-  },
-  badgeGray: {
-    backgroundColor: '#F3F4F6',
-  },
-  badgePurple: {
-    backgroundColor: '#EEF2FF',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 6,
-  },
-  emptySub: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  // NEW: Vaccine due date badges
-  dueBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: '#E5E7EB',
-  },
-  dueSoonBadge: {
-    backgroundColor: '#FEF3C7',
-  },
-  overdueBadge: {
-    backgroundColor: '#FEE2E2',
-  },
-  dueText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  dueSoonText: {
-    color: '#92400E',
-  },
-  overdueText: {
-    color: '#991B1B',
-  },
-}); 
+  container:            { flex: 1, backgroundColor: '#F9FAFB' },
+  header:               { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  backBtn:              { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  backArrow:            { fontSize: 22, color: '#6366F1', fontWeight: '600' },
+  headerTitle:          { fontSize: 18, fontWeight: '700', color: '#1F2937' },
+  addBtn:               { width: 36, height: 36, backgroundColor: '#6366F1', borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  addBtnText:           { color: '#fff', fontSize: 22, fontWeight: '300', lineHeight: 28 },
+  petSwitcher:          { maxHeight: 52, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  petSwitcherContent:   { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  petChip:              { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  petChipActive:        { backgroundColor: '#6366F1', borderColor: '#6366F1' },
+  petChipText:          { fontSize: 14, fontWeight: '500', color: '#6B7280' },
+  petChipTextActive:    { color: '#fff', fontWeight: '600' },
+  tabs:                 { flexDirection: 'row', backgroundColor: '#fff', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  tab:                  { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabActive:            { borderBottomColor: '#6366F1' },
+  tabText:              { fontSize: 12, fontWeight: '500', color: '#9CA3AF' },
+  tabTextActive:        { color: '#6366F1', fontWeight: '700' },
+  tabContent:           { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
+  summaryRow:           { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  summaryCard:          { flex: 1, borderRadius: 12, padding: 14, alignItems: 'center' },
+  summaryNum:           { fontSize: 24, fontWeight: '700', color: '#1F2937' },
+  summaryLabel:         { fontSize: 11, color: '#6B7280', marginTop: 2, fontWeight: '500' },
+  alertBox:             { backgroundColor: '#FEF3C7', borderRadius: 12, padding: 14, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#F59E0B' },
+  alertTitle:           { fontSize: 14, fontWeight: '700', color: '#92400E', marginBottom: 8 },
+  alertRow:             { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  alertRight:           { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  alertDate:            { fontSize: 12, color: '#6B7280' },
+  alertName:            { fontSize: 13, color: '#78350F', fontWeight: '500' },
+  alertBadge:           { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  section:              { marginBottom: 16 },
+  sectionTitle:         { fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 8 },
+  overviewCard:         { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
+  overviewCardName:     { fontSize: 15, fontWeight: '600', color: '#1F2937' },
+  overviewCardSub:      { fontSize: 13, color: '#6B7280', marginTop: 3 },
+  overviewCardNote:     { fontSize: 13, color: '#9CA3AF', marginTop: 4 },
+  card:                 { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  cardHeader:           { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  cardTitle:            { fontSize: 16, fontWeight: '700', color: '#1F2937', flex: 1, marginRight: 8 },
+  cardMeta:             { fontSize: 13, color: '#6B7280', marginBottom: 3 },
+  cardNote:             { fontSize: 13, color: '#9CA3AF', marginTop: 4, fontStyle: 'italic' },
+  cardActions:          { flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  actionBtn:            { paddingVertical: 4, paddingHorizontal: 8 },
+  actionEdit:           { fontSize: 13, fontWeight: '600', color: '#6366F1' },
+  actionDelete:         { fontSize: 13, fontWeight: '600', color: '#EF4444' },
+  statusBadge:          { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  statusText:           { fontSize: 11, fontWeight: '700' },
+  badgeRed:             { backgroundColor: '#FEE2E2' },
+  badgeYellow:          { backgroundColor: '#FEF3C7' },
+  badgeGreen:           { backgroundColor: '#D1FAE5' },
+  badgeGray:            { backgroundColor: '#F3F4F6' },
+  badgePurple:          { backgroundColor: '#EEF2FF' },
+  emptyState:           { alignItems: 'center', paddingVertical: 60 },
+  emptyIcon:            { fontSize: 48, marginBottom: 12 },
+  emptyTitle:           { fontSize: 18, fontWeight: '700', color: '#1F2937', marginBottom: 6 },
+  emptySub:             { fontSize: 14, color: '#9CA3AF', textAlign: 'center', paddingHorizontal: 20 },
+});
 
-
-// ─── Modal Styles ─────────────────────────────────────────────────────────────
+const dpStyles = StyleSheet.create({
+  container:   { marginBottom: 12 },
+  field:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, gap: 8 },
+  icon:        { marginRight: 2 },
+  text:        { flex: 1, fontSize: 15, color: '#1F2937' },
+  placeholder: { color: '#9CA3AF' },
+});
 
 const mStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: '90%',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 6,
-    marginTop: 4,
-  },
-  input: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    fontSize: 15,
-    color: '#1F2937',
-    marginBottom: 12,
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-    paddingTop: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  btn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnCancel: {
-    backgroundColor: '#F3F4F6',
-  },
-  btnSave: {
-    backgroundColor: '#6366F1',
-  },
-  btnCancelText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  btnSaveText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginRight: 8,
-  },
-  chipActive: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  chipTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 4,
-  },
-  toggle: {
-    width: 48,
-    height: 26,
-    borderRadius: 13,
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-  },
-  toggleOn: {
-    backgroundColor: '#6366F1',
-  },
-  toggleOff: {
-    backgroundColor: '#D1D5DB',
-  },
-  toggleThumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  thumbOn: {
-    alignSelf: 'flex-end',
-  },
-  thumbOff: {
-    alignSelf: 'flex-start',
-  },
+  overlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  sheet:       { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
+  title:       { fontSize: 20, fontWeight: '700', color: '#1F2937', marginBottom: 20, textAlign: 'center' },
+  label:       { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 4 },
+  input:       { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#1F2937', marginBottom: 12 },
+  textArea:    { height: 80, textAlignVertical: 'top', paddingTop: 10 },
+  row:         { flexDirection: 'row', gap: 12, marginTop: 8 },
+  btn:         { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  btnCancel:   { backgroundColor: '#F3F4F6' },
+  btnSave:     { backgroundColor: '#6366F1' },
+  btnCancelText: { fontSize: 15, fontWeight: '600', color: '#6B7280' },
+  btnSaveText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  chip:        { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB', marginRight: 8 },
+  chipActive:  { backgroundColor: '#6366F1', borderColor: '#6366F1' },
+  chipText:    { fontSize: 13, fontWeight: '500', color: '#6B7280' },
+  chipTextActive: { color: '#fff', fontWeight: '600' },
+  toggleRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 4 },
+  toggle:      { width: 48, height: 26, borderRadius: 13, justifyContent: 'center', paddingHorizontal: 3 },
+  toggleOn:    { backgroundColor: '#6366F1' },
+  toggleOff:   { backgroundColor: '#D1D5DB' },
+  toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2 },
+  thumbOn:     { alignSelf: 'flex-end' },
+  thumbOff:    { alignSelf: 'flex-start' },
 });
