@@ -34,12 +34,16 @@ function _notify() {
 }
 
 // ─── FETCH ──────────────────────────────────────────────────
-async function _fetchPoints(userId) {
+async function _fetchPoints(userId, { silent = false } = {}) {
   const fetchId = ++_store.fetchCount; // уникальный ID этого запроса
 
-  _store.loading = true;
-  _store.error   = null;
-  _notify();
+  // silent=true — фоновая сверка после insert/realtime: не трогаем loading,
+  // чтобы не моргать спиннером и не сбрасывать оптимистичное значение.
+  if (!silent) {
+    _store.loading = true;
+    _store.error   = null;
+    _notify();
+  }
 
   try {
     const { data, error } = await supabase
@@ -71,8 +75,10 @@ async function _fetchPoints(userId) {
 }
 
 // ─── ADD POINTS ─────────────────────────────────────────────
-// Начисление: пишем строку в user_points. Стор увеличится через
-// realtime INSERT-handler; если канала нет — подстрахуемся refetch.
+// Начисление: пишем строку в user_points и СРАЗУ обновляем стор — не
+// полагаемся на realtime (таблица может быть не в публикации
+// supabase_realtime). Оптимистичный инкремент даёт мгновенный отклик,
+// тихий refetch сверяет баланс с БД.
 async function _addPoints(userId, points) {
   try {
     const { error } = await supabase
@@ -82,7 +88,14 @@ async function _addPoints(userId, points) {
     if (error) throw error;
 
     console.log(`➕ Awarded ${points} points to ${userId.slice(0, 8)}`);
-    if (!_store.channel) _fetchPoints(userId);
+
+    // 1) Оптимистично — UI обновляется немедленно
+    _store.points += points;
+    _notify();
+
+    // 2) Авторитетно — сверяем сумму из БД (идемпотентно, без loading-флика)
+    _fetchPoints(userId, { silent: true });
+
     return true;
   } catch (err) {
     console.error('❌ addPoints:', err.message);
@@ -118,10 +131,11 @@ function _ensureChannel(userId) {
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
-        const added = payload.new?.points || 0;
-        console.log(`🔔 Realtime INSERT: +${added} points`);
-        _store.points += added;
-        _notify();
+        // Realtime-событие (в т.ч. из другой сессии/устройства того же юзера).
+        // Делаем авторитетный тихий refetch — идемпотентно, не двоит с
+        // оптимистичным инкрементом из _addPoints.
+        console.log('🔔 Realtime INSERT on user_points — refetch');
+        _fetchPoints(userId, { silent: true });
       }
     )
     .subscribe((status, err) => {
