@@ -89,6 +89,7 @@
         "adminByPlaceholder": "Dr. Smith",
         "notesLabel": "Notes",
         "notesPlaceholder": "Any additional notes...",
+        "typeLabel": "Vaccine Type",
         "required": "Please enter a vaccine name."
       },
       "medication": {
@@ -128,6 +129,19 @@
         "costLabel": "Cost ($)",
         "costPlaceholder": "150.00",
         "notesLabel": "Notes",
+        "diagnosisCodeLabel": "Diagnosis Code",
+        "diagnosisCodePlaceholder": "e.g. H66.9",
+        "symptomsLabel": "Symptoms",
+        "symptomsPlaceholder": "e.g. itching, ear discharge",
+        "recommendationsLabel": "Recommendations",
+        "recommendationsPlaceholder": "e.g. prescribed antibiotics",
+        "weightLabel": "Weight (kg)",
+        "weightPlaceholder": "e.g. 12.5",
+        "temperatureLabel": "Temperature (°C)",
+        "temperaturePlaceholder": "e.g. 38.5",
+        "followUpLabel": "Follow-up Date",
+        "followUpPlaceholder": "Select follow-up date",
+        "urgencyLabel": "Urgency",
         "notesPlaceholder": "Any additional notes...",
         "required": "Please select a visit date."
       },
@@ -163,6 +177,11 @@
       "dental": "Dental",
       "grooming": "Grooming",
       "other": "Other"
+    },
+    "urgency": {
+      "normal": "Normal",
+      "elevated": "Elevated",
+      "high": "High"
     },
     "vaccineTypes": {
       "primary": "Primary",

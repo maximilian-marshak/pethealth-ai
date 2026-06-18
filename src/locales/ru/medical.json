@@ -89,6 +89,7 @@
         "adminByPlaceholder": "Д-р Иванов",
         "notesLabel": "Заметки",
         "notesPlaceholder": "Дополнительная информация...",
+        "typeLabel": "Тип вакцины",
         "required": "Пожалуйста, введите название вакцины."
       },
       "medication": {
@@ -128,6 +129,19 @@
         "costLabel": "Стоимость ($)",
         "costPlaceholder": "150.00",
         "notesLabel": "Заметки",
+        "diagnosisCodeLabel": "Код диагноза",
+        "diagnosisCodePlaceholder": "напр. H66.9",
+        "symptomsLabel": "Симптомы",
+        "symptomsPlaceholder": "напр. зуд, выделения из уха",
+        "recommendationsLabel": "Рекомендации",
+        "recommendationsPlaceholder": "напр. назначены антибиотики",
+        "weightLabel": "Вес (кг)",
+        "weightPlaceholder": "напр. 12.5",
+        "temperatureLabel": "Температура (°C)",
+        "temperaturePlaceholder": "напр. 38.5",
+        "followUpLabel": "Дата повторного приёма",
+        "followUpPlaceholder": "Выберите дату",
+        "urgencyLabel": "Срочность",
         "notesPlaceholder": "Дополнительная информация...",
         "required": "Пожалуйста, выберите дату визита."
       },
@@ -163,6 +177,11 @@
       "dental": "Стоматология",
       "grooming": "Груминг",
       "other": "Другое"
+    },
+    "urgency": {
+      "normal": "Обычная",
+      "elevated": "Повышенная",
+      "high": "Высокая"
     },
     "vaccineTypes": {
       "primary": "Первичная",

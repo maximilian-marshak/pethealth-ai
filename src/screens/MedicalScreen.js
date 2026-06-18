@@ -46,10 +46,6 @@ const getVaccineStatus = (nextDueDate) => {
   return 'up_to_date';
 };
 
-const RECORD_TYPE_KEYS = [
-  'checkup', 'surgery', 'emergency', 'dental', 'grooming', 'other',
-];
-
 // ─── DatePicker Field ─────────────────────────────────────────────────────────
 
 const DatePickerField = ({ label, value, onChange, placeholder }) => {
@@ -119,6 +115,7 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
   const [dateGiven, setDateGiven] = useState('');
   const [nextDue,   setNextDue]   = useState('');
   const [vet,       setVet]       = useState('');
+  const [vaccineType, setVaccineType] = useState('primary');
   const [notes,     setNotes]     = useState('');
   const [saving,    setSaving]    = useState(false);
 
@@ -128,9 +125,11 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
       setDateGiven(editData.date_given || '');
       setNextDue(editData.next_due_date || '');
       setVet(editData.vet_name || editData.administered_by || '');
+      setVaccineType(editData.vaccine_type || 'primary');
       setNotes(editData.notes || '');
     } else {
       setName(''); setDateGiven(''); setNextDue(''); setVet(''); setNotes('');
+      setVaccineType('primary');
     }
   }, [editData, visible]);
 
@@ -147,6 +146,7 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
         next_due_date:   nextDue   || null,
         vet_name:        vet.trim() || null,
         administered_by: vet.trim() || null,
+        vaccine_type:    vaccineType,
         notes:           notes.trim() || null,
       });
     } catch (err) {
@@ -195,6 +195,21 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
             placeholder={t('modal.vaccine.adminByPlaceholder')}
             placeholderTextColor="#9CA3AF"
           />
+
+          <Text style={mStyles.label}>{t('modal.vaccine.typeLabel')}</Text>
+          <View style={mStyles.row}>
+            {['primary', 'booster'].map((vt) => (
+              <TouchableOpacity
+                key={vt}
+                style={[mStyles.chip, { flex: 1, marginRight: 0 }, vaccineType === vt && mStyles.chipActive]}
+                onPress={() => setVaccineType(vt)}
+              >
+                <Text style={[mStyles.chipText, vaccineType === vt && mStyles.chipTextActive]}>
+                  {t(`vaccineTypes.${vt}`)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <Text style={mStyles.label}>{t('modal.vaccine.notesLabel')}</Text>
           <TextInput
@@ -405,29 +420,36 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
 const RecordModal = ({ visible, onClose, onSave, editData }) => {
   const { t } = useTranslation('medical');
 
-  const [visitDate,   setVisitDate]   = useState('');
-  const [recordType,  setRecordType]  = useState('checkup');
-  const [vetName,     setVetName]     = useState('');
-  const [clinic,      setClinic]      = useState('');
-  const [diagnosis,   setDiagnosis]   = useState('');
-  const [treatment,   setTreatment]   = useState('');
-  const [cost,        setCost]        = useState('');
-  const [notes,       setNotes]       = useState('');
-  const [saving,      setSaving]      = useState(false);
+  const [visitDate,       setVisitDate]       = useState('');
+  const [vetName,         setVetName]         = useState('');
+  const [clinic,          setClinic]          = useState('');
+  const [diagnosis,       setDiagnosis]       = useState('');
+  const [diagnosisCode,   setDiagnosisCode]   = useState('');
+  const [symptoms,        setSymptoms]        = useState('');
+  const [recommendations, setRecommendations] = useState('');
+  const [weight,          setWeight]          = useState('');
+  const [temperature,     setTemperature]     = useState('');
+  const [followUpDate,    setFollowUpDate]    = useState('');
+  const [urgency,         setUrgency]         = useState('normal');
+  const [saving,          setSaving]          = useState(false);
 
   useEffect(() => {
     if (editData) {
-      setVisitDate(editData.visit_date   || '');
-      setRecordType(editData.record_type || 'checkup');
-      setVetName(editData.vet_name       || '');
-      setClinic(editData.clinic_name     || '');
-      setDiagnosis(editData.diagnosis    || '');
-      setTreatment(editData.treatment    || '');
-      setCost(editData.cost ? String(editData.cost) : '');
-      setNotes(editData.notes            || '');
+      setVisitDate((editData.occurred_at || editData.date || '').slice(0, 10));
+      setVetName(editData.vet_name             || '');
+      setClinic(editData.clinic_name           || '');
+      setDiagnosis(editData.diagnosis          || '');
+      setDiagnosisCode(editData.diagnosis_code || '');
+      setSymptoms(editData.symptoms            || '');
+      setRecommendations(editData.recommendations || '');
+      setWeight(editData.weight != null ? String(editData.weight) : '');
+      setTemperature(editData.temperature != null ? String(editData.temperature) : '');
+      setFollowUpDate((editData.follow_up_date || '').slice(0, 10));
+      setUrgency(editData.urgency || 'normal');
     } else {
-      setVisitDate(''); setRecordType('checkup'); setVetName('');
-      setClinic(''); setDiagnosis(''); setTreatment(''); setCost(''); setNotes('');
+      setVisitDate(''); setVetName(''); setClinic(''); setDiagnosis('');
+      setDiagnosisCode(''); setSymptoms(''); setRecommendations('');
+      setWeight(''); setTemperature(''); setFollowUpDate(''); setUrgency('normal');
     }
   }, [editData, visible]);
 
@@ -439,14 +461,17 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
     setSaving(true);
     try {
       await onSave({
-        visit_date:  visitDate,
-        record_type: recordType,
-        vet_name:    vetName.trim()   || null,
-        clinic_name: clinic.trim()    || null,
-        diagnosis:   diagnosis.trim() || null,
-        treatment:   treatment.trim() || null,
-        cost:        cost ? parseFloat(cost) : null,
-        notes:       notes.trim()     || null,
+        visit_date:      visitDate,
+        vet_name:        vetName.trim() || null,
+        clinic_name:     clinic.trim() || null,
+        diagnosis:       diagnosis.trim() || null,
+        diagnosis_code:  diagnosisCode.trim() || null,
+        symptoms:        symptoms.trim() || null,
+        recommendations: recommendations.trim() || null,
+        weight:          weight ? parseFloat(weight) : null,
+        temperature:     temperature ? parseFloat(temperature) : null,
+        follow_up_date:  followUpDate || null,
+        urgency:         urgency,
       });
     } catch (err) {
       Alert.alert(t('modal.errorTitle'), err.message);
@@ -472,31 +497,6 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               onChange={setVisitDate}
               placeholder={t('modal.record.visitDatePlaceholder')}
             />
-
-            <Text style={mStyles.label}>{t('modal.record.recordTypeLabel')}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 12 }}
-            >
-              {RECORD_TYPE_KEYS.map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    mStyles.chip,
-                    recordType === type && mStyles.chipActive,
-                  ]}
-                  onPress={() => setRecordType(type)}
-                >
-                  <Text style={[
-                    mStyles.chipText,
-                    recordType === type && mStyles.chipTextActive,
-                  ]}>
-                    {t(`recordTypes.${type}`)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
 
             <Text style={mStyles.label}>{t('modal.record.vetNameLabel')}</Text>
             <TextInput
@@ -525,37 +525,78 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               placeholderTextColor="#9CA3AF"
             />
 
-            <Text style={mStyles.label}>{t('modal.record.treatmentLabel')}</Text>
+            <Text style={mStyles.label}>{t('modal.record.diagnosisCodeLabel')}</Text>
+            <TextInput
+              style={mStyles.input}
+              value={diagnosisCode}
+              onChangeText={setDiagnosisCode}
+              placeholder={t('modal.record.diagnosisCodePlaceholder')}
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <Text style={mStyles.label}>{t('modal.record.symptomsLabel')}</Text>
             <TextInput
               style={[mStyles.input, mStyles.textArea]}
-              value={treatment}
-              onChangeText={setTreatment}
-              placeholder={t('modal.record.treatmentPlaceholder')}
+              value={symptoms}
+              onChangeText={setSymptoms}
+              placeholder={t('modal.record.symptomsPlaceholder')}
               placeholderTextColor="#9CA3AF"
               multiline
               numberOfLines={3}
             />
 
-            <Text style={mStyles.label}>{t('modal.record.costLabel')}</Text>
+            <Text style={mStyles.label}>{t('modal.record.recommendationsLabel')}</Text>
+            <TextInput
+              style={[mStyles.input, mStyles.textArea]}
+              value={recommendations}
+              onChangeText={setRecommendations}
+              placeholder={t('modal.record.recommendationsPlaceholder')}
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={3}
+            />
+
+            <Text style={mStyles.label}>{t('modal.record.weightLabel')}</Text>
             <TextInput
               style={mStyles.input}
-              value={cost}
-              onChangeText={setCost}
-              placeholder={t('modal.record.costPlaceholder')}
+              value={weight}
+              onChangeText={setWeight}
+              placeholder={t('modal.record.weightPlaceholder')}
               placeholderTextColor="#9CA3AF"
               keyboardType="decimal-pad"
             />
 
-            <Text style={mStyles.label}>{t('modal.record.notesLabel')}</Text>
+            <Text style={mStyles.label}>{t('modal.record.temperatureLabel')}</Text>
             <TextInput
-              style={[mStyles.input, mStyles.textArea]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder={t('modal.record.notesPlaceholder')}
+              style={mStyles.input}
+              value={temperature}
+              onChangeText={setTemperature}
+              placeholder={t('modal.record.temperaturePlaceholder')}
               placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={3}
+              keyboardType="decimal-pad"
             />
+
+            <DatePickerField
+              label={t('modal.record.followUpLabel')}
+              value={followUpDate}
+              onChange={setFollowUpDate}
+              placeholder={t('modal.record.followUpPlaceholder')}
+            />
+
+            <Text style={mStyles.label}>{t('modal.record.urgencyLabel')}</Text>
+            <View style={mStyles.row}>
+              {['normal', 'elevated', 'high'].map((u) => (
+                <TouchableOpacity
+                  key={u}
+                  style={[mStyles.chip, { flex: 1, marginRight: 0 }, urgency === u && mStyles.chipActive]}
+                  onPress={() => setUrgency(u)}
+                >
+                  <Text style={[mStyles.chipText, urgency === u && mStyles.chipTextActive]}>
+                    {t(`urgency.${u}`)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <View style={mStyles.row}>
               <TouchableOpacity
@@ -645,13 +686,33 @@ export default function MedicalScreen() {
   const saveVaccine = async (formData) => {
     try {
       if (editVaccine) {
-        const { error } = await supabase.from('vaccinations')
-          .update({ ...formData, updated_at: new Date().toISOString() })
+        // Правка — прямой update дочерней строки record_vaccines
+        const { error } = await supabase.from('record_vaccines')
+          .update({
+            vaccine_name:  formData.vaccine_name,
+            vaccine_type:  formData.vaccine_type || null,
+            date_given:    formData.date_given || null,
+            next_due_date: formData.next_due_date || null,
+          })
           .eq('id', editVaccine.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('vaccinations')
-          .insert({ ...formData, pet_id: selectedPet.id });
+        // Добавление — через RPC save_medical_record (родитель + дети)
+        const p_payload = {
+          pet_id:      selectedPet.id,
+          record_type: 'vaccination',
+          source:      'manual',
+          occurred_at: formData.date_given || null,
+          vet_name:    formData.vet_name || null,
+          description: formData.notes || null,
+          vaccines: [{
+            vaccine_name:  formData.vaccine_name,
+            vaccine_type:  formData.vaccine_type || null,
+            date_given:    formData.date_given || null,
+            next_due_date: formData.next_due_date || null,
+          }],
+        };
+        const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
       }
       setVaccineModal(false); setEditVaccine(null);
@@ -673,7 +734,7 @@ export default function MedicalScreen() {
           onPress: async () => {
             try {
               const { error } = await supabase
-                .from('vaccinations').delete().eq('id', id);
+                .from('record_vaccines').delete().eq('id', id);
               if (error) throw error;
               await loadMedicalData();
             } catch (err) {
@@ -690,13 +751,37 @@ export default function MedicalScreen() {
   const saveMedication = async (formData) => {
     try {
       if (editMed) {
-        const { error } = await supabase.from('medications')
-          .update({ ...formData, updated_at: new Date().toISOString() })
+        // Правка — прямой update record_prescriptions
+        const { error } = await supabase.from('record_prescriptions')
+          .update({
+            name:        formData.medication_name,
+            dose:        formData.dosage || null,
+            frequency:   formData.frequency || null,
+            start_date:  formData.start_date || null,
+            end_date:    formData.end_date || null,
+            instruction: formData.notes || null,
+            active:      formData.is_active,
+          })
           .eq('id', editMed.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('medications')
-          .insert({ ...formData, pet_id: selectedPet.id });
+        const p_payload = {
+          pet_id:      selectedPet.id,
+          record_type: 'medication_course',
+          source:      'manual',
+          occurred_at: formData.start_date || null,
+          vet_name:    formData.prescribed_by || null,
+          prescriptions: [{
+            name:        formData.medication_name,
+            dose:        formData.dosage || null,
+            frequency:   formData.frequency || null,
+            start_date:  formData.start_date || null,
+            end_date:    formData.end_date || null,
+            instruction: formData.notes || null,
+            active:      formData.is_active,
+          }],
+        };
+        const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
       }
       setMedModal(false); setEditMed(null);
@@ -718,7 +803,7 @@ export default function MedicalScreen() {
           onPress: async () => {
             try {
               const { error } = await supabase
-                .from('medications').delete().eq('id', id);
+                .from('record_prescriptions').delete().eq('id', id);
               if (error) throw error;
               await loadMedicalData();
             } catch (err) {
@@ -734,28 +819,35 @@ export default function MedicalScreen() {
 
   const saveRecord = async (formData) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const payload = {
-        visit_date:  formData.visit_date,
-        reason:      formData.record_type || null,
-        vet_name:    formData.vet_name    || null,
-        clinic_name: formData.clinic_name || null,
-        diagnosis:   formData.diagnosis   || null,
-        treatment:   formData.treatment   || null,
-        cost:        formData.cost ?? null,
-        notes:       formData.notes       || null,
+      const fields = {
+        occurred_at:     formData.visit_date || null,
+        vet_name:        formData.vet_name || null,
+        clinic_name:     formData.clinic_name || null,
+        diagnosis:       formData.diagnosis || null,
+        diagnosis_code:  formData.diagnosis_code || null,
+        symptoms:        formData.symptoms || null,
+        recommendations: formData.recommendations || null,
+        weight:          formData.weight ?? null,
+        temperature:     formData.temperature ?? null,
+        follow_up_date:  formData.follow_up_date || null,
+        urgency:         formData.urgency || null,
       };
 
       if (editRecord) {
-        const { error } = await supabase.from('vet_records')
-          .update({ ...payload, updated_at: new Date().toISOString() })
+        // Правка — прямой update medical_records
+        const { error } = await supabase.from('medical_records')
+          .update(fields)
           .eq('id', editRecord.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('vet_records')
-          .insert({ ...payload, pet_id: selectedPet.id, user_id: user.id });
+        // Добавление — через RPC save_medical_record
+        const p_payload = {
+          pet_id:      selectedPet.id,
+          record_type: 'visit',
+          source:      'manual',
+          ...fields,
+        };
+        const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
       }
       setRecordModal(false); setEditRecord(null);
@@ -777,7 +869,7 @@ export default function MedicalScreen() {
           onPress: async () => {
             try {
               const { error } = await supabase
-                .from('vet_records').delete().eq('id', id);
+                .from('medical_records').delete().eq('id', id);
               if (error) throw error;
               await loadMedicalData();
             } catch (err) {
