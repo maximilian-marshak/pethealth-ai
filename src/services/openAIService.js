@@ -6,22 +6,22 @@
 
 import OpenAI from 'openai';
 import { OPENROUTER_API_KEY } from '@env';
+import i18n from '../utils/i18n';
 
 // ============================================
 // КОНФИГУРАЦИЯ AI МОДЕЛЕЙ
 // ============================================
 
 const AI_MODELS = [
-  // 🆓 Бесплатные модели (актуальные на январь 2025)
-  'google/gemma-7b-it:free',                       // Google Gemma - быстрая и стабильная
-  'mistralai/mistral-7b-instruct:nitro',           // Mistral с низким приоритетом
-  'nousresearch/hermes-3-llama-3.1-405b:free',     // Очень мощная (если доступна)
-  
-  // 💎 Платные модели (запасные, низкая стоимость)
-  'mistralai/mixtral-8x7b-instruct',               // $0.24/1M tokens - высокое качество
-  'meta-llama/llama-3.1-8b-instruct',              // $0.06/1M tokens - очень дешевая
-  'anthropic/claude-3-haiku',                      // $0.25/1M tokens - самая умная
+  // 🆓 Только бесплатные :free-слаги; перебор по порядку (см. callOpenRouterAPI)
+  'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
+  'openrouter/free',                               // самозалечивающийся роутер бесплатных моделей
 ];
+
+// Код языка i18n -> имя языка для инструкции модели
+const LANG_NAMES = { en: 'English', ru: 'Russian' };
 
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ КЛИЕНТА
@@ -189,6 +189,15 @@ export async function sendMessageToOpenAI(userMessage, conversationHistory = [],
     // Добавляем контекст категории
     if (context.category && context.category !== 'free-chat') {
       systemContent += ` Focus on ${context.category}-related questions.`;
+    }
+
+    // Язык ответа = язык приложения (i18n.language), независимо от языка инструкций.
+    const lang = i18n.language || 'en';
+    const langName = LANG_NAMES[lang] || lang;
+    systemContent += ` Always write your reply in ${langName} (the user's app language), regardless of the language of these instructions.`;
+    if (isEmergency) {
+      // Детектор экстренности ищет символ "⚠️" — префикс не переводим.
+      systemContent += ` Keep the literal prefix "⚠️ EMERGENCY:" exactly as written in English, then continue in ${langName}.`;
     }
 
     // Формируем массив сообщений (последние 6 + текущее)
