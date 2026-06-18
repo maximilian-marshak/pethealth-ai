@@ -168,6 +168,8 @@
     },
     "recordTypes": {
       "visit": "Визит",
+      "vaccination": "Вакцинация",
+      "medication_course": "Курс лечения",
       "procedure": "Процедура",
       "lab_test": "Анализ",
       "parasite_treatment": "Обработка от паразитов",
@@ -190,6 +192,63 @@
     "errors": {
       "loadPets": "Не удалось загрузить питомцев.",
       "loadData": "Не удалось загрузить медданные."
+    },
+    "review": {
+      "title": "Проверка скана",
+      "checkHint": "проверьте",
+      "pickDate": "Выберите дату",
+      "addItem": "Добавить",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "savedTitle": "Сохранено",
+      "savedMessage": "Запись добавлена в медкарту.",
+      "errorTitle": "Ошибка сохранения",
+      "sections": {
+        "vaccines": "Вакцины",
+        "prescriptions": "Лекарства",
+        "parasites": "Обработки от паразитов",
+        "labs": "Анализы"
+      },
+      "kinds": {
+        "deworming": "Дегельминтизация",
+        "ectoparasite": "Эктопаразиты"
+      },
+      "labStatus": {
+        "ordered": "Назначен",
+        "completed": "Готов"
+      },
+      "weightUnits": {
+        "kg": "кг",
+        "lb": "фунт"
+      },
+      "fields": {
+        "recordType": "Тип записи",
+        "occurredAt": "Дата",
+        "vetName": "Ветеринар",
+        "clinicName": "Клиника",
+        "diagnosis": "Диагноз",
+        "diagnosisCode": "Код диагноза",
+        "symptoms": "Симптомы",
+        "recommendations": "Рекомендации",
+        "weight": "Вес",
+        "temperature": "Температура (°C)",
+        "followUp": "Повторный приём",
+        "urgency": "Срочность",
+        "vaccineName": "Вакцина",
+        "dateGiven": "Дата введения",
+        "nextDue": "Следующая",
+        "name": "Название",
+        "dose": "Доза",
+        "frequency": "Частота",
+        "startDate": "Начало",
+        "endDate": "Окончание",
+        "active": "Активно",
+        "instruction": "Инструкция",
+        "product": "Препарат",
+        "treatedOn": "Дата обработки",
+        "testType": "Анализ",
+        "result": "Результат"
+      }
     },
     "scan": {
       "button": "Сканировать",

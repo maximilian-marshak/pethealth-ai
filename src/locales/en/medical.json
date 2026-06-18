@@ -168,6 +168,8 @@
     },
     "recordTypes": {
       "visit": "Visit",
+      "vaccination": "Vaccination",
+      "medication_course": "Medication Course",
       "procedure": "Procedure",
       "lab_test": "Lab Test",
       "parasite_treatment": "Parasite Treatment",
@@ -190,6 +192,63 @@
     "errors": {
       "loadPets": "Could not load pets.",
       "loadData": "Could not load medical data."
+    },
+    "review": {
+      "title": "Review Scan",
+      "checkHint": "check",
+      "pickDate": "Select date",
+      "addItem": "Add",
+      "save": "Save",
+      "cancel": "Cancel",
+      "savedTitle": "Saved",
+      "savedMessage": "Record saved to medical history.",
+      "errorTitle": "Save Error",
+      "sections": {
+        "vaccines": "Vaccines",
+        "prescriptions": "Medications",
+        "parasites": "Parasite Treatments",
+        "labs": "Lab Tests"
+      },
+      "kinds": {
+        "deworming": "Deworming",
+        "ectoparasite": "Ectoparasite"
+      },
+      "labStatus": {
+        "ordered": "Ordered",
+        "completed": "Completed"
+      },
+      "weightUnits": {
+        "kg": "kg",
+        "lb": "lb"
+      },
+      "fields": {
+        "recordType": "Record Type",
+        "occurredAt": "Date",
+        "vetName": "Veterinarian",
+        "clinicName": "Clinic",
+        "diagnosis": "Diagnosis",
+        "diagnosisCode": "Diagnosis Code",
+        "symptoms": "Symptoms",
+        "recommendations": "Recommendations",
+        "weight": "Weight",
+        "temperature": "Temperature (°C)",
+        "followUp": "Follow-up Date",
+        "urgency": "Urgency",
+        "vaccineName": "Vaccine",
+        "dateGiven": "Date Given",
+        "nextDue": "Next Due",
+        "name": "Name",
+        "dose": "Dose",
+        "frequency": "Frequency",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "active": "Active",
+        "instruction": "Instruction",
+        "product": "Product",
+        "treatedOn": "Treated On",
+        "testType": "Test",
+        "result": "Result"
+      }
     },
     "scan": {
       "button": "Scan",

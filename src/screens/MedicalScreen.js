@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../utils/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { usePetContext } from '../context/PetContext';
@@ -683,7 +683,11 @@ export default function MedicalScreen() {
     }
   }, [selectedPet, t]);
 
-  useEffect(() => { loadMedicalData(); }, [loadMedicalData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadMedicalData();
+    }, [loadMedicalData])
+  );
 
   // ─── Vaccine CRUD ───────────────────────────────────────────────────────
 
@@ -924,11 +928,11 @@ export default function MedicalScreen() {
       const ocr = await parseMedicalDocument(manipulated.base64, 'image/jpeg');
 
       if (ocr.success) {
-        console.log('🧾 OCR result:', JSON.stringify(ocr.data, null, 2));
-        Alert.alert(
-          t('scan.resultTitle'),
-          JSON.stringify(ocr.data, null, 2).slice(0, 1500)
-        );
+        navigation.navigate('OCRReview', {
+          data: ocr.data,
+          imageUri: manipulated.uri,
+          petId: selectedPet.id,
+        });
       } else {
         console.warn('OCR failed:', ocr.error);
         Alert.alert(t('scan.errorTitle'), ocr.error || t('scan.error'));
