@@ -1,6 +1,7 @@
 {
     "hub": {
       "title": "AI Pet Assistant",
+      "choosePet": "Choose a pet",
       "subtitleWithPet": "Ask me anything about {{name}}'s care",
       "subtitleNoPet": "Ask me anything about pet care",
       "freeChat": "Start Free Chat",

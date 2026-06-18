@@ -8,6 +8,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../utils/supabase';
 import { useAuth } from './AuthContext';
+import { getAgeFromBirthDate } from '../utils/petHelpers';
 
 const SELECTED_PET_KEY = 'selectedPetId';
 
@@ -50,18 +51,25 @@ export function PetProvider({ children }) {
 
       if (error) throw error;
 
-      // Активные питомцы (is_active true/null/undefined)
-      const activePets = (data || []).filter(
-        (pet) => pet.is_active === true || pet.is_active === null || pet.is_active === undefined
-      );
+      // Активные питомцы (is_active true/null/undefined) + вычисляемый возраст
+      const activePets = (data || [])
+        .filter(
+          (pet) => pet.is_active === true || pet.is_active === null || pet.is_active === undefined
+        )
+        .map((pet) => ({ ...pet, age: getAgeFromBirthDate(pet.birth_date) }));
 
       console.log(`✅ PetContext: loaded ${activePets.length} active pets`);
       setPets(activePets);
 
-      // Восстанавливаем выбранного питомца по сохранённому id, иначе первый
+      // Сохраняем текущий выбор по id (не сбрасываем при рефетче/realtime);
+      // иначе — по сохранённому selectedPetId; иначе — первый питомец.
       const storedId = await AsyncStorage.getItem(SELECTED_PET_KEY);
-      const restored = storedId ? activePets.find((pet) => pet.id === storedId) : null;
-      setSelectedPet(restored || activePets[0] || null);
+      setSelectedPet((prev) => {
+        const keepCurrent = prev ? activePets.find((pet) => pet.id === prev.id) : null;
+        if (keepCurrent) return keepCurrent;
+        const restored = storedId ? activePets.find((pet) => pet.id === storedId) : null;
+        return restored || activePets[0] || null;
+      });
     } catch (error) {
       console.error('❌ PetContext: error loading pets:', error);
       setPets([]);
@@ -75,6 +83,28 @@ export function PetProvider({ children }) {
   useEffect(() => {
     loadPets();
   }, [loadPets]);
+
+  // ═══ REALTIME: подхватываем изменения pets без перезапуска ═══
+  // Текущий selectedPet сохраняется в loadPets (по id), выбор не сбрасывается.
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`petcontext_pets_${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pets', filter: `owner_id=eq.${user.id}` },
+        () => {
+          console.log('🔔 PetContext: realtime pets change → reload');
+          loadPets();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, loadPets]);
 
   // ═══ ADD PET (Supabase) ═══
   const addPet = async (petData) => {

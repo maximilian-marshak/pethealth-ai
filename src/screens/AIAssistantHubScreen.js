@@ -2,7 +2,7 @@
 // src/screens/AIAssistantHubScreen.js
 // ══════════════════════════════════════════════════
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,8 +19,14 @@ import { usePetContext } from '../context/PetContext';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function AIAssistantHubScreen({ navigation }) {
-  const { selectedPet } = usePetContext();
+  const { selectedPet, pets, selectPet } = usePetContext();
   const { t } = useTranslation('ai');
+  const [pickerVisible, setPickerVisible] = useState(false);
+
+  const handleSelectPet = async (petId) => {
+    await selectPet(petId);
+    setPickerVisible(false);
+  };
 
   // ═══ КАТЕГОРИИ ═══
   const categories = [
@@ -242,17 +249,26 @@ export default function AIAssistantHubScreen({ navigation }) {
           </Text>
         </View>
 
-        {/* ═══ SELECTED PET INFO ═══ */}
+        {/* ═══ SELECTED PET INFO (тап → выбор питомца) ═══ */}
         {selectedPet && (
-          <View style={styles.petInfoCard}>
+          <TouchableOpacity
+            style={styles.petInfoCard}
+            onPress={() => setPickerVisible(true)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="paw" size={24} color="#6C63FF" />
             <View style={styles.petInfoText}>
               <Text style={styles.petName}>{selectedPet.name}</Text>
               <Text style={styles.petDetails}>
-                {selectedPet.breed} • {selectedPet.age || t('chat.unknownAge')}
+                {selectedPet.breed} • {selectedPet.age != null
+                  ? t('common:yearsOld', { count: selectedPet.age })
+                  : t('chat.unknownAge')}
               </Text>
             </View>
-          </View>
+            {pets.length > 1 && (
+              <Ionicons name="chevron-down" size={20} color="#999" />
+            )}
+          </TouchableOpacity>
         )}
 
         {/* ═══ FREE CHAT CARD ═══ */}
@@ -342,6 +358,50 @@ export default function AIAssistantHubScreen({ navigation }) {
       >
         <Ionicons name="chatbubbles" size={28} color="#FFFFFF" />
       </TouchableOpacity>
+
+      {/* ═══ PET PICKER MODAL ═══ */}
+      <Modal
+        visible={pickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.pickerOverlay}
+          activeOpacity={1}
+          onPress={() => setPickerVisible(false)}
+        >
+          <View style={styles.pickerSheet}>
+            <Text style={styles.pickerTitle}>{t('hub.choosePet')}</Text>
+            <ScrollView>
+              {pets.map((pet) => {
+                const isActive = pet.id === selectedPet?.id;
+                return (
+                  <TouchableOpacity
+                    key={pet.id}
+                    style={[styles.pickerRow, isActive && styles.pickerRowActive]}
+                    onPress={() => handleSelectPet(pet.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="paw" size={20} color={isActive ? '#6C63FF' : '#999'} />
+                    <View style={styles.pickerRowText}>
+                      <Text style={styles.pickerRowName}>{pet.name}</Text>
+                      <Text style={styles.pickerRowDetails}>
+                        {pet.breed} • {pet.age != null
+                          ? t('common:yearsOld', { count: pet.age })
+                          : t('chat.unknownAge')}
+                      </Text>
+                    </View>
+                    {isActive && (
+                      <Ionicons name="checkmark-circle" size={22} color="#6C63FF" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -354,6 +414,52 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100,
+  },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  pickerSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '60%',
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1A1A2E',
+    marginBottom: 16,
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: '#F8F9FA',
+    gap: 12,
+  },
+  pickerRowActive: {
+    backgroundColor: '#6C63FF20',
+    borderWidth: 1,
+    borderColor: '#6C63FF',
+  },
+  pickerRowText: {
+    flex: 1,
+  },
+  pickerRowName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A2E',
+  },
+  pickerRowDetails: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
   },
   header: {
     backgroundColor: '#6C63FF',
