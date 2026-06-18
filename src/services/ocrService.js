@@ -1,47 +1,34 @@
 // ══════════════════════════════════════════════════════════════
 // src/services/ocrService.js
-// OCR ветеринарных выписок через OpenRouter (vision-модели).
-// Переиспользует URL/заголовки из visionService (единый клиент-сетап).
+// OCR ветеринарных выписок через Edge Function ai-proxy (purpose:'ocr').
+// Ключ OpenRouter и цепочка моделей живут в функции, не в приложении.
 // ══════════════════════════════════════════════════════════════
 
-import axios from 'axios';
-import { OPENROUTER_BASE_URL, buildOpenRouterHeaders } from './visionService';
+import { callAIProxy } from './aiProxyClient';
 
-// Vision-цепочка с фолбэком (первые три — настоящие мультимодальные;
-// openrouter/free — крайний фолбэк, зрение не гарантировано).
-const OCR_MODELS = [
-  'google/gemma-4-31b-it:free',
-  'google/gemma-4-26b-a4b-it:free',
-  'meta-llama/llama-4-maverick:free',
-  'openrouter/free',
-];
+const SYSTEM_PROMPT = `You extract structured data from a veterinary document image. Detect the document language and keep values in the original language. Return ONLY a JSON object (no markdown, no commentary) with EXACTLY this shape, all defaults null:
+{ record_type, occurred_at, vet_name, clinic_name, diagnosis, diagnosis_code, symptoms, recommendations, weight, weight_unit, temperature, follow_up_date, urgency, vaccines:[], prescriptions:[], parasite_treatments:[], lab_tests:[], confidence:{} }
 
-const SYSTEM_PROMPT = `You extract data from a veterinary document. Return ONLY JSON matching the schema below — no markdown, no code fences, no explanations. Detect the document language and keep values in the original language. Dates in ISO (YYYY-MM-DD). Numbers as numbers. If a field is absent — null. For every filled field add a confidence score 0..1 in the "confidence" object.
+Item shapes:
+  vaccines: {vaccine_name, vaccine_type, batch_series, date_given, next_due_date}
+  prescriptions: {name, dose, frequency, duration, instruction, start_date, end_date, active}
+  parasite_treatments: {kind, product, treated_on, interval_days, next_due_date}
+  lab_tests: {test_type, status, result}
 
-Schema:
-{
-  "record_type": "visit|vaccination|medication_course|parasite_treatment|procedure|lab_test|other",
-  "occurred_at": null,
-  "vet_name": null,
-  "clinic_name": null,
-  "diagnosis": null,
-  "diagnosis_code": null,
-  "symptoms": null,
-  "recommendations": null,
-  "weight": null,
-  "weight_unit": "kg|lb",
-  "temperature": null,
-  "follow_up_date": null,
-  "urgency": "normal|elevated|high",
-  "vaccines": [{ "vaccine_name": null, "vaccine_type": "primary|booster", "batch_series": null, "date_given": null, "next_due_date": null }],
-  "prescriptions": [{ "name": null, "dose": null, "frequency": null, "duration": null, "instruction": null, "start_date": null, "end_date": null, "active": null }],
-  "parasite_treatments": [{ "kind": "deworming|ectoparasite", "product": null, "treated_on": null, "interval_days": null, "next_due_date": null }],
-  "lab_tests": [{ "test_type": null, "status": null, "result": null }],
-  "confidence": {}
-}`;
+RULES:
+- record_type: exactly one of visit, vaccination, medication_course, parasite_treatment, procedure, lab_test, other.
+- urgency: one of normal, elevated, high — or null.
+- weight_unit: "kg" | "lb" | null. vaccine_type: "primary" | "booster" | null. parasite kind: "deworming" | "ectoparasite". lab status: "ordered" | "completed".
+- Enum fields contain ONE value or null. NEVER output a list of options and NEVER write a string containing the '|' character.
+- vet_name = the treating VETERINARIAN, not the owner. If only the owner is visible, vet_name = null.
+- clinic_name = the name of the CLINIC, not the pet's name/species/breed.
+- All dates in ISO YYYY-MM-DD. Convert Russian formats (15.03.2026, "15 марта 2026") to ISO. date_given = when administered; next_due_date = revaccination / "valid until" / "next"; occurred_at = visit/document date.
+- Each vaccine and each medication is a SEPARATE array item, do not merge them.
+- confidence: an object { name_of_non_null_field: number 0..1 }.
+- Output ONLY the JSON object.`;
 
-// Безопасный парсинг: снять ```json-обёртку, затем JSON.parse; при неудаче —
-// попытаться выделить внешние фигурные скобки. Вернуть объект или null.
+// Безопасный парсинг: снять ```-обёртку, затем JSON.parse; при неудаче —
+// выделить внешние фигурные скобки. Вернуть объект или null.
 const stripAndParse = (content) => {
   if (!content || typeof content !== 'string') return null;
   let text = content.trim();
@@ -66,65 +53,38 @@ const stripAndParse = (content) => {
 };
 
 /**
- * Распознать ветеринарную выписку по base64-изображению.
+ * Распознать ветеринарную выписку по base64-изображению через ai-proxy.
  * @param {string} imageBase64 - base64 (без data-URI префикса)
  * @param {string} mimeType - 'image/jpeg' по умолчанию
- * @returns {Promise<{success:boolean, model?:string, data?:object, rawContent?:string, error?:string}>}
+ * @returns {Promise<{success:boolean, model?:string, data?:object, error?:string, raw?:string}>}
  */
 export async function parseMedicalDocument(imageBase64, mimeType = 'image/jpeg') {
   if (!imageBase64) {
     return { success: false, error: 'No image provided' };
   }
 
-  let lastError = null;
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: 'Extract the medical record from this document.' },
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
+      ],
+    },
+  ];
 
-  for (const model of OCR_MODELS) {
-    try {
-      console.log(`📄 OCR attempt with model: ${model}`);
+  // Дефолты ocr (temperature 0.1 / max_tokens 3000) заданы в Edge Function.
+  const res = await callAIProxy({ purpose: 'ocr', messages });
 
-      const response = await axios.post(
-        `${OPENROUTER_BASE_URL}/chat/completions`,
-        {
-          model,
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: 'Extract structured data from this veterinary document.' },
-                { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
-              ],
-            },
-          ],
-          max_tokens: 3000,
-          temperature: 0.1,
-        },
-        { headers: buildOpenRouterHeaders(), timeout: 60000 }
-      );
-
-      const content = response.data?.choices?.[0]?.message?.content;
-      const parsed = stripAndParse(content);
-
-      if (!parsed) {
-        console.warn(`⚠️ OCR JSON parse failed for ${model}, trying next model...`);
-        lastError = new Error('Failed to parse JSON from model response');
-        continue;
-      }
-
-      console.log('✅ OCR parsed with model:', model);
-      return { success: true, model, data: parsed, rawContent: content };
-    } catch (error) {
-      lastError = error;
-      const status = error.response?.status;
-      console.warn(`OCR model ${model} failed:`, error.response?.data || error.message);
-
-      if (status === 401 || status === 403) {
-        return { success: false, error: 'Invalid API key or unauthorized access' };
-      }
-      // На прочих ошибках — следующая модель в цепочке
-      continue;
-    }
+  if (res.success === false) {
+    return { success: false, error: res.error };
   }
 
-  return { success: false, error: lastError?.message || 'All OCR models failed' };
+  const data = stripAndParse(res.content);
+  if (!data) {
+    return { success: false, error: 'parse failed', raw: res.content };
+  }
+
+  return { success: true, model: res.model, data };
 }
