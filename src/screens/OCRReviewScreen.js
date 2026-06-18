@@ -54,6 +54,17 @@ const mapLabs = (d) =>
     test_type: l.test_type || '', status: l.status || 'ordered', result: l.result || '',
   }));
 
+// Приведение значения к строке для state (ловит и нестроковые из OCR).
+const str = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
+// Null-safe обрезка для payload: строка → trim ('' → null); иначе v ?? null.
+const clean = (v) =>
+  typeof v === 'string' ? (v.trim() === '' ? null : v.trim()) : (v ?? null);
+// Безопасный парс числа: null при пустом/NaN.
+const toNum = (v) => {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : null;
+};
+
 // ─── Локальный DateField (дубликат, чтобы не трогать MedicalScreen) ──────────
 const DateField = ({ label, value, onChange, flag, t }) => {
   const [show, setShow] = useState(false);
@@ -132,17 +143,17 @@ export default function OCRReviewScreen() {
 
   // ─── Скаляры ──────────────────────────────────────────────────────────────
   const [recordType, setRecordType]         = useState(data.record_type || 'visit');
-  const [occurredAt, setOccurredAt]         = useState(data.occurred_at || '');
-  const [vetName, setVetName]               = useState(data.vet_name || '');
-  const [clinicName, setClinicName]         = useState(data.clinic_name || '');
-  const [diagnosis, setDiagnosis]           = useState(data.diagnosis || '');
-  const [diagnosisCode, setDiagnosisCode]   = useState(data.diagnosis_code || '');
-  const [symptoms, setSymptoms]             = useState(data.symptoms || '');
-  const [recommendations, setRecommendations] = useState(data.recommendations || '');
+  const [occurredAt, setOccurredAt]         = useState(str(data.occurred_at));
+  const [vetName, setVetName]               = useState(str(data.vet_name));
+  const [clinicName, setClinicName]         = useState(str(data.clinic_name));
+  const [diagnosis, setDiagnosis]           = useState(str(data.diagnosis));
+  const [diagnosisCode, setDiagnosisCode]   = useState(str(data.diagnosis_code));
+  const [symptoms, setSymptoms]             = useState(str(data.symptoms));
+  const [recommendations, setRecommendations] = useState(str(data.recommendations));
   const [weight, setWeight]                 = useState(data.weight != null ? String(data.weight) : '');
   const [weightUnit, setWeightUnit]         = useState(data.weight_unit || 'kg');
   const [temperature, setTemperature]       = useState(data.temperature != null ? String(data.temperature) : '');
-  const [followUpDate, setFollowUpDate]     = useState(data.follow_up_date || '');
+  const [followUpDate, setFollowUpDate]     = useState(str(data.follow_up_date));
   const [urgency, setUrgency]               = useState(data.urgency || 'normal');
 
   // ─── Массивы ──────────────────────────────────────────────────────────────
@@ -158,17 +169,17 @@ export default function OCRReviewScreen() {
   const scanId = route.params?.scanId;
   useEffect(() => {
     setRecordType(data.record_type || 'visit');
-    setOccurredAt(data.occurred_at || '');
-    setVetName(data.vet_name || '');
-    setClinicName(data.clinic_name || '');
-    setDiagnosis(data.diagnosis || '');
-    setDiagnosisCode(data.diagnosis_code || '');
-    setSymptoms(data.symptoms || '');
-    setRecommendations(data.recommendations || '');
+    setOccurredAt(str(data.occurred_at));
+    setVetName(str(data.vet_name));
+    setClinicName(str(data.clinic_name));
+    setDiagnosis(str(data.diagnosis));
+    setDiagnosisCode(str(data.diagnosis_code));
+    setSymptoms(str(data.symptoms));
+    setRecommendations(str(data.recommendations));
     setWeight(data.weight != null ? String(data.weight) : '');
     setWeightUnit(data.weight_unit || 'kg');
     setTemperature(data.temperature != null ? String(data.temperature) : '');
-    setFollowUpDate(data.follow_up_date || '');
+    setFollowUpDate(str(data.follow_up_date));
     setUrgency(data.urgency || 'normal');
     setVaccines(mapVaccines(data));
     setPrescriptions(mapPrescriptions(data));
@@ -196,22 +207,44 @@ export default function OCRReviewScreen() {
         pet_id: petId,
         record_type: recordType,
         source: 'ocr',
-        occurred_at: occurredAt || null,
-        vet_name: vetName.trim() || null,
-        clinic_name: clinicName.trim() || null,
-        diagnosis: diagnosis.trim() || null,
-        diagnosis_code: diagnosisCode.trim() || null,
-        symptoms: symptoms.trim() || null,
-        recommendations: recommendations.trim() || null,
-        weight: weight !== '' ? parseFloat(weight) : null,
+        occurred_at: clean(occurredAt),
+        vet_name: clean(vetName),
+        clinic_name: clean(clinicName),
+        diagnosis: clean(diagnosis),
+        diagnosis_code: clean(diagnosisCode),
+        symptoms: clean(symptoms),
+        recommendations: clean(recommendations),
+        weight: toNum(weight),
         weight_unit: weightUnit || null,
-        temperature: temperature !== '' ? parseFloat(temperature) : null,
-        follow_up_date: followUpDate || null,
+        temperature: toNum(temperature),
+        follow_up_date: clean(followUpDate),
         urgency: urgency || null,
-        vaccines,
-        prescriptions,
-        parasite_treatments: parasites,
-        lab_tests: labs,
+        vaccines: vaccines.map((v) => ({
+          vaccine_name: clean(v.vaccine_name),
+          vaccine_type: v.vaccine_type || null,
+          date_given: clean(v.date_given),
+          next_due_date: clean(v.next_due_date),
+        })),
+        prescriptions: prescriptions.map((pr) => ({
+          name: clean(pr.name),
+          dose: clean(pr.dose),
+          frequency: clean(pr.frequency),
+          start_date: clean(pr.start_date),
+          end_date: clean(pr.end_date),
+          active: pr.active !== false,
+          instruction: clean(pr.instruction),
+        })),
+        parasite_treatments: parasites.map((pt) => ({
+          kind: pt.kind || null,
+          product: clean(pt.product),
+          treated_on: clean(pt.treated_on),
+          next_due_date: clean(pt.next_due_date),
+        })),
+        lab_tests: labs.map((l) => ({
+          test_type: clean(l.test_type),
+          status: l.status || null,
+          result: clean(l.result),
+        })),
       };
 
       const { error } = await supabase.rpc('save_medical_record', { p_payload });
