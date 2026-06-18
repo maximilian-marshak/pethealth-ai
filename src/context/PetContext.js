@@ -1,9 +1,15 @@
 // ══════════════════════════════════════════════════
 // src/context/PetContext.js
+// Источник питомцев — таблица pets в Supabase (реальные UUID).
+// Публичный API контекста сохранён без изменений сигнатур.
 // ══════════════════════════════════════════════════
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../utils/supabase';
+import { useAuth } from './AuthContext';
+
+const SELECTED_PET_KEY = 'selectedPetId';
 
 // ═══ CREATE CONTEXT ═══
 const PetContext = createContext();
@@ -19,103 +25,132 @@ export function usePetContext() {
 
 // ═══ PROVIDER COMPONENT ═══
 export function PetProvider({ children }) {
+  const { user } = useAuth();
   const [pets, setPets] = useState([]);
   const [selectedPet, setSelectedPet] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ═══ LOAD PETS FROM STORAGE ═══
-  useEffect(() => {
-    loadPets();
-  }, []);
+  // ═══ LOAD PETS FROM SUPABASE ═══
+  const loadPets = useCallback(async () => {
+    if (!user) {
+      setPets([]);
+      setSelectedPet(null);
+      setLoading(false);
+      return;
+    }
 
-  const loadPets = async () => {
     try {
-      const storedPets = await AsyncStorage.getItem('pets');
-      const storedSelectedId = await AsyncStorage.getItem('selectedPetId');
+      setLoading(true);
 
-      if (storedPets) {
-        const parsedPets = JSON.parse(storedPets);
-        setPets(parsedPets);
+      const { data, error } = await supabase
+        .from('pets')
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: true });
 
-        if (storedSelectedId) {
-          const selected = parsedPets.find(pet => pet.id === storedSelectedId);
-          setSelectedPet(selected || parsedPets[0] || null);
-        } else {
-          setSelectedPet(parsedPets[0] || null);
-        }
-      }
+      if (error) throw error;
+
+      // Активные питомцы (is_active true/null/undefined)
+      const activePets = (data || []).filter(
+        (pet) => pet.is_active === true || pet.is_active === null || pet.is_active === undefined
+      );
+
+      console.log(`✅ PetContext: loaded ${activePets.length} active pets`);
+      setPets(activePets);
+
+      // Восстанавливаем выбранного питомца по сохранённому id, иначе первый
+      const storedId = await AsyncStorage.getItem(SELECTED_PET_KEY);
+      const restored = storedId ? activePets.find((pet) => pet.id === storedId) : null;
+      setSelectedPet(restored || activePets[0] || null);
     } catch (error) {
-      console.error('Error loading pets:', error);
+      console.error('❌ PetContext: error loading pets:', error);
+      setPets([]);
+      setSelectedPet(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  // ═══ ADD PET ═══
-  const addPet = async (newPet) => {
+  // ═══ LOAD ON MOUNT / USER CHANGE ═══
+  useEffect(() => {
+    loadPets();
+  }, [loadPets]);
+
+  // ═══ ADD PET (Supabase) ═══
+  const addPet = async (petData) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     try {
-      const petWithId = {
-        ...newPet,
-        id: Date.now().toString(),
-        created_at: new Date().toISOString(),
-      };
+      const { data, error } = await supabase
+        .from('pets')
+        .insert([{ ...petData, owner_id: user.id, is_active: true }])
+        .select()
+        .single();
 
-      const updatedPets = [...pets, petWithId];
-      setPets(updatedPets);
-      await AsyncStorage.setItem('pets', JSON.stringify(updatedPets));
+      if (error) throw error;
 
-      // Auto-select first pet
-      if (!selectedPet) {
-        setSelectedPet(petWithId);
-        await AsyncStorage.setItem('selectedPetId', petWithId.id);
-      }
-
-      return petWithId;
+      console.log('✅ PetContext: pet added:', data.id);
+      await loadPets();
+      return data;
     } catch (error) {
-      console.error('Error adding pet:', error);
+      console.error('❌ PetContext: error adding pet:', error);
       throw error;
     }
   };
 
-  // ═══ UPDATE PET ═══
+  // ═══ UPDATE PET (Supabase) ═══
   const updatePet = async (petId, updates) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     try {
-      const updatedPets = pets.map(pet =>
-        pet.id === petId ? { ...pet, ...updates, updated_at: new Date().toISOString() } : pet
-      );
+      const { data, error } = await supabase
+        .from('pets')
+        .update(updates)
+        .eq('id', petId)
+        .eq('owner_id', user.id)
+        .select()
+        .single();
 
-      setPets(updatedPets);
-      await AsyncStorage.setItem('pets', JSON.stringify(updatedPets));
+      if (error) throw error;
 
-      // Update selected pet if it's the one being updated
-      if (selectedPet?.id === petId) {
-        setSelectedPet({ ...selectedPet, ...updates });
-      }
+      console.log('✅ PetContext: pet updated:', petId);
+      await loadPets();
+      return data;
     } catch (error) {
-      console.error('Error updating pet:', error);
+      console.error('❌ PetContext: error updating pet:', error);
       throw error;
     }
   };
 
-  // ═══ DELETE PET ═══
+  // ═══ DELETE PET (soft delete is_active = false) ═══
   const deletePet = async (petId) => {
-    try {
-      const updatedPets = pets.filter(pet => pet.id !== petId);
-      setPets(updatedPets);
-      await AsyncStorage.setItem('pets', JSON.stringify(updatedPets));
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
 
-      // If deleted pet was selected, select first remaining pet
+    try {
+      const { error } = await supabase
+        .from('pets')
+        .update({ is_active: false })
+        .eq('id', petId)
+        .eq('owner_id', user.id);
+
+      if (error) throw error;
+
+      console.log('✅ PetContext: pet soft-deleted:', petId);
+
+      // Если удалён выбранный питомец — сбрасываем сохранённый выбор
       if (selectedPet?.id === petId) {
-        const newSelected = updatedPets[0] || null;
-        setSelectedPet(newSelected);
-        if (newSelected) {
-          await AsyncStorage.setItem('selectedPetId', newSelected.id);
-        } else {
-          await AsyncStorage.removeItem('selectedPetId');
-        }
+        await AsyncStorage.removeItem(SELECTED_PET_KEY);
       }
+
+      await loadPets();
     } catch (error) {
-      console.error('Error deleting pet:', error);
+      console.error('❌ PetContext: error deleting pet:', error);
       throw error;
     }
   };
@@ -123,17 +158,17 @@ export function PetProvider({ children }) {
   // ═══ SELECT PET ═══
   const selectPet = async (petId) => {
     try {
-      const pet = pets.find(p => p.id === petId);
+      const pet = pets.find((p) => p.id === petId);
       if (pet) {
         setSelectedPet(pet);
-        await AsyncStorage.setItem('selectedPetId', petId);
+        await AsyncStorage.setItem(SELECTED_PET_KEY, petId);
       }
     } catch (error) {
-      console.error('Error selecting pet:', error);
+      console.error('❌ PetContext: error selecting pet:', error);
     }
   };
 
-  // ═══ CONTEXT VALUE ═══
+  // ═══ CONTEXT VALUE (signatures unchanged) ═══
   const value = {
     pets,
     selectedPet,
