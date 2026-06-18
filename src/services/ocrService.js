@@ -25,6 +25,24 @@ RULES:
 - All dates in ISO YYYY-MM-DD. Convert Russian formats (15.03.2026, "15 марта 2026") to ISO. date_given = when administered; next_due_date = revaccination / "valid until" / "next"; occurred_at = visit/document date.
 - Each vaccine and each medication is a SEPARATE array item, do not merge them.
 - confidence: an object { name_of_non_null_field: number 0..1 }.
+- The pet's name, species (e.g. "Собака"/"Dog") and breed are NEVER a diagnosis, a clinic_name, or a vet_name. A header line like "<Name> / <Species> / <Breed>" describes the PET — ignore it for clinic_name/diagnosis.
+- "Владелец"/"Хозяин"/owner name is NOT vet_name. Use vet_name ONLY for an actual treating doctor (e.g. after "Врач:", "Ветеринар:", a doctor's signature). If no vet is shown, vet_name = null.
+- A vaccination record usually has NO diagnosis — set diagnosis null unless a real illness is diagnosed.
+- Each distinct vaccine PRODUCT is its OWN vaccines[] item, even if several are printed on one line. Split e.g. "Нобивак DHPPi, Нобивак Lepto, Нобивак Rabies" into THREE items.
+- next_due_date: capture revaccination/next dates ("ревакцинация", "действительна до", "следующая вакцинация DD.MM.YYYY"). If only a relative interval is given ("через год"/"ежегодно"), compute date_given + 1 year in ISO.
+
+EXAMPLE (guidance only — do not copy these values):
+A document with header "Игги / Собака / Чихуахуа", "Владелец: Иванов И.И.", and a line "Вакцинация 15.03.2026: Нобивак DHPPi, Нобивак Lepto, Нобивак Rabies, ревакцинация через год" must yield:
+- record_type: "vaccination"
+- vet_name: null   (only owner shown)
+- clinic_name: null   (header is the pet, not a clinic)
+- diagnosis: null   (species is not a diagnosis)
+- occurred_at: "2026-03-15"
+- vaccines: THREE separate items —
+    {"vaccine_name":"Нобивак DHPPi","date_given":"2026-03-15","next_due_date":"2027-03-15"},
+    {"vaccine_name":"Нобивак Lepto","date_given":"2026-03-15","next_due_date":"2027-03-15"},
+    {"vaccine_name":"Нобивак Rabies","date_given":"2026-03-15","next_due_date":"2027-03-15"}
+
 - Output ONLY the JSON object.`;
 
 // Безопасный парсинг: снять ```-обёртку, затем JSON.parse; при неудаче —
