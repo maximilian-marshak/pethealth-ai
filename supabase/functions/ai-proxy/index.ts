@@ -88,6 +88,17 @@ serve(async (req: Request) => {
   for (const model of chain) {
     console.log(`[ai-proxy] purpose=${purpose} trying model=${model}`);
     try {
+      const reqBody: Record<string, unknown> = {
+        model,
+        messages,
+        temperature: temp,
+        max_tokens: maxTok,
+      };
+      // OCR/Vision: отключаем reasoning (быстрее, не съедает токены на размышления).
+      if (purpose === "ocr" || purpose === "vision") {
+        reqBody.reasoning = { enabled: false };
+      }
+
       const resp = await fetch(OPENROUTER_URL, {
         method: "POST",
         headers: {
@@ -96,12 +107,7 @@ serve(async (req: Request) => {
           "HTTP-Referer": "https://pethealthai.app",
           "X-Title": "PetHealth AI",
         },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: temp,
-          max_tokens: maxTok,
-        }),
+        body: JSON.stringify(reqBody),
       });
 
       if (!resp.ok) {
