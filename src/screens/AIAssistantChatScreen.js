@@ -20,6 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { usePetContext } from '../context/PetContext';
+import { useAuth } from '../context/AuthContext';
+import { useConversation } from '../hooks/useConversation';
 import { sendMessageToOpenAI } from '../services/openAIService';
 import { analyzeImageWithVision, formatVisionResponse } from '../services/visionService';
 
@@ -34,6 +36,8 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   } = route.params || {};
 
   const { selectedPet } = usePetContext();
+  const { user } = useAuth();
+  const { getOrCreateConversation, loadMessages, addMessage, clearConversation } = useConversation();
   const { t } = useTranslation('ai');
 
   const [messages, setMessages] = useState([]);
@@ -41,6 +45,8 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef(null);
   const dotAnimation = useRef(new Animated.Value(0)).current;
+  const conversationIdRef = useRef(null);
+  const didAutoActRef = useRef(false);
 
   // ═══ ЗАГОЛОВОК ═══
   useEffect(() => {
@@ -63,7 +69,21 @@ export default function AIAssistantChatScreen({ route, navigation }) {
               t('chat.clearChatMessage'),
               [
                 { text: t('hub.cancel'), style: 'cancel' },
-                { text: t('chat.clear'), style: 'destructive', onPress: () => setMessages([]) },
+                {
+                  text: t('chat.clear'),
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      if (conversationIdRef.current) {
+                        await clearConversation(conversationIdRef.current);
+                      }
+                    } catch (e) {
+                      console.error('❌ clearConversation failed:', e);
+                      Alert.alert(t('chat.clearError'));
+                    }
+                    setMessages([]);
+                  },
+                },
               ]
             )
           }
@@ -75,14 +95,54 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     });
   }, [navigation, title, color, t]);
 
-  // ═══ ИНИЦИАЛИЗАЦИЯ ═══
+  // ═══ ИНИЦИАЛИЗАЦИЯ: беседа + история ДО авто-действий ═══
   useEffect(() => {
-    if (photoUri && analysisType) {
-      handlePhotoAnalysis(photoUri, analysisType);
-    } else if (initialQuestion) {
-      handleSendMessage(initialQuestion, true);
-    }
-  }, [photoUri, analysisType]);
+    let cancelled = false;
+
+    (async () => {
+      if (user?.id) {
+        try {
+          const convId = await getOrCreateConversation(
+            user.id,
+            selectedPet?.id ?? null,
+            selectedPet?.name ?? null
+          );
+          if (cancelled) return;
+          conversationIdRef.current = convId;
+
+          const loaded = await loadMessages(convId);
+          if (cancelled) return;
+
+          setMessages(
+            loaded.map((m) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              timestamp: m.created_at,
+            }))
+          );
+        } catch (e) {
+          console.error('❌ Failed to load conversation:', e);
+          if (!cancelled) Alert.alert(t('chat.historyError'));
+        }
+      }
+
+      // Авто-действие из route params — один раз, ПОСЛЕ загрузки истории
+      if (!cancelled && !didAutoActRef.current) {
+        didAutoActRef.current = true;
+        if (photoUri && analysisType) {
+          handlePhotoAnalysis(photoUri, analysisType);
+        } else if (initialQuestion) {
+          handleSendMessage(initialQuestion, true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, selectedPet?.id]);
 
   // ═══ АНИМАЦИЯ ТОЧЕК ═══
   useEffect(() => {
@@ -98,6 +158,18 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     }
   }, [isLoading]);
 
+  // ═══ СОХРАНЕНИЕ УСПЕШНОЙ ПАРЫ (user + assistant) В БЕСЕДУ ═══
+  const persistPair = async (userContent, assistantContent, tokensUsed = null) => {
+    const convId = conversationIdRef.current;
+    if (!convId) return;
+    try {
+      await addMessage(convId, 'user', userContent, null);
+      await addMessage(convId, 'assistant', assistantContent, tokensUsed ?? null);
+    } catch (e) {
+      console.error('❌ Failed to persist messages:', e);
+    }
+  };
+
   // ═══ АНАЛИЗ ФОТО ═══
   const handlePhotoAnalysis = async (uri, type) => {
     setIsLoading(true);
@@ -110,7 +182,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
       imageUri: uri,
     };
 
-    setMessages([userMessage]);
+    setMessages(prev => [...prev, userMessage]);
 
     try {
       const visionResult = await analyzeImageWithVision(uri, type);
@@ -126,6 +198,9 @@ export default function AIAssistantChatScreen({ route, navigation }) {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Сохраняем успешную пару (visionService не возвращает usage → null)
+      await persistPair(userMessage.content, formattedResponse, visionResult?.usage?.total_tokens ?? null);
 
       if (visionResult.success && visionResult.result.urgency === 'red') {
         Alert.alert(
@@ -188,6 +263,9 @@ export default function AIAssistantChatScreen({ route, navigation }) {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Сохраняем успешную пару (user + assistant)
+      await persistPair(userMessage.content, response.message, response.usage?.total_tokens ?? null);
 
       if (response.isEmergency) {
         Alert.alert(t('chat.emergencyAlert'), t('chat.emergencyMessage'));

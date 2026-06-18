@@ -16,6 +16,8 @@
     "search": "Search",
     "language": "Language",
     "english": "English",
-    "russian": "Russian"
+    "russian": "Russian",
+    "yearsOld_one": "{{count}} year",
+    "yearsOld_other": "{{count}} years"
   }
     

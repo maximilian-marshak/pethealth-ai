@@ -1,6 +1,7 @@
 {
     "hub": {
       "title": "AI Pet Assistant",
+      "choosePet": "Choose a pet",
       "subtitleWithPet": "Ask me anything about {{name}}'s care",
       "subtitleNoPet": "Ask me anything about pet care",
       "freeChat": "Start Free Chat",
@@ -69,6 +70,8 @@
     },
     "chat": {
       "defaultTitle": "AI Assistant",
+      "historyError": "Couldn't load chat history.",
+      "clearError": "Couldn't clear the conversation.",
       "petHeader": "{{name}} • {{breed}} • {{age}}",
       "unknownAge": "Unknown age",
       "clearChat": "Clear Chat",
