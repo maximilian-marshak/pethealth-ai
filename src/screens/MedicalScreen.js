@@ -921,8 +921,8 @@ export default function MedicalScreen() {
       setScanning(true);
       const manipulated = await ImageManipulator.manipulateAsync(
         picked.assets[0].uri,
-        [{ resize: { width: 1600 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        [{ resize: { width: 1024 } }],
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
 
       const ocr = await parseMedicalDocument(manipulated.base64, 'image/jpeg');
