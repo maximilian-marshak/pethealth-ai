@@ -6,7 +6,16 @@ import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
 import { OPENROUTER_API_KEY } from '@env';
 
-const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+
+// Аддитивный хелпер для переиспользования (новый код: ocrService).
+// Существующий инлайн-путь analyzeImageWithVision НЕ меняем.
+export const buildOpenRouterHeaders = () => ({
+  Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+  'Content-Type': 'application/json',
+  'HTTP-Referer': 'https://pethealthai.app',
+  'X-Title': 'PetHealth AI',
+});
 
 // ✅ ОБНОВЛЕНО: Рабочие vision модели (платные, но доступные)
 const VISION_MODELS = [

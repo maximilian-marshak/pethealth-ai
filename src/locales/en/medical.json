@@ -191,6 +191,19 @@
       "loadPets": "Could not load pets.",
       "loadData": "Could not load medical data."
     },
+    "scan": {
+      "button": "Scan",
+      "sourceTitle": "Scan Document",
+      "sourceMessage": "Choose a source",
+      "camera": "📷 Camera",
+      "gallery": "🖼️ Gallery",
+      "loading": "Recognizing document…",
+      "resultTitle": "Recognized (test)",
+      "errorTitle": "Recognition Error",
+      "error": "Could not recognize the document.",
+      "permissionTitle": "Permission Required",
+      "permissionMessage": "Camera/photo access is needed to scan documents."
+    },
     "hub": {
       "title": "Medical Hub 🏥"
     },

@@ -18,6 +18,9 @@ import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { usePetContext } from '../context/PetContext';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { parseMedicalDocument } from '../services/ocrService';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -636,6 +639,7 @@ export default function MedicalScreen() {
   const { pets, selectedPet, selectPet, loading: petsLoading } = usePetContext();
 
   const [activeTab,   setActiveTab]   = useState('overview');
+  const [scanning,    setScanning]    = useState(false);
   const [vaccines,    setVaccines]    = useState([]);
   const [medications, setMedications] = useState([]);
   const [records,     setRecords]     = useState([]);
@@ -891,6 +895,62 @@ export default function MedicalScreen() {
       case 'completed':  return t('status.completed');
       default:           return '';
     }
+  };
+
+  // ─── OCR Scan (Commit 1: распознавание без сохранения) ───────────────────
+
+  const runScan = async (fromCamera) => {
+    try {
+      const perm = fromCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (perm.status !== 'granted') {
+        Alert.alert(t('scan.permissionTitle'), t('scan.permissionMessage'));
+        return;
+      }
+
+      const picked = fromCamera
+        ? await ImagePicker.launchCameraAsync({ quality: 0.9 })
+        : await ImagePicker.launchImageLibraryAsync({ quality: 0.9, mediaTypes: ['images'] });
+      if (picked.canceled || !picked.assets?.length) return;
+
+      setScanning(true);
+      const manipulated = await ImageManipulator.manipulateAsync(
+        picked.assets[0].uri,
+        [{ resize: { width: 1600 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+
+      const ocr = await parseMedicalDocument(manipulated.base64, 'image/jpeg');
+
+      if (ocr.success) {
+        console.log('🧾 OCR result:', JSON.stringify(ocr.data, null, 2));
+        Alert.alert(
+          t('scan.resultTitle'),
+          JSON.stringify(ocr.data, null, 2).slice(0, 1500)
+        );
+      } else {
+        console.warn('OCR failed:', ocr.error);
+        Alert.alert(t('scan.errorTitle'), ocr.error || t('scan.error'));
+      }
+    } catch (err) {
+      console.error('Scan error:', err);
+      Alert.alert(t('scan.errorTitle'), err.message || t('scan.error'));
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleScan = () => {
+    Alert.alert(
+      t('scan.sourceTitle'),
+      t('scan.sourceMessage'),
+      [
+        { text: t('scan.camera'), onPress: () => runScan(true) },
+        { text: t('scan.gallery'), onPress: () => runScan(false) },
+        { text: t('modal.cancel'), style: 'cancel' },
+      ]
+    );
   };
 
   // ─── Render Overview ────────────────────────────────────────────────────
@@ -1249,22 +1309,31 @@ export default function MedicalScreen() {
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('header.title')}</Text>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => {
-            if (activeTab === 'vaccines') {
-              setEditVaccine(null); setVaccineModal(true);
-            } else if (activeTab === 'medications') {
-              setEditMed(null); setMedModal(true);
-            } else if (activeTab === 'records') {
-              setEditRecord(null); setRecordModal(true);
-            }
-          }}
-        >
-          <Text style={styles.addBtnText}>
-            {activeTab === 'overview' ? '···' : '+'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.scanBtn}
+            onPress={handleScan}
+            disabled={scanning}
+          >
+            <Ionicons name="scan-outline" size={20} color="#6366F1" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => {
+              if (activeTab === 'vaccines') {
+                setEditVaccine(null); setVaccineModal(true);
+              } else if (activeTab === 'medications') {
+                setEditMed(null); setMedModal(true);
+              } else if (activeTab === 'records') {
+                setEditRecord(null); setRecordModal(true);
+              }
+            }}
+          >
+            <Text style={styles.addBtnText}>
+              {activeTab === 'overview' ? '···' : '+'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Pet Switcher */}
@@ -1346,6 +1415,13 @@ export default function MedicalScreen() {
         onSave={saveRecord}
         editData={editRecord}
       />
+
+      {scanning && (
+        <View style={styles.scanOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.scanOverlayText}>{t('scan.loading')}</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1360,6 +1436,10 @@ const styles = StyleSheet.create({
   headerTitle:          { fontSize: 18, fontWeight: '700', color: '#1F2937' },
   addBtn:               { width: 36, height: 36, backgroundColor: '#6366F1', borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   addBtnText:           { color: '#fff', fontSize: 22, fontWeight: '300', lineHeight: 28 },
+  headerActions:        { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  scanBtn:              { width: 36, height: 36, backgroundColor: '#EEF2FF', borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  scanOverlay:          { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', gap: 14 },
+  scanOverlayText:      { color: '#fff', fontSize: 15, fontWeight: '600' },
   petSwitcher:          { maxHeight: 52, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   petSwitcherContent:   { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   petChip:              { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
