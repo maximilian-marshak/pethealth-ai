@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
+import { usePetContext } from '../context/PetContext';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -591,9 +592,8 @@ export default function MedicalScreen() {
   const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
   const fmt    = (dateStr) => formatDate(dateStr, locale);
 
-  const [pets,        setPets]        = useState([]);
-  const [selectedPet, setSelectedPet] = useState(null);
-  const [petsLoading, setPetsLoading] = useState(true);
+  const { pets, selectedPet, selectPet, loading: petsLoading } = usePetContext();
+
   const [activeTab,   setActiveTab]   = useState('overview');
   const [vaccines,    setVaccines]    = useState([]);
   const [medications, setMedications] = useState([]);
@@ -607,33 +607,6 @@ export default function MedicalScreen() {
   const [editMed,      setEditMed]      = useState(null);
   const [editRecord,   setEditRecord]   = useState(null);
 
-  // ─── Load Pets ──────────────────────────────────────────────────────────
-
-  const loadPets = useCallback(async () => {
-    try {
-      setPetsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('pets')
-        .select('id, name, species, breed, avatar_url')
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setPets(data || []);
-      if (data?.length > 0) setSelectedPet(prev => prev ?? data[0]);
-    } catch (err) {
-      console.error('loadPets:', err.message);
-      Alert.alert('Error', t('errors.loadPets'));
-    } finally {
-      setPetsLoading(false);
-    }
-  }, [t]);
-
-  useEffect(() => { loadPets(); }, [loadPets]);
-
   // ─── Load Medical Data ──────────────────────────────────────────────────
 
   const loadMedicalData = useCallback(async () => {
@@ -641,12 +614,15 @@ export default function MedicalScreen() {
     try {
       setLoading(true);
       const [vaccRes, medRes, recRes] = await Promise.all([
-        supabase.from('vaccinations').select('*').eq('pet_id', selectedPet.id)
-          .order('next_due_date', { ascending: true }),
-        supabase.from('medications').select('*').eq('pet_id', selectedPet.id)
+        supabase.from('record_vaccines').select('*').eq('pet_id', selectedPet.id)
+          .order('next_due_date', { ascending: true })
+          .order('date_given', { ascending: false }),
+        supabase.from('record_prescriptions').select('*').eq('pet_id', selectedPet.id)
           .order('start_date', { ascending: false }),
-        supabase.from('vet_records').select('*').eq('pet_id', selectedPet.id)
-          .order('visit_date', { ascending: false }),
+        supabase.from('medical_records').select('*').eq('pet_id', selectedPet.id)
+          .in('record_type', ['visit', 'procedure', 'lab_test', 'parasite_treatment', 'other'])
+          .order('occurred_at', { ascending: false, nullsFirst: false })
+          .order('date', { ascending: false, nullsFirst: false }),
       ]);
       if (vaccRes.error) throw vaccRes.error;
       if (medRes.error)  throw medRes.error;
@@ -828,8 +804,9 @@ export default function MedicalScreen() {
   // ─── Render Overview ────────────────────────────────────────────────────
 
   const renderOverview = () => {
-    const activeMeds   = medications.filter(m => m.is_active);
-    const recentRecord = records[0];
+    const activeMeds   = medications.filter(m => m.active);
+    const visits       = records.filter(r => r.record_type === 'visit');
+    const recentRecord = visits[0];
     const isEmpty =
       vaccines.length === 0 &&
       medications.length === 0 &&
@@ -860,7 +837,7 @@ export default function MedicalScreen() {
             <Text style={styles.summaryLabel}>{t('overview.summary.activeMeds')}</Text>
           </View>
           <View style={[styles.summaryCard, { backgroundColor: '#FFF7ED' }]}>
-            <Text style={styles.summaryNum}>{records.length}</Text>
+            <Text style={styles.summaryNum}>{visits.length}</Text>
             <Text style={styles.summaryLabel}>{t('overview.summary.vetVisits')}</Text>
           </View>
         </View>
@@ -898,9 +875,9 @@ export default function MedicalScreen() {
             <Text style={styles.sectionTitle}>{t('overview.activeMedications')}</Text>
             {activeMeds.map(m => (
               <View key={m.id} style={styles.overviewCard}>
-                <Text style={styles.overviewCardName}>{m.medication_name}</Text>
+                <Text style={styles.overviewCardName}>{m.name}</Text>
                 <Text style={styles.overviewCardSub}>
-                  {m.dosage} · {m.frequency}
+                  {[m.dose, m.frequency].filter(Boolean).join(' · ')}
                 </Text>
               </View>
             ))}
@@ -913,7 +890,7 @@ export default function MedicalScreen() {
             <Text style={styles.sectionTitle}>{t('overview.lastVisit')}</Text>
             <View style={styles.overviewCard}>
               <Text style={styles.overviewCardName}>
-                {fmt(recentRecord.visit_date)}
+                {fmt(recentRecord.occurred_at ?? recentRecord.date)}
               </Text>
               {recentRecord.vet_name && (
                 <Text style={styles.overviewCardSub}>
@@ -976,13 +953,10 @@ export default function MedicalScreen() {
                   {t('card.nextDue', { date: fmt(v.next_due_date) })}
                 </Text>
               )}
-              {v.administered_by && (
+              {v.vaccine_type && (
                 <Text style={styles.cardMeta}>
-                  {t('card.by', { name: v.administered_by })}
+                  {t('card.vaccineType', { value: t(`vaccineTypes.${v.vaccine_type}`, { defaultValue: v.vaccine_type }) })}
                 </Text>
-              )}
-              {v.notes && (
-                <Text style={styles.cardNote}>{v.notes}</Text>
               )}
 
               <View style={styles.cardActions}>
@@ -1020,20 +994,20 @@ export default function MedicalScreen() {
         medications.map(m => (
           <View key={m.id} style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{m.medication_name}</Text>
+              <Text style={styles.cardTitle}>{m.name}</Text>
               <View style={[
                 styles.statusBadge,
-                m.is_active ? styles.badgeGreen : styles.badgeGray,
+                m.active ? styles.badgeGreen : styles.badgeGray,
               ]}>
                 <Text style={styles.statusText}>
-                  {m.is_active ? t('status.active') : t('status.inactive')}
+                  {m.active ? t('status.active') : t('status.inactive')}
                 </Text>
               </View>
             </View>
 
-            {m.dosage && (
+            {m.dose && (
               <Text style={styles.cardMeta}>
-                {t('card.dosage', { value: m.dosage })}
+                {t('card.dosage', { value: m.dose })}
               </Text>
             )}
             {m.frequency && (
@@ -1051,13 +1025,8 @@ export default function MedicalScreen() {
                 {t('card.ends', { date: fmt(m.end_date) })}
               </Text>
             )}
-            {m.prescribed_by && (
-              <Text style={styles.cardMeta}>
-                {t('card.prescribedBy', { name: m.prescribed_by })}
-              </Text>
-            )}
-            {m.notes && (
-              <Text style={styles.cardNote}>{m.notes}</Text>
+            {m.instruction && (
+              <Text style={styles.cardNote}>{m.instruction}</Text>
             )}
 
             <View style={styles.cardActions}>
@@ -1094,13 +1063,13 @@ export default function MedicalScreen() {
         records.map(r => (
           <View key={r.id} style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{fmt(r.visit_date)}</Text>
+              <Text style={styles.cardTitle}>{fmt(r.occurred_at ?? r.date)}</Text>
               <View style={[styles.statusBadge, styles.badgePurple]}>
                 <Text style={styles.statusText}>
-                  {r.reason
-                    ? t(`recordTypes.${r.reason}`, {
+                  {r.record_type
+                    ? t(`recordTypes.${r.record_type}`, {
                         defaultValue:
-                          r.reason.charAt(0).toUpperCase() + r.reason.slice(1),
+                          r.record_type.charAt(0).toUpperCase() + r.record_type.slice(1),
                       })
                     : t('status.visit')}
                 </Text>
@@ -1122,18 +1091,35 @@ export default function MedicalScreen() {
                 {t('card.diagnosis', { value: r.diagnosis })}
               </Text>
             )}
-            {r.treatment && (
-              <Text style={styles.cardNote}>
-                {t('card.treatment', { value: r.treatment })}
-              </Text>
-            )}
-            {r.cost && (
+            {r.diagnosis_code && (
               <Text style={styles.cardMeta}>
-                {t('card.cost', { value: Number(r.cost).toFixed(2) })}
+                {t('card.diagnosisCode', { value: r.diagnosis_code })}
               </Text>
             )}
-            {r.notes && (
-              <Text style={styles.cardNote}>{r.notes}</Text>
+            {r.symptoms && (
+              <Text style={styles.cardMeta}>
+                {t('card.symptoms', { value: r.symptoms })}
+              </Text>
+            )}
+            {r.weight != null && r.weight !== '' && (
+              <Text style={styles.cardMeta}>
+                {t('card.weight', { value: r.weight })}
+              </Text>
+            )}
+            {r.temperature != null && r.temperature !== '' && (
+              <Text style={styles.cardMeta}>
+                {t('card.temperature', { value: r.temperature })}
+              </Text>
+            )}
+            {r.follow_up_date && (
+              <Text style={styles.cardMeta}>
+                {t('card.followUp', { date: fmt(r.follow_up_date) })}
+              </Text>
+            )}
+            {r.recommendations && (
+              <Text style={styles.cardNote}>
+                {t('card.recommendations', { value: r.recommendations })}
+              </Text>
             )}
 
             <View style={styles.cardActions}>
@@ -1206,7 +1192,7 @@ export default function MedicalScreen() {
                 styles.petChip,
                 selectedPet?.id === pet.id && styles.petChipActive,
               ]}
-              onPress={() => setSelectedPet(pet)}
+              onPress={() => selectPet(pet.id)}
             >
               <Text style={[
                 styles.petChipText,

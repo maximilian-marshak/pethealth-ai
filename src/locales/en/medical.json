@@ -65,6 +65,13 @@
       "diagnosis": "Diagnosis: {{value}}",
       "treatment": "Treatment: {{value}}",
       "cost": "Cost: ${{value}}",
+      "vaccineType": "Type: {{value}}",
+      "diagnosisCode": "Code: {{value}}",
+      "symptoms": "Symptoms: {{value}}",
+      "recommendations": "Recommendations: {{value}}",
+      "weight": "Weight: {{value}} kg",
+      "temperature": "Temp: {{value}}°C",
+      "followUp": "Follow-up: {{date}}",
       "edit": "Edit",
       "delete": "Delete"
     },
@@ -146,12 +153,20 @@
       "cancel": "Cancel"
     },
     "recordTypes": {
+      "visit": "Visit",
+      "procedure": "Procedure",
+      "lab_test": "Lab Test",
+      "parasite_treatment": "Parasite Treatment",
       "checkup": "Checkup",
       "surgery": "Surgery",
       "emergency": "Emergency",
       "dental": "Dental",
       "grooming": "Grooming",
       "other": "Other"
+    },
+    "vaccineTypes": {
+      "primary": "Primary",
+      "booster": "Booster"
     },
     "errors": {
       "loadPets": "Could not load pets.",

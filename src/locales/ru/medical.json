@@ -65,6 +65,13 @@
       "diagnosis": "Диагноз: {{value}}",
       "treatment": "Лечение: {{value}}",
       "cost": "Стоимость: ${{value}}",
+      "vaccineType": "Тип: {{value}}",
+      "diagnosisCode": "Код: {{value}}",
+      "symptoms": "Симптомы: {{value}}",
+      "recommendations": "Рекомендации: {{value}}",
+      "weight": "Вес: {{value}} кг",
+      "temperature": "Темп.: {{value}}°C",
+      "followUp": "Повторный приём: {{date}}",
       "edit": "Изменить",
       "delete": "Удалить"
     },
@@ -146,12 +153,20 @@
       "cancel": "Отмена"
     },
     "recordTypes": {
+      "visit": "Визит",
+      "procedure": "Процедура",
+      "lab_test": "Анализ",
+      "parasite_treatment": "Обработка от паразитов",
       "checkup": "Осмотр",
       "surgery": "Операция",
       "emergency": "Экстренный",
       "dental": "Стоматология",
       "grooming": "Груминг",
       "other": "Другое"
+    },
+    "vaccineTypes": {
+      "primary": "Первичная",
+      "booster": "Ревакцинация"
     },
     "errors": {
       "loadPets": "Не удалось загрузить питомцев.",
