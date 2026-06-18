@@ -70,6 +70,8 @@
     },
     "chat": {
       "defaultTitle": "AI Assistant",
+      "historyError": "Couldn't load chat history.",
+      "clearError": "Couldn't clear the conversation.",
       "petHeader": "{{name}} • {{breed}} • {{age}}",
       "unknownAge": "Unknown age",
       "clearChat": "Clear Chat",

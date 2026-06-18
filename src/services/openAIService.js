@@ -181,9 +181,13 @@ export async function sendMessageToOpenAI(userMessage, conversationHistory = [],
       ? '🚨 You are an emergency veterinary assistant. Provide immediate, critical care instructions. Be concise and actionable. Start your response with "⚠️ EMERGENCY:"'
       : '🐾 You are a helpful veterinary assistant specializing in pet health. Provide accurate, practical advice in a friendly tone.';
 
-    // Добавляем контекст питомца
+    // Добавляем контекст питомца (маппинг полей: name всегда; breed/age — если есть)
     if (context.selectedPet) {
-      systemContent += ` You are helping with ${context.selectedPet.name}, a ${context.selectedPet.breed} (${context.selectedPet.age} years old).`;
+      const { name, breed, age } = context.selectedPet;
+      systemContent += ` You are helping with ${name}`;
+      if (breed) systemContent += `, a ${breed}`;
+      if (age != null) systemContent += ` (${age} years old)`;
+      systemContent += '.';
     }
 
     // Добавляем контекст категории

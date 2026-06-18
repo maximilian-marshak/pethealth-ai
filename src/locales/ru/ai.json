@@ -70,6 +70,8 @@
     },
     "chat": {
       "defaultTitle": "ИИ Помощник",
+      "historyError": "Не удалось загрузить историю чата.",
+      "clearError": "Не удалось очистить беседу.",
       "petHeader": "{{name}} • {{breed}} • {{age}}",
       "unknownAge": "Возраст неизвестен",
       "clearChat": "Очистить чат",
