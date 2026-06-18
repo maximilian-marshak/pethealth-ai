@@ -932,6 +932,7 @@ export default function MedicalScreen() {
           data: ocr.data,
           imageUri: manipulated.uri,
           petId: selectedPet.id,
+          scanId: Date.now(),
         });
       } else {
         console.warn('OCR failed:', ocr.error);

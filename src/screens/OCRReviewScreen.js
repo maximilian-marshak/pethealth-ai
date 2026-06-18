@@ -4,7 +4,7 @@
 // Параметры навигации: { data, imageUri, petId }. base64 НЕ передаётся.
 // ══════════════════════════════════════════════════════════════
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   Alert, ActivityIndicator, Platform, Image,
@@ -31,6 +31,28 @@ const ARRAY_FOR_TYPE = {
   parasite_treatments: 'parasite_treatment',
   lab_tests: 'lab_test',
 };
+
+// Чистые маппинги массивов из распознанного data (всегда новый массив).
+const mapVaccines = (d) =>
+  (d?.vaccines || []).map((v) => ({
+    vaccine_name: v.vaccine_name || '', vaccine_type: v.vaccine_type || 'primary',
+    date_given: v.date_given || '', next_due_date: v.next_due_date || '',
+  }));
+const mapPrescriptions = (d) =>
+  (d?.prescriptions || []).map((p) => ({
+    name: p.name || '', dose: p.dose || '', frequency: p.frequency || '',
+    start_date: p.start_date || '', end_date: p.end_date || '',
+    active: p.active !== false, instruction: p.instruction || '',
+  }));
+const mapParasites = (d) =>
+  (d?.parasite_treatments || []).map((p) => ({
+    kind: p.kind || 'deworming', product: p.product || '',
+    treated_on: p.treated_on || '', next_due_date: p.next_due_date || '',
+  }));
+const mapLabs = (d) =>
+  (d?.lab_tests || []).map((l) => ({
+    test_type: l.test_type || '', status: l.status || 'ordered', result: l.result || '',
+  }));
 
 // ─── Локальный DateField (дубликат, чтобы не трогать MedicalScreen) ──────────
 const DateField = ({ label, value, onChange, flag, t }) => {
@@ -124,32 +146,36 @@ export default function OCRReviewScreen() {
   const [urgency, setUrgency]               = useState(data.urgency || 'normal');
 
   // ─── Массивы ──────────────────────────────────────────────────────────────
-  const [vaccines, setVaccines] = useState(
-    (data.vaccines || []).map((v) => ({
-      vaccine_name: v.vaccine_name || '', vaccine_type: v.vaccine_type || 'primary',
-      date_given: v.date_given || '', next_due_date: v.next_due_date || '',
-    }))
-  );
-  const [prescriptions, setPrescriptions] = useState(
-    (data.prescriptions || []).map((p) => ({
-      name: p.name || '', dose: p.dose || '', frequency: p.frequency || '',
-      start_date: p.start_date || '', end_date: p.end_date || '',
-      active: p.active !== false, instruction: p.instruction || '',
-    }))
-  );
-  const [parasites, setParasites] = useState(
-    (data.parasite_treatments || []).map((p) => ({
-      kind: p.kind || 'deworming', product: p.product || '',
-      treated_on: p.treated_on || '', next_due_date: p.next_due_date || '',
-    }))
-  );
-  const [labs, setLabs] = useState(
-    (data.lab_tests || []).map((l) => ({
-      test_type: l.test_type || '', status: l.status || 'ordered', result: l.result || '',
-    }))
-  );
+  const [vaccines, setVaccines]         = useState(mapVaccines(data));
+  const [prescriptions, setPrescriptions] = useState(mapPrescriptions(data));
+  const [parasites, setParasites]       = useState(mapParasites(data));
+  const [labs, setLabs]                 = useState(mapLabs(data));
 
   const [saving, setSaving] = useState(false);
+
+  // Новый скан = новый scanId → полностью переинициализируем форму, иначе на
+  // переиспользованном экране остаются поля/массивы прошлого скана.
+  const scanId = route.params?.scanId;
+  useEffect(() => {
+    setRecordType(data.record_type || 'visit');
+    setOccurredAt(data.occurred_at || '');
+    setVetName(data.vet_name || '');
+    setClinicName(data.clinic_name || '');
+    setDiagnosis(data.diagnosis || '');
+    setDiagnosisCode(data.diagnosis_code || '');
+    setSymptoms(data.symptoms || '');
+    setRecommendations(data.recommendations || '');
+    setWeight(data.weight != null ? String(data.weight) : '');
+    setWeightUnit(data.weight_unit || 'kg');
+    setTemperature(data.temperature != null ? String(data.temperature) : '');
+    setFollowUpDate(data.follow_up_date || '');
+    setUrgency(data.urgency || 'normal');
+    setVaccines(mapVaccines(data));
+    setPrescriptions(mapPrescriptions(data));
+    setParasites(mapParasites(data));
+    setLabs(mapLabs(data));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanId]);
 
   const needsReview = (field, value) => {
     const empty = value == null || value === '' || (Array.isArray(value) && value.length === 0);
