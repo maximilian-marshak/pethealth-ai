@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../utils/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, StackActions } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { usePetContext } from '../context/PetContext';
@@ -47,6 +47,21 @@ const getVaccineStatus = (nextDueDate) => {
   if (days < 0)   return 'overdue';
   if (days <= 30) return 'due_soon';
   return 'up_to_date';
+};
+
+// Пустой OCR: все массивы пусты И ключевые скаляры пусты (record_type не в счёт).
+const isEmptyOCR = (d) => {
+  if (!d) return true;
+  const arraysEmpty =
+    !(d.vaccines && d.vaccines.length) &&
+    !(d.prescriptions && d.prescriptions.length) &&
+    !(d.parasite_treatments && d.parasite_treatments.length) &&
+    !(d.lab_tests && d.lab_tests.length);
+  const scalarsEmpty = [
+    d.diagnosis, d.symptoms, d.recommendations,
+    d.vet_name, d.clinic_name, d.weight, d.temperature,
+  ].every((v) => v == null || v === '');
+  return arraysEmpty && scalarsEmpty;
 };
 
 // ─── DatePicker Field ─────────────────────────────────────────────────────────
@@ -927,17 +942,27 @@ export default function MedicalScreen() {
 
       const ocr = await parseMedicalDocument(manipulated.base64, 'image/jpeg');
 
-      if (ocr.success) {
-        navigation.navigate('OCRReview', {
-          data: ocr.data,
-          imageUri: manipulated.uri,
-          petId: selectedPet.id,
-          scanId: Date.now(),
-        });
-      } else {
-        console.warn('OCR failed:', ocr.error);
-        Alert.alert(t('scan.errorTitle'), ocr.error || t('scan.error'));
+      if (!ocr.success) console.warn('OCR failed:', ocr.error);
+
+      if (!ocr.success || isEmptyOCR(ocr.data)) {
+        Alert.alert(
+          t('scan.emptyTitle'),
+          t('scan.emptyMessage'),
+          [
+            { text: t('scan.fillManually'), onPress: () => { setEditRecord(null); setRecordModal(true); } },
+            { text: t('common:ok'), style: 'cancel' },
+          ]
+        );
+        return;
       }
+
+      // push -> новый экземпляр OCRReview на каждый скан (из таба — через StackActions)
+      navigation.dispatch(StackActions.push('OCRReview', {
+        data: ocr.data,
+        imageUri: manipulated.uri,
+        petId: selectedPet.id,
+        scanId: Date.now(),
+      }));
     } catch (err) {
       console.error('Scan error:', err);
       Alert.alert(t('scan.errorTitle'), err.message || t('scan.error'));
