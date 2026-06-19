@@ -8,7 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator, Image,
+  Alert, ActivityIndicator, Image, Modal, Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../utils/supabase';
 
 const ACCENT = '#6B4EFF';
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 export default function RecordDetailScreen() {
   const navigation = useNavigation();
@@ -39,6 +40,7 @@ export default function RecordDetailScreen() {
   const [signedUrl, setSignedUrl]       = useState(null);
   const [loading, setLoading]           = useState(true);
   const [deleting, setDeleting]         = useState(false);
+  const [viewerOpen, setViewerOpen]     = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -245,7 +247,9 @@ export default function RecordDetailScreen() {
             <View style={s.section}>
               <Text style={s.sectionTitle}>{t('detail.attachment')}</Text>
               {signedUrl ? (
-                <Image source={{ uri: signedUrl }} style={s.attachment} resizeMode="contain" />
+                <TouchableOpacity activeOpacity={0.85} onPress={() => setViewerOpen(true)}>
+                  <Image source={{ uri: signedUrl }} style={s.attachment} resizeMode="contain" />
+                </TouchableOpacity>
               ) : (
                 <Text style={s.attachmentUnavailable}>{t('detail.attachmentUnavailable')}</Text>
               )}
@@ -269,6 +273,35 @@ export default function RecordDetailScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* Полноэкранный просмотр вложения: pinch-zoom через ScrollView; signed URL уже получен */}
+      <Modal visible={viewerOpen} transparent animationType="fade" onRequestClose={() => setViewerOpen(false)}>
+        <View style={s.viewerBackdrop}>
+          <ScrollView
+            style={s.viewerScroll}
+            contentContainerStyle={s.viewerContent}
+            maximumZoomScale={3}
+            minimumZoomScale={1}
+            centerContent
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+          >
+            <TouchableOpacity activeOpacity={1} onPress={() => setViewerOpen(false)}>
+              {signedUrl ? (
+                <Image source={{ uri: signedUrl }} style={s.viewerImage} resizeMode="contain" />
+              ) : null}
+            </TouchableOpacity>
+          </ScrollView>
+          <TouchableOpacity
+            style={s.viewerClose}
+            onPress={() => setViewerOpen(false)}
+            accessibilityLabel={t('common:close')}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -277,6 +310,11 @@ const s = StyleSheet.create({
   container:   { flex: 1, backgroundColor: '#F9FAFB' },
   errorBox:    { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 },
   errorText:   { fontSize: 15, color: '#6B7280', textAlign: 'center' },
+  viewerBackdrop: { flex: 1, backgroundColor: '#000' },
+  viewerScroll:   { flex: 1 },
+  viewerContent:  { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
+  viewerImage:    { width: SCREEN_W, height: SCREEN_H },
+  viewerClose:    { position: 'absolute', top: 48, right: 16, width: 44, height: 44, borderRadius: 22, backgroundColor: ACCENT, alignItems: 'center', justifyContent: 'center' },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   headerBtn:   { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
