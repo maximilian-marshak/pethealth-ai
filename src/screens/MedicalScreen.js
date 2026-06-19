@@ -980,7 +980,7 @@ export default function MedicalScreen() {
   const handleScan = () => {
     Alert.alert(
       t('scan.sourceTitle'),
-      t('scan.sourceMessage'),
+      t('scan.hint'),
       [
         { text: t('scan.camera'), onPress: () => runScan(true) },
         { text: t('scan.gallery'), onPress: () => runScan(false) },

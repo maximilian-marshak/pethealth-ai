@@ -202,6 +202,7 @@
       "cancel": "Cancel",
       "savedTitle": "Saved",
       "savedMessage": "Record saved to medical history.",
+      "attachWarning": "Record saved, but the scan image couldn't be attached.",
       "errorTitle": "Save Error",
       "sections": {
         "vaccines": "Vaccines",
@@ -254,6 +255,7 @@
       "button": "Scan",
       "sourceTitle": "Scan Document",
       "sourceMessage": "Choose a source",
+      "hint": "Place the sheet flat from directly above, right side up, in good light.",
       "camera": "📷 Camera",
       "gallery": "🖼️ Gallery",
       "loading": "Recognizing document…",

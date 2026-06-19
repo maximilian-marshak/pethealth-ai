@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
+import * as FileSystem from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
 import { supabase } from '../utils/supabase';
 
 const ACCENT = '#6B4EFF';
@@ -255,10 +257,45 @@ export default function OCRReviewScreen() {
         })),
       };
 
-      const { error } = await supabase.rpc('save_medical_record', { p_payload });
+      const { data: saveResult, error } = await supabase.rpc('save_medical_record', { p_payload });
       if (error) throw error;
 
-      Alert.alert(t('review.savedTitle'), t('review.savedMessage'));
+      // Вложение оригинала в бакет — НЕ фатально: запись уже сохранена (RPC прошёл).
+      let attachFailed = false;
+      const recordId = saveResult?.record_id;
+      if (recordId && imageUri) {
+        try {
+          const path = `${petId}/${recordId}/scan.jpg`;
+          const base64 = await FileSystem.readAsStringAsync(imageUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          const bytes = decode(base64);
+
+          const { error: upErr } = await supabase.storage
+            .from('medical-docs')
+            .upload(path, bytes, { contentType: 'image/jpeg', upsert: false });
+          if (upErr) throw upErr;
+
+          const { error: insErr } = await supabase.from('record_attachments').insert({
+            record_id: recordId,
+            pet_id: petId,
+            file_url: path,
+            file_type: 'image',
+            page: 1,
+            ocr_text: null,
+            ocr_confidence: null,
+          });
+          if (insErr) throw insErr;
+        } catch (attachErr) {
+          attachFailed = true;
+          console.error('❌ Attachment failed (record kept):', attachErr.message);
+        }
+      }
+
+      Alert.alert(
+        t('review.savedTitle'),
+        attachFailed ? `${t('review.savedMessage')}\n${t('review.attachWarning')}` : t('review.savedMessage')
+      );
       navigation.goBack();
     } catch (e) {
       Alert.alert(t('review.errorTitle'), e.message);
