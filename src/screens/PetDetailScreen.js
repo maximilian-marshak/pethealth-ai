@@ -1221,12 +1221,16 @@ export default function PetDetailScreen({ route, navigation }) {
 
             <View style={styles.modalInputGroup}>
               <Text style={styles.modalInputLabel}>Вещество (аллерген) *</Text>
-              <TextInput style={styles.modalInput} placeholder="Напр.: курица, амоксициллин" placeholderTextColor="#C0C0C0" value={aSubstance} onChangeText={setASubstance} />
+              <View style={styles.modalInputRow}>
+                <TextInput style={styles.modalInput} placeholder="Напр.: курица, амоксициллин" placeholderTextColor="#C0C0C0" value={aSubstance} onChangeText={setASubstance} />
+              </View>
             </View>
 
             <View style={styles.modalInputGroup}>
               <Text style={styles.modalInputLabel}>Реакция</Text>
-              <TextInput style={styles.modalInput} placeholder="Напр.: зуд, отёк" placeholderTextColor="#C0C0C0" value={aReaction} onChangeText={setAReaction} />
+              <View style={styles.modalInputRow}>
+                <TextInput style={styles.modalInput} placeholder="Напр.: зуд, отёк" placeholderTextColor="#C0C0C0" value={aReaction} onChangeText={setAReaction} />
+              </View>
             </View>
 
             <View style={styles.modalInputGroup}>
@@ -1265,12 +1269,16 @@ export default function PetDetailScreen({ route, navigation }) {
 
             <View style={styles.modalInputGroup}>
               <Text style={styles.modalInputLabel}>Заболевание *</Text>
-              <TextInput style={styles.modalInput} placeholder="Напр.: атопический дерматит" placeholderTextColor="#C0C0C0" value={cCondition} onChangeText={setCCondition} />
+              <View style={styles.modalInputRow}>
+                <TextInput style={styles.modalInput} placeholder="Напр.: атопический дерматит" placeholderTextColor="#C0C0C0" value={cCondition} onChangeText={setCCondition} />
+              </View>
             </View>
 
             <View style={styles.modalInputGroup}>
               <Text style={styles.modalInputLabel}>Код (МКБ/прочее)</Text>
-              <TextInput style={styles.modalInput} placeholder="Напр.: L20" placeholderTextColor="#C0C0C0" value={cCode} onChangeText={setCCode} />
+              <View style={styles.modalInputRow}>
+                <TextInput style={styles.modalInput} placeholder="Напр.: L20" placeholderTextColor="#C0C0C0" value={cCode} onChangeText={setCCode} />
+              </View>
             </View>
 
             <PassportDateField label="С какого времени" value={cSince} onChange={setCSince} />
