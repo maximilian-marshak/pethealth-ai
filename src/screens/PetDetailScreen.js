@@ -49,6 +49,8 @@ export default function PetDetailScreen({ route, navigation }) {
   });
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [recentRecords, setRecentRecords]   = useState([]);
+  const [allergies, setAllergies]           = useState([]);
+  const [conditions, setConditions]         = useState([]);
 
   // ─── Weight state ─────────────────────────────
   const [weightHistory, setWeightHistory]     = useState([]);
@@ -80,6 +82,8 @@ export default function PetDetailScreen({ route, navigation }) {
       loadUpcomingEvents();
       loadRecentRecords();
       loadWeightHistory();
+      loadAllergies();
+      loadConditions();
     }
     setLoading(false);
   };
@@ -91,6 +95,8 @@ export default function PetDetailScreen({ route, navigation }) {
       loadUpcomingEvents(),
       loadRecentRecords(),
       loadWeightHistory(),
+      loadAllergies(),
+      loadConditions(),
     ]);
     setRefreshing(false);
   };
@@ -281,6 +287,37 @@ export default function PetDetailScreen({ route, navigation }) {
       console.error('Error loading weight history:', error);
     } finally {
       setWeightLoading(false);
+    }
+  };
+
+  // ═══ ALLERGIES / CONDITIONS (паспорт) ════════
+  const loadAllergies = async () => {
+    if (!petId) return;
+    try {
+      const { data, error } = await supabase
+        .from('pet_allergies')
+        .select('*')
+        .eq('pet_id', petId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setAllergies(data || []);
+    } catch (error) {
+      console.error('Error loading allergies:', error);
+    }
+  };
+
+  const loadConditions = async () => {
+    if (!petId) return;
+    try {
+      const { data, error } = await supabase
+        .from('pet_conditions')
+        .select('*')
+        .eq('pet_id', petId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setConditions(data || []);
+    } catch (error) {
+      console.error('Error loading conditions:', error);
     }
   };
 
@@ -550,6 +587,19 @@ export default function PetDetailScreen({ route, navigation }) {
           </Text>
         </View>
 
+        {/* ─── ⚠️ ALLERGY ALERT (safety-critical, над плитками) ─── */}
+        {allergies.length > 0 && (
+          <View style={styles.allergyBanner}>
+            <Ionicons name="warning" size={22} color="#EF4444" />
+            <View style={styles.allergyBannerText}>
+              <Text style={styles.allergyBannerTitle}>Аллергии</Text>
+              <Text style={styles.allergyBannerList}>
+                {allergies.map((a) => a.substance).filter(Boolean).join(', ')}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* ─── QUICK STATS ──────────────────── */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
@@ -687,6 +737,60 @@ export default function PetDetailScreen({ route, navigation }) {
                 ))}
               </View>
             </View>
+          )}
+        </View>
+
+        {/* ─── 🤧 ALLERGIES (паспорт, read-only) ─── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🤧 Аллергии</Text>
+          {allergies.length === 0 ? (
+            <Text style={styles.emptyText}>Нет данных об аллергиях</Text>
+          ) : (
+            allergies.map((a) => {
+              const parts = [];
+              if (a.reaction) parts.push(a.reaction);
+              if (a.severity) parts.push(a.severity);
+              if (a.noted_on) parts.push(formatDate(a.noted_on));
+              return (
+                <View key={a.id} style={styles.passportRow}>
+                  <Text style={styles.passportName}>{a.substance}</Text>
+                  {parts.length > 0 && (
+                    <Text style={styles.passportSub}>{parts.join(' · ')}</Text>
+                  )}
+                </View>
+              );
+            })
+          )}
+        </View>
+
+        {/* ─── 🩺 CHRONIC CONDITIONS (read-only) ─── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🩺 Хронические заболевания</Text>
+          {conditions.length === 0 ? (
+            <Text style={styles.emptyText}>Нет хронических заболеваний</Text>
+          ) : (
+            conditions.map((c) => {
+              const sub = [];
+              if (c.since_date) sub.push(`С ${formatDate(c.since_date)}`);
+              if (c.notes) sub.push(c.notes);
+              return (
+                <View key={c.id} style={styles.passportRow}>
+                  <View style={styles.passportHeadRow}>
+                    <Text style={styles.passportName}>
+                      {c.condition}{c.code ? ` (${c.code})` : ''}
+                    </Text>
+                    <View style={[styles.condBadge, c.active ? styles.condBadgeActive : styles.condBadgeRemission]}>
+                      <Text style={[styles.condBadgeText, c.active ? styles.condBadgeTextActive : styles.condBadgeTextRemission]}>
+                        {c.active ? 'Активно' : 'В ремиссии'}
+                      </Text>
+                    </View>
+                  </View>
+                  {sub.length > 0 && (
+                    <Text style={styles.passportSub}>{sub.join(' · ')}</Text>
+                  )}
+                </View>
+              );
+            })
           )}
         </View>
 
@@ -1151,6 +1255,20 @@ const styles = StyleSheet.create({
     padding: 24, alignItems: 'center', gap: 8,
   },
   emptyText: { fontSize: 14, color: '#B0B0B0' },
+  allergyBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 20, marginTop: 16, padding: 14, backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#EF4444', borderRadius: 12 },
+  allergyBannerText: { flex: 1 },
+  allergyBannerTitle: { fontSize: 14, fontWeight: '700', color: '#B91C1C' },
+  allergyBannerList: { fontSize: 13, color: '#B91C1C', marginTop: 2 },
+  passportRow: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginTop: 8, borderWidth: 1, borderColor: '#F0F0F5' },
+  passportHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  passportName: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', flexShrink: 1 },
+  passportSub: { fontSize: 13, color: '#6B7280', marginTop: 4 },
+  condBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
+  condBadgeActive: { backgroundColor: '#FEE2E2' },
+  condBadgeRemission: { backgroundColor: '#E5E7EB' },
+  condBadgeText: { fontSize: 11, fontWeight: '700' },
+  condBadgeTextActive: { color: '#B91C1C' },
+  condBadgeTextRemission: { color: '#6B7280' },
 
   // ─── Actions ──────────────────────────────────
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
