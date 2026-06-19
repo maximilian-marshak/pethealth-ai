@@ -941,6 +941,7 @@ export default function MedicalScreen() {
       );
 
       const ocr = await parseMedicalDocument(manipulated.base64, 'image/jpeg');
+      console.log('🧾 OCR result:', JSON.stringify(ocr, null, 2));
 
       if (!ocr.success) console.warn('OCR failed:', ocr.error);
 
