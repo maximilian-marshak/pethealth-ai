@@ -1,30 +1,11 @@
 // ══════════════════════════════════════════════════
-// src/services/visionService.js (ФИНАЛЬНАЯ ВЕРСИЯ)
+// src/services/visionService.js
+// Vision-анализ фото через Edge Function ai-proxy (purpose:'vision').
+// Ключ OpenRouter в приложении НЕ хранится; цепочка моделей живёт в функции.
 // ══════════════════════════════════════════════════
 
-import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
-import { OPENROUTER_API_KEY } from '@env';
-
-export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-
-// Аддитивный хелпер для переиспользования (новый код: ocrService).
-// Существующий инлайн-путь analyzeImageWithVision НЕ меняем.
-export const buildOpenRouterHeaders = () => ({
-  Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-  'Content-Type': 'application/json',
-  'HTTP-Referer': 'https://pethealthai.app',
-  'X-Title': 'PetHealth AI',
-});
-
-// ✅ ОБНОВЛЕНО: Рабочие vision модели (платные, но доступные)
-const VISION_MODELS = [
-  'openai/gpt-4o-mini',                           // Самая дешевая ($0.15/1M tokens)
-  'google/gemini-pro-vision',                     // Google Gemini Pro Vision
-  'anthropic/claude-3-5-sonnet-20241022',         // Claude 3.5 Sonnet (latest)
-  'meta-llama/llama-3.2-11b-vision-instruct',     // Llama 3.2 Vision
-  'openai/gpt-4o',                                // GPT-4o (fallback, дороже)
-];
+import { callAIProxy } from './aiProxyClient';
 
 /**
  * Convert image URI to base64
@@ -108,122 +89,81 @@ const parseJSONResponse = (content) => {
 };
 
 /**
- * Analyze image with vision model (with fallback chain)
+ * Analyze image with vision via ai-proxy (purpose:'vision', proxy defaults 0.2/1500)
  */
 export const analyzeImageWithVision = async (imageUri, analysisType = 'general') => {
   try {
     console.log(`🔍 Starting vision analysis: ${analysisType}`);
-    
+
     // Convert image to base64
     const base64Image = await imageToBase64(imageUri);
     const mimeType = imageUri.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
 
     const systemPrompt = getSystemPrompt(analysisType);
-    
-    let lastError = null;
 
-    // ═══ FALLBACK ЦЕПОЧКА ═══
-    for (const model of VISION_MODELS) {
-      try {
-        console.log(`Attempting vision analysis with model: ${model}`);
-
-        const response = await axios.post(
-          `${OPENROUTER_BASE_URL}/chat/completions`,
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      {
+        role: 'user',
+        content: [
           {
-            model: model,
-            messages: [
-              {
-                role: 'system',
-                content: systemPrompt
-              },
-              {
-                role: 'user',
-                content: [
-                  {
-                    type: 'text',
-                    text: analysisType === 'symptoms' 
-                      ? 'Analyze this pet image for any visible health symptoms or concerns.'
-                      : analysisType === 'breed'
-                      ? 'Identify the breed of this pet.'
-                      : 'Describe this pet and provide helpful insights.'
-                  },
-                  {
-                    type: 'image_url',
-                    image_url: {
-                      url: `data:${mimeType};base64,${base64Image}`
-                    }
-                  }
-                ]
-              }
-            ],
-            max_tokens: 1000,
-            temperature: 0.3, // Lower temperature for more consistent JSON
+            type: 'text',
+            text: analysisType === 'symptoms'
+              ? 'Analyze this pet image for any visible health symptoms or concerns.'
+              : analysisType === 'breed'
+              ? 'Identify the breed of this pet.'
+              : 'Describe this pet and provide helpful insights.',
           },
           {
-            headers: {
-              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-              'Content-Type': 'application/json',
-              'HTTP-Referer': 'https://pethealthai.app',
-              'X-Title': 'PetHealth AI'
-            },
-            timeout: 30000,
-          }
-        );
+            type: 'image_url',
+            image_url: { url: `data:${mimeType};base64,${base64Image}` },
+          },
+        ],
+      },
+    ];
 
-        const content = response.data.choices[0].message.content;
-        console.log('📥 Raw AI response:', content.substring(0, 200) + '...');
-        
-        // ═══ ПАРСИНГ JSON ═══
-        let parsedResult;
-        if (analysisType === 'symptoms' || analysisType === 'breed') {
-          parsedResult = parseJSONResponse(content);
-          
-          if (!parsedResult) {
-            console.warn('⚠️ JSON parsing failed, using raw content');
-            parsedResult = { rawContent: content };
-          }
-        }
+    // temperature/max_tokens НЕ передаём — берём дефолты vision из ai-proxy.
+    const res = await callAIProxy({ purpose: 'vision', messages });
 
-        console.log('✅ Vision analysis successful with model:', model);
-        
-        return {
-          success: true,
-          model: model,
-          analysisType,
-          result: parsedResult || content,
-          rawContent: content,
-          timestamp: new Date().toISOString()
-        };
+    if (res.success === false) {
+      return {
+        success: false,
+        error: res.error || 'Failed to analyze image',
+        timestamp: new Date().toISOString(),
+      };
+    }
 
-      } catch (error) {
-        lastError = error;
-        const errorData = error.response?.data;
-        const errorStatus = error.response?.status;
-        
-        console.warn(`Model ${model} failed:`, errorData || error.message);
-        
-        // ⚠️ НЕ ПРОДОЛЖАЕМ на критических ошибках
-        if (errorStatus === 401 || errorStatus === 403) {
-          throw new Error('Invalid API key or unauthorized access');
-        }
-        
-        // Продолжаем fallback на 404, 429, 402, 503
-        if (![404, 429, 402, 503, 500].includes(errorStatus)) {
-          // Неизвестная ошибка - пробуем следующую модель
-          continue;
-        }
+    const content = res.content || '';
+    console.log('📥 Raw AI response:', content.substring(0, 200) + '...');
+
+    // ═══ ПАРСИНГ JSON ═══
+    let parsedResult;
+    if (analysisType === 'symptoms' || analysisType === 'breed') {
+      parsedResult = parseJSONResponse(content);
+
+      if (!parsedResult) {
+        console.warn('⚠️ JSON parsing failed, using raw content');
+        parsedResult = { rawContent: content };
       }
     }
 
-    // ❌ Все модели провалились
-    throw new Error(lastError?.response?.data?.error?.message || 'All vision models failed');
+    console.log('✅ Vision analysis successful with model:', res.model);
+
+    return {
+      success: true,
+      model: res.model,
+      analysisType,
+      result: parsedResult || content,
+      rawContent: content,
+      timestamp: new Date().toISOString(),
+    };
 
   } catch (error) {
     console.error('❌ Vision analysis failed:', error.message);
     return {
       success: false,
       error: error.message || 'Failed to analyze image',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 };
@@ -262,7 +202,7 @@ ${result.recommendation || result.rawContent || 'No specific recommendation prov
 
 ${urgency === 'red' ? '⚠️ **IMPORTANT:** This is not a substitute for professional veterinary care. Please consult a vet immediately.' : ''}
 
-_Analyzed with ${model.split('/')[1]}_
+_Analyzed with ${model?.split('/')[1] || model || 'AI'}_
     `.trim();
   }
 
@@ -281,7 +221,7 @@ ${result.characteristics?.map(c => `• ${c}`).join('\n') || '• N/A'}
 
 ${result.funFact ? `\n💡 **Fun Fact:** ${result.funFact}` : ''}
 
-_Analyzed with ${model.split('/')[1]}_
+_Analyzed with ${model?.split('/')[1] || model || 'AI'}_
     `.trim();
   }
 
@@ -291,6 +231,6 @@ _Analyzed with ${model.split('/')[1]}_
 
 ${result.rawContent || result}
 
-_Analyzed with ${model.split('/')[1]}_
+_Analyzed with ${model?.split('/')[1] || model || 'AI'}_
   `.trim();
 };
