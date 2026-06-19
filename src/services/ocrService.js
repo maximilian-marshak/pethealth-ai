@@ -30,6 +30,13 @@ RULES:
 - A vaccination record usually has NO diagnosis — set diagnosis null unless a real illness is diagnosed.
 - Each distinct vaccine PRODUCT is its OWN vaccines[] item, even if several are printed on one line. Split e.g. "Нобивак DHPPi, Нобивак Lepto, Нобивак Rabies" into THREE items.
 - next_due_date: capture revaccination/next dates ("ревакцинация", "действительна до", "следующая вакцинация DD.MM.YYYY"). If only a relative interval is given ("через год"/"ежегодно"), compute date_given + 1 year in ISO.
+- Forms often contain CHECKLISTS / MENUS of possible items. Extract ONLY the marked ones (checkmark, cross, "+", underline, filled in). Do NOT extract empty, unmarked items. A list of possible tests/procedures is NOT a list of performed ones.
+- Each item belongs to EXACTLY ONE category. Laboratory/diagnostic tests go ONLY in lab_tests, NEVER in vaccines. vaccines are real vaccine PRODUCTS (Нобивак, Eurican, Purevax, Мультикан, etc.), NOT tests and NOT procedures. Do not duplicate one item across multiple arrays.
+- Determine record_type by the essence of the visit: if there is a DIAGNOSIS and/or TREATMENT, it is 'visit' (or 'procedure'), NOT 'vaccination'. The word "Вакцинация" inside a recommendations/prevention checklist does NOT make the record a vaccination.
+- Prescribed MEDICATIONS with a dosage go to prescriptions[] (name, dose, frequency, duration, instruction), even under headers like "Рекомендации и назначения" / "Препараты и манипуляции". General care advice (how to clean ears, etc.) goes to recommendations.
+- diagnosis: extract both the diagnosis text and its code (e.g. "H96 Наружный отит" → diagnosis_code: "H96", diagnosis: "Наружный отит").
+- recommendations is a SINGLE string (join multiple points with line breaks), NOT an array.
+- Russian dates are day-first (DD.MM.YYYY).
 
 EXAMPLE (guidance only — do not copy these values):
 A document with header "Игги / Собака / Чихуахуа", "Владелец: Иванов И.И.", and a line "Вакцинация 15.03.2026: Нобивак DHPPi, Нобивак Lepto, Нобивак Rabies, ревакцинация через год" must yield:
