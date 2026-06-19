@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { usePetContext } from '../context/PetContext';
+import { usePetHealth } from '../hooks/usePetHealth';
 import { useAuth } from '../context/AuthContext';
 import { useConversation } from '../hooks/useConversation';
 import { sendMessageToOpenAI } from '../services/openAIService';
@@ -39,6 +40,12 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   const { user } = useAuth();
   const { getOrCreateConversation, loadMessages, addMessage, clearConversation } = useConversation();
   const { t } = useTranslation('ai');
+  const health = usePetHealth(selectedPet?.id);
+
+  // ⏳ ВРЕМЕННЫЙ ЛОГ (Коммит 1, удалить в Коммите 2)
+  useEffect(() => {
+    console.log('PET HEALTH', health);
+  }, [health]);
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
