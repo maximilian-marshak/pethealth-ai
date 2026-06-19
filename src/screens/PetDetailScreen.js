@@ -57,15 +57,17 @@ const PassportDateField = ({ label, value, onChange }) => {
   return (
     <View style={styles.modalInputGroup}>
       <Text style={styles.modalInputLabel}>{label}</Text>
-      <TouchableOpacity style={[styles.modalInput, styles.passportDateField]} onPress={() => setShow(true)} activeOpacity={0.7}>
-        <Ionicons name="calendar-outline" size={18} color={value ? '#6B4EFF' : '#C0C0C0'} />
-        <Text style={[styles.passportDateText, !value && { color: '#C0C0C0' }]}>{display}</Text>
-        {value ? (
-          <TouchableOpacity onPress={() => onChange('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close-circle" size={18} color="#C0C0C0" />
-          </TouchableOpacity>
-        ) : null}
-      </TouchableOpacity>
+      <View style={styles.modalInputRow}>
+        <TouchableOpacity style={[styles.modalInput, styles.passportDateField]} onPress={() => setShow(true)} activeOpacity={0.7}>
+          <Ionicons name="calendar-outline" size={18} color={value ? '#6B4EFF' : '#C0C0C0'} />
+          <Text style={[styles.passportDateText, !value && { color: '#C0C0C0' }]}>{display}</Text>
+          {value ? (
+            <TouchableOpacity onPress={() => onChange('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={18} color="#C0C0C0" />
+            </TouchableOpacity>
+          ) : null}
+        </TouchableOpacity>
+      </View>
       {show && (
         <DateTimePicker value={dateVal} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={handle} />
       )}
@@ -1290,7 +1292,9 @@ export default function PetDetailScreen({ route, navigation }) {
 
             <View style={styles.modalInputGroup}>
               <Text style={styles.modalInputLabel}>Заметки</Text>
-              <TextInput style={[styles.modalInput, styles.modalInputNote]} placeholder="Доп. информация" placeholderTextColor="#C0C0C0" value={cNotes} onChangeText={setCNotes} multiline maxLength={300} />
+              <View style={styles.modalInputRow}>
+                <TextInput style={[styles.modalInput, styles.modalInputNote]} placeholder="Доп. информация" placeholderTextColor="#C0C0C0" value={cNotes} onChangeText={setCNotes} multiline maxLength={300} />
+              </View>
             </View>
 
             <TouchableOpacity style={[styles.modalSaveBtn, savingCondition && styles.modalSaveBtnDisabled]} onPress={saveCondition} disabled={savingCondition}>
