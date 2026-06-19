@@ -17,6 +17,8 @@ import { useTranslation } from 'react-i18next';
 import * as FileSystem from 'expo-file-system';
 import { decode } from 'base64-arraybuffer';
 import { supabase } from '../utils/supabase';
+import AutocompleteInput from '../components/AutocompleteInput';
+import { VACCINES, ANTIPARASITICS, DRUGS } from '../data/medicalPresets';
 
 const ACCENT = '#6B4EFF';
 
@@ -327,7 +329,7 @@ export default function OCRReviewScreen() {
         <View style={s.headerBtn} />
       </View>
 
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {imageUri ? <Image source={{ uri: imageUri }} style={s.preview} resizeMode="cover" /> : null}
 
         {/* Record type */}
@@ -374,7 +376,7 @@ export default function OCRReviewScreen() {
                   <Text style={s.itemIdx}>#{i + 1}</Text>
                   <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => rm(setVaccines, v._id)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
                 </View>
-                <Field label={t('review.fields.vaccineName')} value={v.vaccine_name} onChange={(x) => upd(setVaccines, v._id, 'vaccine_name', x)} flag={!v.vaccine_name} t={t} />
+                <AutocompleteInput label={t('review.fields.vaccineName')} value={v.vaccine_name} onChangeText={(x) => upd(setVaccines, v._id, 'vaccine_name', x)} suggestions={VACCINES} flag={!v.vaccine_name} t={t} />
                 <Chips options={VACCINE_TYPES} value={v.vaccine_type} onChange={(x) => upd(setVaccines, v._id, 'vaccine_type', x)} labelFor={(o) => t(`vaccineTypes.${o}`, { defaultValue: o })} />
                 <DateField label={t('review.fields.dateGiven')} value={v.date_given} onChange={(x) => upd(setVaccines, v._id, 'date_given', x)} t={t} />
                 <DateField label={t('review.fields.nextDue')} value={v.next_due_date} onChange={(x) => upd(setVaccines, v._id, 'next_due_date', x)} t={t} />
@@ -403,7 +405,7 @@ export default function OCRReviewScreen() {
                   <Text style={s.itemIdx}>#{i + 1}</Text>
                   <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => rm(setPrescriptions, p._id)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
                 </View>
-                <Field label={t('review.fields.name')} value={p.name} onChange={(x) => upd(setPrescriptions, p._id, 'name', x)} flag={!p.name} t={t} />
+                <AutocompleteInput label={t('review.fields.name')} value={p.name} onChangeText={(x) => upd(setPrescriptions, p._id, 'name', x)} suggestions={DRUGS} flag={!p.name} t={t} />
                 <Field label={t('review.fields.dose')} value={p.dose} onChange={(x) => upd(setPrescriptions, p._id, 'dose', x)} t={t} />
                 <Field label={t('review.fields.frequency')} value={p.frequency} onChange={(x) => upd(setPrescriptions, p._id, 'frequency', x)} t={t} />
                 <DateField label={t('review.fields.startDate')} value={p.start_date} onChange={(x) => upd(setPrescriptions, p._id, 'start_date', x)} t={t} />
@@ -439,7 +441,7 @@ export default function OCRReviewScreen() {
                   <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => rm(setParasites, p._id)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
                 </View>
                 <Chips options={PARASITE_KINDS} value={p.kind} onChange={(x) => upd(setParasites, p._id, 'kind', x)} labelFor={(o) => t(`review.kinds.${o}`, { defaultValue: o })} />
-                <Field label={t('review.fields.product')} value={p.product} onChange={(x) => upd(setParasites, p._id, 'product', x)} flag={!p.product} t={t} />
+                <AutocompleteInput label={t('review.fields.product')} value={p.product} onChangeText={(x) => upd(setParasites, p._id, 'product', x)} suggestions={ANTIPARASITICS} flag={!p.product} t={t} />
                 <DateField label={t('review.fields.treatedOn')} value={p.treated_on} onChange={(x) => upd(setParasites, p._id, 'treated_on', x)} t={t} />
                 <DateField label={t('review.fields.nextDue')} value={p.next_due_date} onChange={(x) => upd(setParasites, p._id, 'next_due_date', x)} t={t} />
               </View>
