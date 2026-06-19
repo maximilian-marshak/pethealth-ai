@@ -32,25 +32,33 @@ const ARRAY_FOR_TYPE = {
   lab_tests: 'lab_test',
 };
 
+// Стабильный id строки для корректного reconciliation (ключи + удаление по id).
+let _rowSeq = 0;
+const newRowId = () => `row${++_rowSeq}`;
+
 // Чистые маппинги массивов из распознанного data (всегда новый массив).
 const mapVaccines = (d) =>
   (d?.vaccines || []).map((v) => ({
+    _id: newRowId(),
     vaccine_name: v.vaccine_name || '', vaccine_type: v.vaccine_type || 'primary',
     date_given: v.date_given || '', next_due_date: v.next_due_date || '',
   }));
 const mapPrescriptions = (d) =>
   (d?.prescriptions || []).map((p) => ({
+    _id: newRowId(),
     name: p.name || '', dose: p.dose || '', frequency: p.frequency || '',
     start_date: p.start_date || '', end_date: p.end_date || '',
     active: p.active !== false, instruction: p.instruction || '',
   }));
 const mapParasites = (d) =>
   (d?.parasite_treatments || []).map((p) => ({
+    _id: newRowId(),
     kind: p.kind || 'deworming', product: p.product || '',
     treated_on: p.treated_on || '', next_due_date: p.next_due_date || '',
   }));
 const mapLabs = (d) =>
   (d?.lab_tests || []).map((l) => ({
+    _id: newRowId(),
     test_type: l.test_type || '', status: l.status || 'ordered', result: l.result || '',
   }));
 
@@ -196,9 +204,9 @@ export default function OCRReviewScreen() {
 
   const showArr = (name, items) => items.length > 0 || recordType === ARRAY_FOR_TYPE[name];
 
-  const upd = (setter, arr, idx, key, val) =>
-    setter(arr.map((it, i) => (i === idx ? { ...it, [key]: val } : it)));
-  const rm = (setter, arr, idx) => setter(arr.filter((_, i) => i !== idx));
+  const upd = (setter, id, key, val) =>
+    setter((prev) => prev.map((it) => (it._id === id ? { ...it, [key]: val } : it)));
+  const rm = (setter, id) => setter((prev) => prev.filter((it) => it._id !== id));
 
   const handleSave = async () => {
     setSaving(true);
@@ -305,18 +313,18 @@ export default function OCRReviewScreen() {
           <View style={s.arrSection}>
             <Text style={s.sectionTitle}>{t('review.sections.vaccines')}</Text>
             {vaccines.map((v, i) => (
-              <View key={`vac-${i}`} style={s.itemCard}>
+              <View key={v._id} style={s.itemCard}>
                 <View style={s.itemHead}>
                   <Text style={s.itemIdx}>#{i + 1}</Text>
-                  <TouchableOpacity onPress={() => rm(setVaccines, vaccines, i)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
+                  <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => rm(setVaccines, v._id)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
                 </View>
-                <Field label={t('review.fields.vaccineName')} value={v.vaccine_name} onChange={(x) => upd(setVaccines, vaccines, i, 'vaccine_name', x)} flag={!v.vaccine_name} t={t} />
-                <Chips options={VACCINE_TYPES} value={v.vaccine_type} onChange={(x) => upd(setVaccines, vaccines, i, 'vaccine_type', x)} labelFor={(o) => t(`vaccineTypes.${o}`, { defaultValue: o })} />
-                <DateField label={t('review.fields.dateGiven')} value={v.date_given} onChange={(x) => upd(setVaccines, vaccines, i, 'date_given', x)} t={t} />
-                <DateField label={t('review.fields.nextDue')} value={v.next_due_date} onChange={(x) => upd(setVaccines, vaccines, i, 'next_due_date', x)} t={t} />
+                <Field label={t('review.fields.vaccineName')} value={v.vaccine_name} onChange={(x) => upd(setVaccines, v._id, 'vaccine_name', x)} flag={!v.vaccine_name} t={t} />
+                <Chips options={VACCINE_TYPES} value={v.vaccine_type} onChange={(x) => upd(setVaccines, v._id, 'vaccine_type', x)} labelFor={(o) => t(`vaccineTypes.${o}`, { defaultValue: o })} />
+                <DateField label={t('review.fields.dateGiven')} value={v.date_given} onChange={(x) => upd(setVaccines, v._id, 'date_given', x)} t={t} />
+                <DateField label={t('review.fields.nextDue')} value={v.next_due_date} onChange={(x) => upd(setVaccines, v._id, 'next_due_date', x)} t={t} />
               </View>
             ))}
-            <TouchableOpacity style={s.addBtn} onPress={() => setVaccines([...vaccines, { vaccine_name: '', vaccine_type: 'primary', date_given: '', next_due_date: '' }])}>
+            <TouchableOpacity style={s.addBtn} onPress={() => setVaccines([...vaccines, { _id: newRowId(), vaccine_name: '', vaccine_type: 'primary', date_given: '', next_due_date: '' }])}>
               <Ionicons name="add" size={18} color={ACCENT} /><Text style={s.addBtnText}>{t('review.addItem')}</Text>
             </TouchableOpacity>
           </View>
@@ -327,24 +335,24 @@ export default function OCRReviewScreen() {
           <View style={s.arrSection}>
             <Text style={s.sectionTitle}>{t('review.sections.prescriptions')}</Text>
             {prescriptions.map((p, i) => (
-              <View key={`rx-${i}`} style={s.itemCard}>
+              <View key={p._id} style={s.itemCard}>
                 <View style={s.itemHead}>
                   <Text style={s.itemIdx}>#{i + 1}</Text>
-                  <TouchableOpacity onPress={() => rm(setPrescriptions, prescriptions, i)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
+                  <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => rm(setPrescriptions, p._id)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
                 </View>
-                <Field label={t('review.fields.name')} value={p.name} onChange={(x) => upd(setPrescriptions, prescriptions, i, 'name', x)} flag={!p.name} t={t} />
-                <Field label={t('review.fields.dose')} value={p.dose} onChange={(x) => upd(setPrescriptions, prescriptions, i, 'dose', x)} t={t} />
-                <Field label={t('review.fields.frequency')} value={p.frequency} onChange={(x) => upd(setPrescriptions, prescriptions, i, 'frequency', x)} t={t} />
-                <DateField label={t('review.fields.startDate')} value={p.start_date} onChange={(x) => upd(setPrescriptions, prescriptions, i, 'start_date', x)} t={t} />
-                <DateField label={t('review.fields.endDate')} value={p.end_date} onChange={(x) => upd(setPrescriptions, prescriptions, i, 'end_date', x)} t={t} />
-                <Field label={t('review.fields.instruction')} value={p.instruction} onChange={(x) => upd(setPrescriptions, prescriptions, i, 'instruction', x)} t={t} multiline />
-                <TouchableOpacity style={s.toggleRow} onPress={() => upd(setPrescriptions, prescriptions, i, 'active', !p.active)}>
+                <Field label={t('review.fields.name')} value={p.name} onChange={(x) => upd(setPrescriptions, p._id, 'name', x)} flag={!p.name} t={t} />
+                <Field label={t('review.fields.dose')} value={p.dose} onChange={(x) => upd(setPrescriptions, p._id, 'dose', x)} t={t} />
+                <Field label={t('review.fields.frequency')} value={p.frequency} onChange={(x) => upd(setPrescriptions, p._id, 'frequency', x)} t={t} />
+                <DateField label={t('review.fields.startDate')} value={p.start_date} onChange={(x) => upd(setPrescriptions, p._id, 'start_date', x)} t={t} />
+                <DateField label={t('review.fields.endDate')} value={p.end_date} onChange={(x) => upd(setPrescriptions, p._id, 'end_date', x)} t={t} />
+                <Field label={t('review.fields.instruction')} value={p.instruction} onChange={(x) => upd(setPrescriptions, p._id, 'instruction', x)} t={t} multiline />
+                <TouchableOpacity style={s.toggleRow} onPress={() => upd(setPrescriptions, p._id, 'active', !p.active)}>
                   <Text style={s.label}>{t('review.fields.active')}</Text>
                   <Ionicons name={p.active ? 'checkbox' : 'square-outline'} size={22} color={p.active ? ACCENT : '#9CA3AF'} />
                 </TouchableOpacity>
               </View>
             ))}
-            <TouchableOpacity style={s.addBtn} onPress={() => setPrescriptions([...prescriptions, { name: '', dose: '', frequency: '', start_date: '', end_date: '', active: true, instruction: '' }])}>
+            <TouchableOpacity style={s.addBtn} onPress={() => setPrescriptions([...prescriptions, { _id: newRowId(), name: '', dose: '', frequency: '', start_date: '', end_date: '', active: true, instruction: '' }])}>
               <Ionicons name="add" size={18} color={ACCENT} /><Text style={s.addBtnText}>{t('review.addItem')}</Text>
             </TouchableOpacity>
           </View>
@@ -355,18 +363,18 @@ export default function OCRReviewScreen() {
           <View style={s.arrSection}>
             <Text style={s.sectionTitle}>{t('review.sections.parasites')}</Text>
             {parasites.map((p, i) => (
-              <View key={`par-${i}`} style={s.itemCard}>
+              <View key={p._id} style={s.itemCard}>
                 <View style={s.itemHead}>
                   <Text style={s.itemIdx}>#{i + 1}</Text>
-                  <TouchableOpacity onPress={() => rm(setParasites, parasites, i)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
+                  <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => rm(setParasites, p._id)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
                 </View>
-                <Chips options={PARASITE_KINDS} value={p.kind} onChange={(x) => upd(setParasites, parasites, i, 'kind', x)} labelFor={(o) => t(`review.kinds.${o}`, { defaultValue: o })} />
-                <Field label={t('review.fields.product')} value={p.product} onChange={(x) => upd(setParasites, parasites, i, 'product', x)} flag={!p.product} t={t} />
-                <DateField label={t('review.fields.treatedOn')} value={p.treated_on} onChange={(x) => upd(setParasites, parasites, i, 'treated_on', x)} t={t} />
-                <DateField label={t('review.fields.nextDue')} value={p.next_due_date} onChange={(x) => upd(setParasites, parasites, i, 'next_due_date', x)} t={t} />
+                <Chips options={PARASITE_KINDS} value={p.kind} onChange={(x) => upd(setParasites, p._id, 'kind', x)} labelFor={(o) => t(`review.kinds.${o}`, { defaultValue: o })} />
+                <Field label={t('review.fields.product')} value={p.product} onChange={(x) => upd(setParasites, p._id, 'product', x)} flag={!p.product} t={t} />
+                <DateField label={t('review.fields.treatedOn')} value={p.treated_on} onChange={(x) => upd(setParasites, p._id, 'treated_on', x)} t={t} />
+                <DateField label={t('review.fields.nextDue')} value={p.next_due_date} onChange={(x) => upd(setParasites, p._id, 'next_due_date', x)} t={t} />
               </View>
             ))}
-            <TouchableOpacity style={s.addBtn} onPress={() => setParasites([...parasites, { kind: 'deworming', product: '', treated_on: '', next_due_date: '' }])}>
+            <TouchableOpacity style={s.addBtn} onPress={() => setParasites([...parasites, { _id: newRowId(), kind: 'deworming', product: '', treated_on: '', next_due_date: '' }])}>
               <Ionicons name="add" size={18} color={ACCENT} /><Text style={s.addBtnText}>{t('review.addItem')}</Text>
             </TouchableOpacity>
           </View>
@@ -377,17 +385,17 @@ export default function OCRReviewScreen() {
           <View style={s.arrSection}>
             <Text style={s.sectionTitle}>{t('review.sections.labs')}</Text>
             {labs.map((l, i) => (
-              <View key={`lab-${i}`} style={s.itemCard}>
+              <View key={l._id} style={s.itemCard}>
                 <View style={s.itemHead}>
                   <Text style={s.itemIdx}>#{i + 1}</Text>
-                  <TouchableOpacity onPress={() => rm(setLabs, labs, i)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
+                  <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => rm(setLabs, l._id)}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
                 </View>
-                <Field label={t('review.fields.testType')} value={l.test_type} onChange={(x) => upd(setLabs, labs, i, 'test_type', x)} flag={!l.test_type} t={t} />
-                <Chips options={LAB_STATUSES} value={l.status} onChange={(x) => upd(setLabs, labs, i, 'status', x)} labelFor={(o) => t(`review.labStatus.${o}`, { defaultValue: o })} />
-                <Field label={t('review.fields.result')} value={l.result} onChange={(x) => upd(setLabs, labs, i, 'result', x)} t={t} multiline />
+                <Field label={t('review.fields.testType')} value={l.test_type} onChange={(x) => upd(setLabs, l._id, 'test_type', x)} flag={!l.test_type} t={t} />
+                <Chips options={LAB_STATUSES} value={l.status} onChange={(x) => upd(setLabs, l._id, 'status', x)} labelFor={(o) => t(`review.labStatus.${o}`, { defaultValue: o })} />
+                <Field label={t('review.fields.result')} value={l.result} onChange={(x) => upd(setLabs, l._id, 'result', x)} t={t} multiline />
               </View>
             ))}
-            <TouchableOpacity style={s.addBtn} onPress={() => setLabs([...labs, { test_type: '', status: 'ordered', result: '' }])}>
+            <TouchableOpacity style={s.addBtn} onPress={() => setLabs([...labs, { _id: newRowId(), test_type: '', status: 'ordered', result: '' }])}>
               <Ionicons name="add" size={18} color={ACCENT} /><Text style={s.addBtnText}>{t('review.addItem')}</Text>
             </TouchableOpacity>
           </View>
