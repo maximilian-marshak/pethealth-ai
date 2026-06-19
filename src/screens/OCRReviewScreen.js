@@ -210,6 +210,18 @@ export default function OCRReviewScreen() {
     setter((prev) => prev.map((it) => (it._id === id ? { ...it, [key]: val } : it)));
   const rm = (setter, id) => setter((prev) => prev.filter((it) => it._id !== id));
 
+  // Очистить весь список (подтверждение). Тот же сеттер, без нового источника истины.
+  const clearAll = (setter) => {
+    Alert.alert(
+      t('review.clearAllConfirm'),
+      undefined,
+      [
+        { text: t('review.cancel'), style: 'cancel' },
+        { text: t('review.clearAll'), style: 'destructive', onPress: () => setter([]) },
+      ]
+    );
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -348,7 +360,14 @@ export default function OCRReviewScreen() {
         {/* Vaccines */}
         {showArr('vaccines', vaccines) && (
           <View style={s.arrSection}>
-            <Text style={s.sectionTitle}>{t('review.sections.vaccines')}</Text>
+            <View style={s.arrHeader}>
+              <Text style={s.sectionTitle}>{t('review.sections.vaccines')}</Text>
+              {vaccines.length > 0 && (
+                <TouchableOpacity onPress={() => clearAll(setVaccines)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={s.clearAllText}>{t('review.clearAll')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {vaccines.map((v, i) => (
               <View key={v._id} style={s.itemCard}>
                 <View style={s.itemHead}>
@@ -370,7 +389,14 @@ export default function OCRReviewScreen() {
         {/* Prescriptions */}
         {showArr('prescriptions', prescriptions) && (
           <View style={s.arrSection}>
-            <Text style={s.sectionTitle}>{t('review.sections.prescriptions')}</Text>
+            <View style={s.arrHeader}>
+              <Text style={s.sectionTitle}>{t('review.sections.prescriptions')}</Text>
+              {prescriptions.length > 0 && (
+                <TouchableOpacity onPress={() => clearAll(setPrescriptions)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={s.clearAllText}>{t('review.clearAll')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {prescriptions.map((p, i) => (
               <View key={p._id} style={s.itemCard}>
                 <View style={s.itemHead}>
@@ -398,7 +424,14 @@ export default function OCRReviewScreen() {
         {/* Parasite treatments */}
         {showArr('parasite_treatments', parasites) && (
           <View style={s.arrSection}>
-            <Text style={s.sectionTitle}>{t('review.sections.parasites')}</Text>
+            <View style={s.arrHeader}>
+              <Text style={s.sectionTitle}>{t('review.sections.parasites')}</Text>
+              {parasites.length > 0 && (
+                <TouchableOpacity onPress={() => clearAll(setParasites)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={s.clearAllText}>{t('review.clearAll')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {parasites.map((p, i) => (
               <View key={p._id} style={s.itemCard}>
                 <View style={s.itemHead}>
@@ -420,7 +453,14 @@ export default function OCRReviewScreen() {
         {/* Lab tests */}
         {showArr('lab_tests', labs) && (
           <View style={s.arrSection}>
-            <Text style={s.sectionTitle}>{t('review.sections.labs')}</Text>
+            <View style={s.arrHeader}>
+              <Text style={s.sectionTitle}>{t('review.sections.labs')}</Text>
+              {labs.length > 0 && (
+                <TouchableOpacity onPress={() => clearAll(setLabs)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={s.clearAllText}>{t('review.clearAll')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {labs.map((l, i) => (
               <View key={l._id} style={s.itemCard}>
                 <View style={s.itemHead}>
@@ -459,6 +499,8 @@ const s = StyleSheet.create({
   content:        { padding: 16, paddingBottom: 40 },
   preview:        { width: '100%', height: 160, borderRadius: 12, marginBottom: 16, backgroundColor: '#E5E7EB' },
   sectionTitle:   { fontSize: 15, fontWeight: '700', color: '#374151', marginTop: 8, marginBottom: 8 },
+  arrHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  clearAllText:   { fontSize: 13, fontWeight: '600', color: ACCENT },
   fieldWrap:      { marginBottom: 12 },
   labelRow:       { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   label:          { fontSize: 13, fontWeight: '600', color: '#374151' },

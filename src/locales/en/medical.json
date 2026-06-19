@@ -196,6 +196,8 @@
     "review": {
       "title": "Review Scan",
       "checkHint": "check",
+      "clearAll": "Clear all",
+      "clearAllConfirm": "Remove all items in this list?",
       "pickDate": "Select date",
       "addItem": "Add",
       "save": "Save",
