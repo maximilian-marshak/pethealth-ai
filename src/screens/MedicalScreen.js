@@ -21,6 +21,8 @@ import { usePetContext } from '../context/PetContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { parseMedicalDocument } from '../services/ocrService';
+import AutocompleteInput from '../components/AutocompleteInput';
+import { VACCINES, DRUGS } from '../data/medicalPresets';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -182,13 +184,12 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
             {editData ? t('modal.vaccine.editTitle') : t('modal.vaccine.addTitle')}
           </Text>
 
-          <Text style={mStyles.label}>{t('modal.vaccine.nameLabel')}</Text>
-          <TextInput
-            style={mStyles.input}
+          <AutocompleteInput
+            label={t('modal.vaccine.nameLabel')}
             value={name}
             onChangeText={setName}
+            suggestions={VACCINES}
             placeholder={t('modal.vaccine.namePlaceholder')}
-            placeholderTextColor="#9CA3AF"
           />
 
           <DatePickerField
@@ -324,20 +325,19 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
     <Modal visible={visible} animationType="slide" transparent>
       <View style={mStyles.overlay}>
         <View style={mStyles.sheet}>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={mStyles.title}>
               {editData
                 ? t('modal.medication.editTitle')
                 : t('modal.medication.addTitle')}
             </Text>
 
-            <Text style={mStyles.label}>{t('modal.medication.nameLabel')}</Text>
-            <TextInput
-              style={mStyles.input}
+            <AutocompleteInput
+              label={t('modal.medication.nameLabel')}
               value={name}
               onChangeText={setName}
+              suggestions={DRUGS}
               placeholder={t('modal.medication.namePlaceholder')}
-              placeholderTextColor="#9CA3AF"
             />
 
             <Text style={mStyles.label}>{t('modal.medication.dosageLabel')}</Text>
