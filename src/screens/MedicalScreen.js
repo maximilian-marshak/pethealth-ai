@@ -1127,7 +1127,13 @@ export default function MedicalScreen() {
           const statusKey = getVaccineStatus(v.next_due_date);
           const days      = getDaysUntil(v.next_due_date);
           return (
-            <View key={v.id} style={styles.card}>
+            <TouchableOpacity
+              key={v.id}
+              style={styles.card}
+              activeOpacity={0.7}
+              disabled={!v.record_id}
+              onPress={v.record_id ? () => navigation.navigate('RecordDetail', { recordId: v.record_id, petId: selectedPet.id }) : undefined}
+            >
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>{v.vaccine_name}</Text>
                 <View style={[
@@ -1173,7 +1179,7 @@ export default function MedicalScreen() {
                   <Text style={styles.actionDelete}>{t('card.delete')}</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })
       )}
@@ -1192,7 +1198,13 @@ export default function MedicalScreen() {
         </View>
       ) : (
         medications.map(m => (
-          <View key={m.id} style={styles.card}>
+          <TouchableOpacity
+            key={m.id}
+            style={styles.card}
+            activeOpacity={0.7}
+            disabled={!m.record_id}
+            onPress={m.record_id ? () => navigation.navigate('RecordDetail', { recordId: m.record_id, petId: selectedPet.id }) : undefined}
+          >
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{m.name}</Text>
               <View style={[
@@ -1243,7 +1255,7 @@ export default function MedicalScreen() {
                 <Text style={styles.actionDelete}>{t('card.delete')}</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>

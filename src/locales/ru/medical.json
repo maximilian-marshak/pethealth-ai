@@ -259,7 +259,8 @@
     "detail": {
       "title": "Запись",
       "attachment": "Скан",
-      "attachmentUnavailable": "Превью недоступно"
+      "attachmentUnavailable": "Превью недоступно",
+      "loadError": "Не удалось загрузить запись"
     },
     "scan": {
       "button": "Сканировать",

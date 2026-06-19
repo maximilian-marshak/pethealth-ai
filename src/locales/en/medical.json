@@ -259,7 +259,8 @@
     "detail": {
       "title": "Record",
       "attachment": "Scan",
-      "attachmentUnavailable": "Preview unavailable"
+      "attachmentUnavailable": "Preview unavailable",
+      "loadError": "Couldn't load the record"
     },
     "scan": {
       "button": "Scan",

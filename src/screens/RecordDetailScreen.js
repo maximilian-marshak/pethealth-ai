@@ -25,8 +25,11 @@ export default function RecordDetailScreen() {
   const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
   const fmt = (d) => (d ? new Date(d).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
 
-  const { record = {}, recordId, petId } = route.params || {};
-  const id = recordId || record.id;
+  const { record: paramRecord, recordId, petId } = route.params || {};
+  const id = recordId || paramRecord?.id;
+
+  const [record, setRecord]   = useState(paramRecord || null);
+  const [loadError, setLoadError] = useState(false);
 
   const [vaccines, setVaccines]         = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
@@ -40,7 +43,21 @@ export default function RecordDetailScreen() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!id) { setLoading(false); return; }
+      if (!id) { setLoadError(true); setLoading(false); return; }
+      // Дозагрузка родителя, если открыли по одному recordId без объекта record.
+      if (!paramRecord) {
+        try {
+          const { data: parent, error: pErr } = await supabase
+            .from('medical_records').select('*').eq('id', id).single();
+          if (pErr) throw pErr;
+          if (cancelled) return;
+          setRecord(parent);
+        } catch (e) {
+          console.error('RecordDetail parent load:', e?.message);
+          if (!cancelled) { setLoadError(true); setLoading(false); }
+          return;
+        }
+      }
       try {
         const [vac, rx, par, lab, att] = await Promise.all([
           supabase.from('record_vaccines').select('*').eq('record_id', id),
@@ -122,12 +139,12 @@ export default function RecordDetailScreen() {
       </View>
     );
 
-  const recordTypeLabel = record.record_type
+  const recordTypeLabel = record?.record_type
     ? t(`recordTypes.${record.record_type}`, { defaultValue: record.record_type })
     : t('status.visit');
 
   const weightValue =
-    record.weight != null && record.weight !== ''
+    record?.weight != null && record?.weight !== ''
       ? `${record.weight}${record.weight_unit ? ' ' + t(`review.weightUnits.${record.weight_unit}`, { defaultValue: record.weight_unit }) : ''}`
       : null;
 
@@ -143,6 +160,13 @@ export default function RecordDetailScreen() {
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} size="large" color={ACCENT} />
+      ) : loadError || !record ? (
+        <View style={s.errorBox}>
+          <Text style={s.errorText}>{t('detail.loadError')}</Text>
+          <TouchableOpacity style={[s.btn, s.btnEdit, { alignSelf: 'stretch' }]} onPress={() => navigation.goBack()}>
+            <Text style={s.btnEditText}>{t('header.back')}</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
           {/* Parent */}
@@ -251,6 +275,8 @@ export default function RecordDetailScreen() {
 
 const s = StyleSheet.create({
   container:   { flex: 1, backgroundColor: '#F9FAFB' },
+  errorBox:    { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 },
+  errorText:   { fontSize: 15, color: '#6B7280', textAlign: 'center' },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   headerBtn:   { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
