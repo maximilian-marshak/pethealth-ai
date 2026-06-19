@@ -22,34 +22,21 @@ RULES:
 - Enum fields contain ONE value or null. NEVER output a list of options and NEVER write a string containing the '|' character.
 - vet_name = the treating VETERINARIAN, not the owner. If only the owner is visible, vet_name = null.
 - clinic_name = the name of the CLINIC, not the pet's name/species/breed.
-- All dates in ISO YYYY-MM-DD. Convert Russian formats (15.03.2026, "15 марта 2026") to ISO. date_given = when administered; next_due_date = revaccination / "valid until" / "next"; occurred_at = visit/document date.
+- All dates in ISO YYYY-MM-DD. Convert Russian date formats (day-first numeric or month-name forms) to ISO. date_given = when administered; next_due_date = revaccination / "valid until" / "next"; occurred_at = visit/document date.
 - Each vaccine and each medication is a SEPARATE array item, do not merge them.
 - confidence: an object { name_of_non_null_field: number 0..1 }.
 - The pet's name, species (e.g. "Собака"/"Dog") and breed are NEVER a diagnosis, a clinic_name, or a vet_name. A header line like "<Name> / <Species> / <Breed>" describes the PET — ignore it for clinic_name/diagnosis.
 - "Владелец"/"Хозяин"/owner name is NOT vet_name. Use vet_name ONLY for an actual treating doctor (e.g. after "Врач:", "Ветеринар:", a doctor's signature). If no vet is shown, vet_name = null.
 - A vaccination record usually has NO diagnosis — set diagnosis null unless a real illness is diagnosed.
-- Each distinct vaccine PRODUCT is its OWN vaccines[] item, even if several are printed on one line. Split e.g. "Нобивак DHPPi, Нобивак Lepto, Нобивак Rabies" into THREE items.
+- Each distinct vaccine PRODUCT is its OWN vaccines[] item, even if several are printed on one line. If several vaccine products are listed together, split them into separate items.
 - next_due_date: capture revaccination/next dates ("ревакцинация", "действительна до", "следующая вакцинация DD.MM.YYYY"). If only a relative interval is given ("через год"/"ежегодно"), compute date_given + 1 year in ISO.
 - Forms often contain CHECKLISTS / MENUS of possible items. Extract ONLY the marked ones (checkmark, cross, "+", underline, filled in). Do NOT extract empty, unmarked items. A list of possible tests/procedures is NOT a list of performed ones.
-- Each item belongs to EXACTLY ONE category. Laboratory/diagnostic tests go ONLY in lab_tests, NEVER in vaccines. vaccines are real vaccine PRODUCTS (Нобивак, Eurican, Purevax, Мультикан, etc.), NOT tests and NOT procedures. Do not duplicate one item across multiple arrays.
+- Each item belongs to EXACTLY ONE category. Laboratory/diagnostic tests go ONLY in lab_tests, NEVER in vaccines. vaccines are real vaccine products, NOT tests and NOT procedures. Do not duplicate one item across multiple arrays.
 - Determine record_type by the essence of the visit: if there is a DIAGNOSIS and/or TREATMENT, it is 'visit' (or 'procedure'), NOT 'vaccination'. The word "Вакцинация" inside a recommendations/prevention checklist does NOT make the record a vaccination.
 - Prescribed MEDICATIONS with a dosage go to prescriptions[] (name, dose, frequency, duration, instruction), even under headers like "Рекомендации и назначения" / "Препараты и манипуляции". General care advice (how to clean ears, etc.) goes to recommendations.
-- diagnosis: extract both the diagnosis text and its code (e.g. "H96 Наружный отит" → diagnosis_code: "H96", diagnosis: "Наружный отит").
+- diagnosis: extract the diagnosis text; if a code precedes the text, put the code in diagnosis_code and the text in diagnosis.
 - recommendations is a SINGLE string (join multiple points with line breaks), NOT an array.
 - Russian dates are day-first (DD.MM.YYYY).
-
-EXAMPLE (guidance only — do not copy these values):
-A document with header "Игги / Собака / Чихуахуа", "Владелец: Иванов И.И.", and a line "Вакцинация 15.03.2026: Нобивак DHPPi, Нобивак Lepto, Нобивак Rabies, ревакцинация через год" must yield:
-- record_type: "vaccination"
-- vet_name: null   (only owner shown)
-- clinic_name: null   (header is the pet, not a clinic)
-- diagnosis: null   (species is not a diagnosis)
-- occurred_at: "2026-03-15"
-- vaccines: THREE separate items —
-    {"vaccine_name":"Нобивак DHPPi","date_given":"2026-03-15","next_due_date":"2027-03-15"},
-    {"vaccine_name":"Нобивак Lepto","date_given":"2026-03-15","next_due_date":"2027-03-15"},
-    {"vaccine_name":"Нобивак Rabies","date_given":"2026-03-15","next_due_date":"2027-03-15"}
-
 - Output ONLY the JSON object.`;
 
 // Безопасный парсинг: снять ```-обёртку, затем JSON.parse; при неудаче —
