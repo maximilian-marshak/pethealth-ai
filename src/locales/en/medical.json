@@ -238,6 +238,9 @@
         "followUp": "Follow-up Date",
         "urgency": "Urgency",
         "vaccineName": "Vaccine",
+        "vaccineType": "Type",
+        "kind": "Kind",
+        "status": "Status",
         "dateGiven": "Date Given",
         "nextDue": "Next Due",
         "name": "Name",
@@ -252,6 +255,11 @@
         "testType": "Test",
         "result": "Result"
       }
+    },
+    "detail": {
+      "title": "Record",
+      "attachment": "Scan",
+      "attachmentUnavailable": "Preview unavailable"
     },
     "scan": {
       "button": "Scan",

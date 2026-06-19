@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../utils/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect, StackActions } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, StackActions } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { usePetContext } from '../context/PetContext';
@@ -704,6 +704,18 @@ export default function MedicalScreen() {
     }, [loadMedicalData])
   );
 
+  // Возврат из RecordDetail с "Изменить": открыть существующий RecordModal и
+  // сбросить param, чтобы модалка не открывалась повторно на следующем фокусе.
+  const route = useRoute();
+  useEffect(() => {
+    const er = route.params?.editRecord;
+    if (er) {
+      setEditRecord(er);
+      setRecordModal(true);
+      navigation.setParams({ editRecord: undefined });
+    }
+  }, [route.params?.editRecord]);
+
   // ─── Vaccine CRUD ───────────────────────────────────────────────────────
 
   const saveVaccine = async (formData) => {
@@ -1249,7 +1261,12 @@ export default function MedicalScreen() {
         </View>
       ) : (
         records.map(r => (
-          <View key={r.id} style={styles.card}>
+          <TouchableOpacity
+            key={r.id}
+            style={styles.card}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('RecordDetail', { record: r, recordId: r.id, petId: selectedPet.id })}
+          >
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{fmt(r.occurred_at ?? r.date)}</Text>
               <View style={[styles.statusBadge, styles.badgePurple]}>
@@ -1324,7 +1341,7 @@ export default function MedicalScreen() {
                 <Text style={styles.actionDelete}>{t('card.delete')}</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>

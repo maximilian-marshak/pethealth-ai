@@ -238,6 +238,9 @@
         "followUp": "Повторный приём",
         "urgency": "Срочность",
         "vaccineName": "Вакцина",
+        "vaccineType": "Тип",
+        "kind": "Вид",
+        "status": "Статус",
         "dateGiven": "Дата введения",
         "nextDue": "Следующая",
         "name": "Название",
@@ -252,6 +255,11 @@
         "testType": "Анализ",
         "result": "Результат"
       }
+    },
+    "detail": {
+      "title": "Запись",
+      "attachment": "Скан",
+      "attachmentUnavailable": "Превью недоступно"
     },
     "scan": {
       "button": "Сканировать",

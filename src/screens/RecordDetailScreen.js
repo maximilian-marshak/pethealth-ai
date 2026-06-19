@@ -1,0 +1,277 @@
+// ══════════════════════════════════════════════════════════════
+// src/screens/RecordDetailScreen.js
+// Детальный просмотр медзаписи (read-only) + изменить/удалить.
+// Вне PetProvider (root Stack): питомец из params (record.pet_id / petId).
+// Дочерние таблицы связаны с родителем колонкой record_id.
+// ══════════════════════════════════════════════════════════════
+
+import React, { useEffect, useState } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  Alert, ActivityIndicator, Image,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+import { supabase } from '../utils/supabase';
+
+const ACCENT = '#6B4EFF';
+
+export default function RecordDetailScreen() {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { t, i18n } = useTranslation('medical');
+  const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+  const fmt = (d) => (d ? new Date(d).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
+
+  const { record = {}, recordId, petId } = route.params || {};
+  const id = recordId || record.id;
+
+  const [vaccines, setVaccines]         = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [parasites, setParasites]       = useState([]);
+  const [labs, setLabs]                 = useState([]);
+  const [hasAttachment, setHasAttachment] = useState(false);
+  const [signedUrl, setSignedUrl]       = useState(null);
+  const [loading, setLoading]           = useState(true);
+  const [deleting, setDeleting]         = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!id) { setLoading(false); return; }
+      try {
+        const [vac, rx, par, lab, att] = await Promise.all([
+          supabase.from('record_vaccines').select('*').eq('record_id', id),
+          supabase.from('record_prescriptions').select('*').eq('record_id', id),
+          supabase.from('record_parasite_treatments').select('*').eq('record_id', id),
+          supabase.from('record_lab_tests').select('*').eq('record_id', id),
+          supabase.from('record_attachments').select('*').eq('record_id', id).limit(1).maybeSingle(),
+        ]);
+        if (cancelled) return;
+        setVaccines(vac.data || []);
+        setPrescriptions(rx.data || []);
+        setParasites(par.data || []);
+        setLabs(lab.data || []);
+
+        const attachment = att.data;
+        if (attachment?.file_url) {
+          setHasAttachment(true);
+          try {
+            const { data: signed, error: sErr } = await supabase.storage
+              .from('medical-docs')
+              .createSignedUrl(attachment.file_url, 3600);
+            if (!cancelled && !sErr && signed?.signedUrl) setSignedUrl(signed.signedUrl);
+          } catch (e) {
+            console.warn('signed url failed:', e?.message);
+          }
+        }
+      } catch (e) {
+        console.error('RecordDetail load:', e?.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  const handleEdit = () => {
+    // Переиспользуем существующий RecordModal в MedicalScreen (param сбрасывается там).
+    navigation.navigate('MainTabs', { screen: 'Medical', params: { editRecord: record } });
+  };
+
+  const handleDelete = () => {
+    Alert.alert(t('delete.record.title'), t('delete.record.message'), [
+      { text: t('delete.cancel'), style: 'cancel' },
+      {
+        text: t('delete.confirm'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setDeleting(true);
+            const { error } = await supabase.from('medical_records').delete().eq('id', id);
+            if (error) throw error;
+            navigation.goBack();
+          } catch (e) {
+            Alert.alert(t('modal.errorTitle'), e.message);
+          } finally {
+            setDeleting(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  // ─── Render helpers ───────────────────────────────────────────────────────
+  const Row = ({ label, value }) =>
+    value == null || value === '' ? null : (
+      <View style={s.row}>
+        <Text style={s.rowLabel}>{label}</Text>
+        <Text style={s.rowValue}>{String(value)}</Text>
+      </View>
+    );
+
+  const ChildSection = ({ title, items, renderItem }) =>
+    !items.length ? null : (
+      <View style={s.section}>
+        <Text style={s.sectionTitle}>{title}</Text>
+        {items.map((it, i) => (
+          <View key={it.id || i} style={s.childCard}>{renderItem(it)}</View>
+        ))}
+      </View>
+    );
+
+  const recordTypeLabel = record.record_type
+    ? t(`recordTypes.${record.record_type}`, { defaultValue: record.record_type })
+    : t('status.visit');
+
+  const weightValue =
+    record.weight != null && record.weight !== ''
+      ? `${record.weight}${record.weight_unit ? ' ' + t(`review.weightUnits.${record.weight_unit}`, { defaultValue: record.weight_unit }) : ''}`
+      : null;
+
+  return (
+    <SafeAreaView style={s.container} edges={['top']}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.headerBtn}>
+          <Ionicons name="arrow-back" size={24} color={ACCENT} />
+        </TouchableOpacity>
+        <Text style={s.headerTitle}>{t('detail.title')}</Text>
+        <View style={s.headerBtn} />
+      </View>
+
+      {loading ? (
+        <ActivityIndicator style={{ marginTop: 40 }} size="large" color={ACCENT} />
+      ) : (
+        <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+          {/* Parent */}
+          <View style={s.topRow}>
+            <Text style={s.date}>{fmt(record.occurred_at ?? record.date)}</Text>
+            <View style={s.badge}><Text style={s.badgeText}>{recordTypeLabel}</Text></View>
+          </View>
+
+          <View style={s.section}>
+            <Row label={t('review.fields.vetName')} value={record.vet_name} />
+            <Row label={t('review.fields.clinicName')} value={record.clinic_name} />
+            <Row label={t('review.fields.diagnosis')} value={record.diagnosis} />
+            <Row label={t('review.fields.diagnosisCode')} value={record.diagnosis_code} />
+            <Row label={t('review.fields.symptoms')} value={record.symptoms} />
+            <Row label={t('review.fields.recommendations')} value={record.recommendations} />
+            <Row label={t('review.fields.weight')} value={weightValue} />
+            <Row label={t('review.fields.temperature')} value={record.temperature} />
+            <Row label={t('review.fields.followUp')} value={record.follow_up_date ? fmt(record.follow_up_date) : null} />
+            <Row label={t('review.fields.urgency')} value={record.urgency ? t(`urgency.${record.urgency}`, { defaultValue: record.urgency }) : null} />
+          </View>
+
+          {/* Children */}
+          <ChildSection
+            title={t('review.sections.vaccines')}
+            items={vaccines}
+            renderItem={(v) => (
+              <>
+                <Text style={s.childTitle}>{v.vaccine_name || '—'}</Text>
+                <Row label={t('review.fields.vaccineType')} value={v.vaccine_type ? t(`vaccineTypes.${v.vaccine_type}`, { defaultValue: v.vaccine_type }) : null} />
+                <Row label={t('review.fields.dateGiven')} value={v.date_given ? fmt(v.date_given) : null} />
+                <Row label={t('review.fields.nextDue')} value={v.next_due_date ? fmt(v.next_due_date) : null} />
+              </>
+            )}
+          />
+          <ChildSection
+            title={t('review.sections.prescriptions')}
+            items={prescriptions}
+            renderItem={(p) => (
+              <>
+                <Text style={s.childTitle}>{p.name || '—'}</Text>
+                <Row label={t('review.fields.dose')} value={p.dose} />
+                <Row label={t('review.fields.frequency')} value={p.frequency} />
+                <Row label={t('review.fields.startDate')} value={p.start_date ? fmt(p.start_date) : null} />
+                <Row label={t('review.fields.endDate')} value={p.end_date ? fmt(p.end_date) : null} />
+                <Row label={t('review.fields.instruction')} value={p.instruction} />
+                <Row label={t('review.fields.active')} value={p.active === false ? t('status.inactive') : t('status.active')} />
+              </>
+            )}
+          />
+          <ChildSection
+            title={t('review.sections.parasites')}
+            items={parasites}
+            renderItem={(p) => (
+              <>
+                <Text style={s.childTitle}>{p.product || '—'}</Text>
+                <Row label={t('review.fields.kind') } value={p.kind ? t(`review.kinds.${p.kind}`, { defaultValue: p.kind }) : null} />
+                <Row label={t('review.fields.treatedOn')} value={p.treated_on ? fmt(p.treated_on) : null} />
+                <Row label={t('review.fields.nextDue')} value={p.next_due_date ? fmt(p.next_due_date) : null} />
+              </>
+            )}
+          />
+          <ChildSection
+            title={t('review.sections.labs')}
+            items={labs}
+            renderItem={(l) => (
+              <>
+                <Text style={s.childTitle}>{l.test_type || '—'}</Text>
+                <Row label={t('review.fields.status')} value={l.status ? t(`review.labStatus.${l.status}`, { defaultValue: l.status }) : null} />
+                <Row label={t('review.fields.result')} value={l.result} />
+              </>
+            )}
+          />
+
+          {/* Attachment */}
+          {(signedUrl || hasAttachment) && (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>{t('detail.attachment')}</Text>
+              {signedUrl ? (
+                <Image source={{ uri: signedUrl }} style={s.attachment} resizeMode="contain" />
+              ) : (
+                <Text style={s.attachmentUnavailable}>{t('detail.attachmentUnavailable')}</Text>
+              )}
+            </View>
+          )}
+
+          {/* Actions */}
+          <View style={s.footer}>
+            <TouchableOpacity style={[s.btn, s.btnEdit]} onPress={handleEdit} disabled={deleting}>
+              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Text style={s.btnEditText}>{t('card.edit')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.btn, s.btnDelete]} onPress={handleDelete} disabled={deleting}>
+              {deleting ? <ActivityIndicator color="#EF4444" /> : (
+                <>
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                  <Text style={s.btnDeleteText}>{t('card.delete')}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  container:   { flex: 1, backgroundColor: '#F9FAFB' },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  headerBtn:   { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
+  content:     { padding: 16, paddingBottom: 40 },
+  topRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  date:        { fontSize: 18, fontWeight: '700', color: '#1F2937' },
+  badge:       { backgroundColor: '#EEF2FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  badgeText:   { fontSize: 11, fontWeight: '700', color: ACCENT },
+  section:     { marginBottom: 16, borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingTop: 12 },
+  sectionTitle:{ fontSize: 15, fontWeight: '700', color: '#374151', marginBottom: 8 },
+  row:         { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 6 },
+  rowLabel:    { fontSize: 13, color: '#6B7280', flexShrink: 0 },
+  rowValue:    { fontSize: 13, color: '#1F2937', fontWeight: '500', flex: 1, textAlign: 'right' },
+  childCard:   { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
+  childTitle:  { fontSize: 15, fontWeight: '600', color: '#1F2937', marginBottom: 6 },
+  attachment:  { width: '100%', height: 240, borderRadius: 12, backgroundColor: '#E5E7EB' },
+  attachmentUnavailable: { fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' },
+  footer:      { flexDirection: 'row', gap: 12, marginTop: 8 },
+  btn:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12 },
+  btnEdit:     { backgroundColor: ACCENT },
+  btnEditText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  btnDelete:   { backgroundColor: '#FEE2E2' },
+  btnDeleteText:{ fontSize: 15, fontWeight: '600', color: '#EF4444' },
+});
