@@ -12,8 +12,8 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL_CHAINS: Record<string, string[]> = {
   ocr:    ["nvidia/nemotron-nano-12b-v2-vl:free", "openrouter/free"],
   vision: ["nvidia/nemotron-nano-12b-v2-vl:free", "openrouter/free"],
-  // Портировано из openAIService без google/gemma-* (геоблок), порядок сохранён.
-  chat:   ["nvidia/nemotron-3-ultra-550b-a55b:free", "openrouter/free"],
+  // Быстрые non-reasoning free-модели (550B-reasoning примарь тормозил -> таймаут).
+  chat:   ["deepseek/deepseek-chat-v3.1:free", "meta-llama/llama-3.3-70b-instruct:free", "openrouter/free"],
 };
 
 // Дефолты, если параметры не переданы клиентом.
