@@ -18,7 +18,6 @@ import { supabase } from '../utils/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
-import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
@@ -31,14 +30,6 @@ const ACTIVITY_TYPES = [
   { value: 'training', icon: 'school' },
   { value: 'other', icon: 'ellipsis-horizontal' },
 ];
-
-const ACTIVITY_TO_REWARD = {
-  walk: 'training',
-  play: 'training',
-  exercise: 'training',
-  training: 'training',
-  other: null,
-};
 
 export default function ActivityScreen() {
   const { t, i18n } = useTranslation('activity');
@@ -62,7 +53,6 @@ export default function ActivityScreen() {
   const [activityDate, setActivityDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const { addPoints } = useLoyaltyPoints();
 
   useEffect(() => {
     fetchPets();
@@ -206,23 +196,8 @@ export default function ActivityScreen() {
 
       if (error) throw error;
 
-      const rewardType = ACTIVITY_TO_REWARD[activityType];
-
-      if (rewardType) {
-        const pointsAdded = await addPoints(rewardType, activityType);
-
-        if (pointsAdded) {
-          Alert.alert(
-            t('alerts.successTitle'),
-            t('alerts.successMessage'),
-            [{ text: t('alerts.successButton'), style: 'default' }]
-          );
-        } else {
-          Alert.alert(t('common:ok'), t('alerts.successSimple'));
-        }
-      } else {
-        Alert.alert(t('common:ok'), t('alerts.successSimple'));
-      }
+      // Логирование активности баллов не начисляет — только проверяемые события.
+      Alert.alert(t('common:ok'), t('alerts.successSimple'));
 
       setModalVisible(false);
       resetForm();
