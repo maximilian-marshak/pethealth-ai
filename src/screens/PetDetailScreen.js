@@ -249,7 +249,7 @@ export default function PetDetailScreen({ route, navigation }) {
         const iconMap = {
           vaccination: 'medkit-outline',
           checkup:     'pulse-outline',
-          vet_visit:   'medkit-outline',
+          vet_visit:   'business-outline',
           medication:  'medical-outline',
           grooming:    'cut-outline',
         };
