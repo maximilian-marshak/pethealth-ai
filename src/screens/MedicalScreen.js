@@ -933,7 +933,6 @@ export default function MedicalScreen() {
   const runScan = async (fromCamera) => {
     const scanId = Date.now();
     const source = fromCamera ? 'camera' : 'gallery';
-    console.log('🔵 SCAN START', scanId, 'source:', source);
     try {
       const perm = fromCamera
         ? await ImagePicker.requestCameraPermissionsAsync()
@@ -947,7 +946,6 @@ export default function MedicalScreen() {
         ? await ImagePicker.launchCameraAsync({ quality: 0.9 })
         : await ImagePicker.launchImageLibraryAsync({ quality: 0.9, mediaTypes: ['images'] });
       if (picked.canceled || !picked.assets?.length) return;
-      console.log('🔵', scanId, 'picked uri:', picked.assets[0].uri);
 
       setScanning(true);
       const manipulated = await ImageManipulator.manipulateAsync(
@@ -955,7 +953,6 @@ export default function MedicalScreen() {
         [{ resize: { width: 1024 } }],
         { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
-      console.log('🔵', scanId, 'manip uri:', manipulated.uri, 'base64 len:', manipulated.base64?.length, 'base64 head:', manipulated.base64?.slice(0, 24));
 
       const ocr = await parseMedicalDocument(manipulated.base64, 'image/jpeg');
       console.log('🧾 OCR result', scanId, JSON.stringify(ocr, null, 2));
