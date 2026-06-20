@@ -14,9 +14,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../utils/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, StackActions } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
+import { usePetContext } from '../context/PetContext';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { parseMedicalDocument } from '../services/ocrService';
+import AutocompleteInput from '../components/AutocompleteInput';
+import { VACCINES, DRUGS } from '../data/medicalPresets';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -45,9 +51,20 @@ const getVaccineStatus = (nextDueDate) => {
   return 'up_to_date';
 };
 
-const RECORD_TYPE_KEYS = [
-  'checkup', 'surgery', 'emergency', 'dental', 'grooming', 'other',
-];
+// Пустой OCR: все массивы пусты И ключевые скаляры пусты (record_type не в счёт).
+const isEmptyOCR = (d) => {
+  if (!d) return true;
+  const arraysEmpty =
+    !(d.vaccines && d.vaccines.length) &&
+    !(d.prescriptions && d.prescriptions.length) &&
+    !(d.parasite_treatments && d.parasite_treatments.length) &&
+    !(d.lab_tests && d.lab_tests.length);
+  const scalarsEmpty = [
+    d.diagnosis, d.symptoms, d.recommendations,
+    d.vet_name, d.clinic_name, d.weight, d.temperature,
+  ].every((v) => v == null || v === '');
+  return arraysEmpty && scalarsEmpty;
+};
 
 // ─── DatePicker Field ─────────────────────────────────────────────────────────
 
@@ -118,6 +135,7 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
   const [dateGiven, setDateGiven] = useState('');
   const [nextDue,   setNextDue]   = useState('');
   const [vet,       setVet]       = useState('');
+  const [vaccineType, setVaccineType] = useState('primary');
   const [notes,     setNotes]     = useState('');
   const [saving,    setSaving]    = useState(false);
 
@@ -127,9 +145,11 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
       setDateGiven(editData.date_given || '');
       setNextDue(editData.next_due_date || '');
       setVet(editData.vet_name || editData.administered_by || '');
+      setVaccineType(editData.vaccine_type || 'primary');
       setNotes(editData.notes || '');
     } else {
       setName(''); setDateGiven(''); setNextDue(''); setVet(''); setNotes('');
+      setVaccineType('primary');
     }
   }, [editData, visible]);
 
@@ -146,6 +166,7 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
         next_due_date:   nextDue   || null,
         vet_name:        vet.trim() || null,
         administered_by: vet.trim() || null,
+        vaccine_type:    vaccineType,
         notes:           notes.trim() || null,
       });
     } catch (err) {
@@ -163,13 +184,12 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
             {editData ? t('modal.vaccine.editTitle') : t('modal.vaccine.addTitle')}
           </Text>
 
-          <Text style={mStyles.label}>{t('modal.vaccine.nameLabel')}</Text>
-          <TextInput
-            style={mStyles.input}
+          <AutocompleteInput
+            label={t('modal.vaccine.nameLabel')}
             value={name}
             onChangeText={setName}
+            suggestions={VACCINES}
             placeholder={t('modal.vaccine.namePlaceholder')}
-            placeholderTextColor="#9CA3AF"
           />
 
           <DatePickerField
@@ -194,6 +214,21 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
             placeholder={t('modal.vaccine.adminByPlaceholder')}
             placeholderTextColor="#9CA3AF"
           />
+
+          <Text style={mStyles.label}>{t('modal.vaccine.typeLabel')}</Text>
+          <View style={mStyles.row}>
+            {['primary', 'booster'].map((vt) => (
+              <TouchableOpacity
+                key={vt}
+                style={[mStyles.chip, { flex: 1, marginRight: 0 }, vaccineType === vt && mStyles.chipActive]}
+                onPress={() => setVaccineType(vt)}
+              >
+                <Text style={[mStyles.chipText, vaccineType === vt && mStyles.chipTextActive]}>
+                  {t(`vaccineTypes.${vt}`)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <Text style={mStyles.label}>{t('modal.vaccine.notesLabel')}</Text>
           <TextInput
@@ -290,20 +325,19 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
     <Modal visible={visible} animationType="slide" transparent>
       <View style={mStyles.overlay}>
         <View style={mStyles.sheet}>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={mStyles.title}>
               {editData
                 ? t('modal.medication.editTitle')
                 : t('modal.medication.addTitle')}
             </Text>
 
-            <Text style={mStyles.label}>{t('modal.medication.nameLabel')}</Text>
-            <TextInput
-              style={mStyles.input}
+            <AutocompleteInput
+              label={t('modal.medication.nameLabel')}
               value={name}
               onChangeText={setName}
+              suggestions={DRUGS}
               placeholder={t('modal.medication.namePlaceholder')}
-              placeholderTextColor="#9CA3AF"
             />
 
             <Text style={mStyles.label}>{t('modal.medication.dosageLabel')}</Text>
@@ -404,29 +438,36 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
 const RecordModal = ({ visible, onClose, onSave, editData }) => {
   const { t } = useTranslation('medical');
 
-  const [visitDate,   setVisitDate]   = useState('');
-  const [recordType,  setRecordType]  = useState('checkup');
-  const [vetName,     setVetName]     = useState('');
-  const [clinic,      setClinic]      = useState('');
-  const [diagnosis,   setDiagnosis]   = useState('');
-  const [treatment,   setTreatment]   = useState('');
-  const [cost,        setCost]        = useState('');
-  const [notes,       setNotes]       = useState('');
-  const [saving,      setSaving]      = useState(false);
+  const [visitDate,       setVisitDate]       = useState('');
+  const [vetName,         setVetName]         = useState('');
+  const [clinic,          setClinic]          = useState('');
+  const [diagnosis,       setDiagnosis]       = useState('');
+  const [diagnosisCode,   setDiagnosisCode]   = useState('');
+  const [symptoms,        setSymptoms]        = useState('');
+  const [recommendations, setRecommendations] = useState('');
+  const [weight,          setWeight]          = useState('');
+  const [temperature,     setTemperature]     = useState('');
+  const [followUpDate,    setFollowUpDate]    = useState('');
+  const [urgency,         setUrgency]         = useState('normal');
+  const [saving,          setSaving]          = useState(false);
 
   useEffect(() => {
     if (editData) {
-      setVisitDate(editData.visit_date   || '');
-      setRecordType(editData.record_type || 'checkup');
-      setVetName(editData.vet_name       || '');
-      setClinic(editData.clinic_name     || '');
-      setDiagnosis(editData.diagnosis    || '');
-      setTreatment(editData.treatment    || '');
-      setCost(editData.cost ? String(editData.cost) : '');
-      setNotes(editData.notes            || '');
+      setVisitDate((editData.occurred_at || editData.date || '').slice(0, 10));
+      setVetName(editData.vet_name             || '');
+      setClinic(editData.clinic_name           || '');
+      setDiagnosis(editData.diagnosis          || '');
+      setDiagnosisCode(editData.diagnosis_code || '');
+      setSymptoms(editData.symptoms            || '');
+      setRecommendations(editData.recommendations || '');
+      setWeight(editData.weight != null ? String(editData.weight) : '');
+      setTemperature(editData.temperature != null ? String(editData.temperature) : '');
+      setFollowUpDate((editData.follow_up_date || '').slice(0, 10));
+      setUrgency(editData.urgency || 'normal');
     } else {
-      setVisitDate(''); setRecordType('checkup'); setVetName('');
-      setClinic(''); setDiagnosis(''); setTreatment(''); setCost(''); setNotes('');
+      setVisitDate(''); setVetName(''); setClinic(''); setDiagnosis('');
+      setDiagnosisCode(''); setSymptoms(''); setRecommendations('');
+      setWeight(''); setTemperature(''); setFollowUpDate(''); setUrgency('normal');
     }
   }, [editData, visible]);
 
@@ -438,14 +479,17 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
     setSaving(true);
     try {
       await onSave({
-        visit_date:  visitDate,
-        record_type: recordType,
-        vet_name:    vetName.trim()   || null,
-        clinic_name: clinic.trim()    || null,
-        diagnosis:   diagnosis.trim() || null,
-        treatment:   treatment.trim() || null,
-        cost:        cost ? parseFloat(cost) : null,
-        notes:       notes.trim()     || null,
+        visit_date:      visitDate,
+        vet_name:        vetName.trim() || null,
+        clinic_name:     clinic.trim() || null,
+        diagnosis:       diagnosis.trim() || null,
+        diagnosis_code:  diagnosisCode.trim() || null,
+        symptoms:        symptoms.trim() || null,
+        recommendations: recommendations.trim() || null,
+        weight:          weight ? parseFloat(weight) : null,
+        temperature:     temperature ? parseFloat(temperature) : null,
+        follow_up_date:  followUpDate || null,
+        urgency:         urgency,
       });
     } catch (err) {
       Alert.alert(t('modal.errorTitle'), err.message);
@@ -471,31 +515,6 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               onChange={setVisitDate}
               placeholder={t('modal.record.visitDatePlaceholder')}
             />
-
-            <Text style={mStyles.label}>{t('modal.record.recordTypeLabel')}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 12 }}
-            >
-              {RECORD_TYPE_KEYS.map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    mStyles.chip,
-                    recordType === type && mStyles.chipActive,
-                  ]}
-                  onPress={() => setRecordType(type)}
-                >
-                  <Text style={[
-                    mStyles.chipText,
-                    recordType === type && mStyles.chipTextActive,
-                  ]}>
-                    {t(`recordTypes.${type}`)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
 
             <Text style={mStyles.label}>{t('modal.record.vetNameLabel')}</Text>
             <TextInput
@@ -524,37 +543,78 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               placeholderTextColor="#9CA3AF"
             />
 
-            <Text style={mStyles.label}>{t('modal.record.treatmentLabel')}</Text>
+            <Text style={mStyles.label}>{t('modal.record.diagnosisCodeLabel')}</Text>
+            <TextInput
+              style={mStyles.input}
+              value={diagnosisCode}
+              onChangeText={setDiagnosisCode}
+              placeholder={t('modal.record.diagnosisCodePlaceholder')}
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <Text style={mStyles.label}>{t('modal.record.symptomsLabel')}</Text>
             <TextInput
               style={[mStyles.input, mStyles.textArea]}
-              value={treatment}
-              onChangeText={setTreatment}
-              placeholder={t('modal.record.treatmentPlaceholder')}
+              value={symptoms}
+              onChangeText={setSymptoms}
+              placeholder={t('modal.record.symptomsPlaceholder')}
               placeholderTextColor="#9CA3AF"
               multiline
               numberOfLines={3}
             />
 
-            <Text style={mStyles.label}>{t('modal.record.costLabel')}</Text>
+            <Text style={mStyles.label}>{t('modal.record.recommendationsLabel')}</Text>
+            <TextInput
+              style={[mStyles.input, mStyles.textArea]}
+              value={recommendations}
+              onChangeText={setRecommendations}
+              placeholder={t('modal.record.recommendationsPlaceholder')}
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={3}
+            />
+
+            <Text style={mStyles.label}>{t('modal.record.weightLabel')}</Text>
             <TextInput
               style={mStyles.input}
-              value={cost}
-              onChangeText={setCost}
-              placeholder={t('modal.record.costPlaceholder')}
+              value={weight}
+              onChangeText={setWeight}
+              placeholder={t('modal.record.weightPlaceholder')}
               placeholderTextColor="#9CA3AF"
               keyboardType="decimal-pad"
             />
 
-            <Text style={mStyles.label}>{t('modal.record.notesLabel')}</Text>
+            <Text style={mStyles.label}>{t('modal.record.temperatureLabel')}</Text>
             <TextInput
-              style={[mStyles.input, mStyles.textArea]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder={t('modal.record.notesPlaceholder')}
+              style={mStyles.input}
+              value={temperature}
+              onChangeText={setTemperature}
+              placeholder={t('modal.record.temperaturePlaceholder')}
               placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={3}
+              keyboardType="decimal-pad"
             />
+
+            <DatePickerField
+              label={t('modal.record.followUpLabel')}
+              value={followUpDate}
+              onChange={setFollowUpDate}
+              placeholder={t('modal.record.followUpPlaceholder')}
+            />
+
+            <Text style={mStyles.label}>{t('modal.record.urgencyLabel')}</Text>
+            <View style={mStyles.row}>
+              {['normal', 'elevated', 'high'].map((u) => (
+                <TouchableOpacity
+                  key={u}
+                  style={[mStyles.chip, { flex: 1, marginRight: 0 }, urgency === u && mStyles.chipActive]}
+                  onPress={() => setUrgency(u)}
+                >
+                  <Text style={[mStyles.chipText, urgency === u && mStyles.chipTextActive]}>
+                    {t(`urgency.${u}`)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <View style={mStyles.row}>
               <TouchableOpacity
@@ -591,10 +651,10 @@ export default function MedicalScreen() {
   const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
   const fmt    = (dateStr) => formatDate(dateStr, locale);
 
-  const [pets,        setPets]        = useState([]);
-  const [selectedPet, setSelectedPet] = useState(null);
-  const [petsLoading, setPetsLoading] = useState(true);
+  const { pets, selectedPet, selectPet, loading: petsLoading } = usePetContext();
+
   const [activeTab,   setActiveTab]   = useState('overview');
+  const [scanning,    setScanning]    = useState(false);
   const [vaccines,    setVaccines]    = useState([]);
   const [medications, setMedications] = useState([]);
   const [records,     setRecords]     = useState([]);
@@ -607,33 +667,6 @@ export default function MedicalScreen() {
   const [editMed,      setEditMed]      = useState(null);
   const [editRecord,   setEditRecord]   = useState(null);
 
-  // ─── Load Pets ──────────────────────────────────────────────────────────
-
-  const loadPets = useCallback(async () => {
-    try {
-      setPetsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('pets')
-        .select('id, name, species, breed, avatar_url')
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setPets(data || []);
-      if (data?.length > 0) setSelectedPet(prev => prev ?? data[0]);
-    } catch (err) {
-      console.error('loadPets:', err.message);
-      Alert.alert('Error', t('errors.loadPets'));
-    } finally {
-      setPetsLoading(false);
-    }
-  }, [t]);
-
-  useEffect(() => { loadPets(); }, [loadPets]);
-
   // ─── Load Medical Data ──────────────────────────────────────────────────
 
   const loadMedicalData = useCallback(async () => {
@@ -641,12 +674,15 @@ export default function MedicalScreen() {
     try {
       setLoading(true);
       const [vaccRes, medRes, recRes] = await Promise.all([
-        supabase.from('vaccinations').select('*').eq('pet_id', selectedPet.id)
-          .order('next_due_date', { ascending: true }),
-        supabase.from('medications').select('*').eq('pet_id', selectedPet.id)
+        supabase.from('record_vaccines').select('*').eq('pet_id', selectedPet.id)
+          .order('next_due_date', { ascending: true })
+          .order('date_given', { ascending: false }),
+        supabase.from('record_prescriptions').select('*').eq('pet_id', selectedPet.id)
           .order('start_date', { ascending: false }),
-        supabase.from('vet_records').select('*').eq('pet_id', selectedPet.id)
-          .order('visit_date', { ascending: false }),
+        supabase.from('medical_records').select('*').eq('pet_id', selectedPet.id)
+          .in('record_type', ['visit', 'procedure', 'lab_test', 'parasite_treatment', 'other'])
+          .order('occurred_at', { ascending: false, nullsFirst: false })
+          .order('date', { ascending: false, nullsFirst: false }),
       ]);
       if (vaccRes.error) throw vaccRes.error;
       if (medRes.error)  throw medRes.error;
@@ -662,20 +698,56 @@ export default function MedicalScreen() {
     }
   }, [selectedPet, t]);
 
-  useEffect(() => { loadMedicalData(); }, [loadMedicalData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadMedicalData();
+    }, [loadMedicalData])
+  );
+
+  // Возврат из RecordDetail с "Изменить": открыть существующий RecordModal и
+  // сбросить param, чтобы модалка не открывалась повторно на следующем фокусе.
+  const route = useRoute();
+  useEffect(() => {
+    const er = route.params?.editRecord;
+    if (er) {
+      setEditRecord(er);
+      setRecordModal(true);
+      navigation.setParams({ editRecord: undefined });
+    }
+  }, [route.params?.editRecord]);
 
   // ─── Vaccine CRUD ───────────────────────────────────────────────────────
 
   const saveVaccine = async (formData) => {
     try {
       if (editVaccine) {
-        const { error } = await supabase.from('vaccinations')
-          .update({ ...formData, updated_at: new Date().toISOString() })
+        // Правка — прямой update дочерней строки record_vaccines
+        const { error } = await supabase.from('record_vaccines')
+          .update({
+            vaccine_name:  formData.vaccine_name,
+            vaccine_type:  formData.vaccine_type || null,
+            date_given:    formData.date_given || null,
+            next_due_date: formData.next_due_date || null,
+          })
           .eq('id', editVaccine.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('vaccinations')
-          .insert({ ...formData, pet_id: selectedPet.id });
+        // Добавление — через RPC save_medical_record (родитель + дети)
+        const p_payload = {
+          pet_id:      selectedPet.id,
+          record_type: 'vaccination',
+          source:      'manual',
+          occurred_at: formData.date_given || null,
+          vet_name:    formData.vet_name || null,
+          description: formData.notes || null,
+          vaccines: [{
+            vaccine_name:  formData.vaccine_name,
+            vaccine_type:  formData.vaccine_type || null,
+            date_given:    formData.date_given || null,
+            next_due_date: formData.next_due_date || null,
+          }],
+        };
+        const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
       }
       setVaccineModal(false); setEditVaccine(null);
@@ -697,7 +769,7 @@ export default function MedicalScreen() {
           onPress: async () => {
             try {
               const { error } = await supabase
-                .from('vaccinations').delete().eq('id', id);
+                .from('record_vaccines').delete().eq('id', id);
               if (error) throw error;
               await loadMedicalData();
             } catch (err) {
@@ -714,13 +786,37 @@ export default function MedicalScreen() {
   const saveMedication = async (formData) => {
     try {
       if (editMed) {
-        const { error } = await supabase.from('medications')
-          .update({ ...formData, updated_at: new Date().toISOString() })
+        // Правка — прямой update record_prescriptions
+        const { error } = await supabase.from('record_prescriptions')
+          .update({
+            name:        formData.medication_name,
+            dose:        formData.dosage || null,
+            frequency:   formData.frequency || null,
+            start_date:  formData.start_date || null,
+            end_date:    formData.end_date || null,
+            instruction: formData.notes || null,
+            active:      formData.is_active,
+          })
           .eq('id', editMed.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('medications')
-          .insert({ ...formData, pet_id: selectedPet.id });
+        const p_payload = {
+          pet_id:      selectedPet.id,
+          record_type: 'medication_course',
+          source:      'manual',
+          occurred_at: formData.start_date || null,
+          vet_name:    formData.prescribed_by || null,
+          prescriptions: [{
+            name:        formData.medication_name,
+            dose:        formData.dosage || null,
+            frequency:   formData.frequency || null,
+            start_date:  formData.start_date || null,
+            end_date:    formData.end_date || null,
+            instruction: formData.notes || null,
+            active:      formData.is_active,
+          }],
+        };
+        const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
       }
       setMedModal(false); setEditMed(null);
@@ -742,7 +838,7 @@ export default function MedicalScreen() {
           onPress: async () => {
             try {
               const { error } = await supabase
-                .from('medications').delete().eq('id', id);
+                .from('record_prescriptions').delete().eq('id', id);
               if (error) throw error;
               await loadMedicalData();
             } catch (err) {
@@ -758,28 +854,35 @@ export default function MedicalScreen() {
 
   const saveRecord = async (formData) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const payload = {
-        visit_date:  formData.visit_date,
-        reason:      formData.record_type || null,
-        vet_name:    formData.vet_name    || null,
-        clinic_name: formData.clinic_name || null,
-        diagnosis:   formData.diagnosis   || null,
-        treatment:   formData.treatment   || null,
-        cost:        formData.cost ?? null,
-        notes:       formData.notes       || null,
+      const fields = {
+        occurred_at:     formData.visit_date || null,
+        vet_name:        formData.vet_name || null,
+        clinic_name:     formData.clinic_name || null,
+        diagnosis:       formData.diagnosis || null,
+        diagnosis_code:  formData.diagnosis_code || null,
+        symptoms:        formData.symptoms || null,
+        recommendations: formData.recommendations || null,
+        weight:          formData.weight ?? null,
+        temperature:     formData.temperature ?? null,
+        follow_up_date:  formData.follow_up_date || null,
+        urgency:         formData.urgency || null,
       };
 
       if (editRecord) {
-        const { error } = await supabase.from('vet_records')
-          .update({ ...payload, updated_at: new Date().toISOString() })
+        // Правка — прямой update medical_records
+        const { error } = await supabase.from('medical_records')
+          .update(fields)
           .eq('id', editRecord.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('vet_records')
-          .insert({ ...payload, pet_id: selectedPet.id, user_id: user.id });
+        // Добавление — через RPC save_medical_record
+        const p_payload = {
+          pet_id:      selectedPet.id,
+          record_type: 'visit',
+          source:      'manual',
+          ...fields,
+        };
+        const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
       }
       setRecordModal(false); setEditRecord(null);
@@ -801,7 +904,7 @@ export default function MedicalScreen() {
           onPress: async () => {
             try {
               const { error } = await supabase
-                .from('vet_records').delete().eq('id', id);
+                .from('medical_records').delete().eq('id', id);
               if (error) throw error;
               await loadMedicalData();
             } catch (err) {
@@ -825,11 +928,85 @@ export default function MedicalScreen() {
     }
   };
 
+  // ─── OCR Scan (Commit 1: распознавание без сохранения) ───────────────────
+
+  const runScan = async (fromCamera) => {
+    const scanId = Date.now();
+    const source = fromCamera ? 'camera' : 'gallery';
+    console.log('🔵 SCAN START', scanId, 'source:', source);
+    try {
+      const perm = fromCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (perm.status !== 'granted') {
+        Alert.alert(t('scan.permissionTitle'), t('scan.permissionMessage'));
+        return;
+      }
+
+      const picked = fromCamera
+        ? await ImagePicker.launchCameraAsync({ quality: 0.9 })
+        : await ImagePicker.launchImageLibraryAsync({ quality: 0.9, mediaTypes: ['images'] });
+      if (picked.canceled || !picked.assets?.length) return;
+      console.log('🔵', scanId, 'picked uri:', picked.assets[0].uri);
+
+      setScanning(true);
+      const manipulated = await ImageManipulator.manipulateAsync(
+        picked.assets[0].uri,
+        [{ resize: { width: 1024 } }],
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+      console.log('🔵', scanId, 'manip uri:', manipulated.uri, 'base64 len:', manipulated.base64?.length, 'base64 head:', manipulated.base64?.slice(0, 24));
+
+      const ocr = await parseMedicalDocument(manipulated.base64, 'image/jpeg');
+      console.log('🧾 OCR result', scanId, JSON.stringify(ocr, null, 2));
+
+      if (!ocr.success) console.warn('OCR failed:', ocr.error);
+
+      if (!ocr.success || isEmptyOCR(ocr.data)) {
+        Alert.alert(
+          t('scan.emptyTitle'),
+          t('scan.emptyMessage'),
+          [
+            { text: t('scan.fillManually'), onPress: () => { setEditRecord(null); setRecordModal(true); } },
+            { text: t('common:ok'), style: 'cancel' },
+          ]
+        );
+        return;
+      }
+
+      // push -> новый экземпляр OCRReview на каждый скан (из таба — через StackActions)
+      navigation.dispatch(StackActions.push('OCRReview', {
+        data: ocr.data,
+        imageUri: manipulated.uri,
+        petId: selectedPet.id,
+        scanId,
+      }));
+    } catch (err) {
+      console.error('Scan error:', err);
+      Alert.alert(t('scan.errorTitle'), err.message || t('scan.error'));
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleScan = () => {
+    Alert.alert(
+      t('scan.sourceTitle'),
+      t('scan.hint'),
+      [
+        { text: t('scan.camera'), onPress: () => runScan(true) },
+        { text: t('scan.gallery'), onPress: () => runScan(false) },
+        { text: t('modal.cancel'), style: 'cancel' },
+      ]
+    );
+  };
+
   // ─── Render Overview ────────────────────────────────────────────────────
 
   const renderOverview = () => {
-    const activeMeds   = medications.filter(m => m.is_active);
-    const recentRecord = records[0];
+    const activeMeds   = medications.filter(m => m.active);
+    const visits       = records.filter(r => r.record_type === 'visit');
+    const recentRecord = visits[0];
     const isEmpty =
       vaccines.length === 0 &&
       medications.length === 0 &&
@@ -860,7 +1037,7 @@ export default function MedicalScreen() {
             <Text style={styles.summaryLabel}>{t('overview.summary.activeMeds')}</Text>
           </View>
           <View style={[styles.summaryCard, { backgroundColor: '#FFF7ED' }]}>
-            <Text style={styles.summaryNum}>{records.length}</Text>
+            <Text style={styles.summaryNum}>{visits.length}</Text>
             <Text style={styles.summaryLabel}>{t('overview.summary.vetVisits')}</Text>
           </View>
         </View>
@@ -898,9 +1075,9 @@ export default function MedicalScreen() {
             <Text style={styles.sectionTitle}>{t('overview.activeMedications')}</Text>
             {activeMeds.map(m => (
               <View key={m.id} style={styles.overviewCard}>
-                <Text style={styles.overviewCardName}>{m.medication_name}</Text>
+                <Text style={styles.overviewCardName}>{m.name}</Text>
                 <Text style={styles.overviewCardSub}>
-                  {m.dosage} · {m.frequency}
+                  {[m.dose, m.frequency].filter(Boolean).join(' · ')}
                 </Text>
               </View>
             ))}
@@ -913,7 +1090,7 @@ export default function MedicalScreen() {
             <Text style={styles.sectionTitle}>{t('overview.lastVisit')}</Text>
             <View style={styles.overviewCard}>
               <Text style={styles.overviewCardName}>
-                {fmt(recentRecord.visit_date)}
+                {fmt(recentRecord.occurred_at ?? recentRecord.date)}
               </Text>
               {recentRecord.vet_name && (
                 <Text style={styles.overviewCardSub}>
@@ -950,7 +1127,13 @@ export default function MedicalScreen() {
           const statusKey = getVaccineStatus(v.next_due_date);
           const days      = getDaysUntil(v.next_due_date);
           return (
-            <View key={v.id} style={styles.card}>
+            <TouchableOpacity
+              key={v.id}
+              style={styles.card}
+              activeOpacity={0.7}
+              disabled={!v.record_id}
+              onPress={v.record_id ? () => navigation.navigate('RecordDetail', { recordId: v.record_id, petId: selectedPet.id }) : undefined}
+            >
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>{v.vaccine_name}</Text>
                 <View style={[
@@ -976,13 +1159,10 @@ export default function MedicalScreen() {
                   {t('card.nextDue', { date: fmt(v.next_due_date) })}
                 </Text>
               )}
-              {v.administered_by && (
+              {v.vaccine_type && (
                 <Text style={styles.cardMeta}>
-                  {t('card.by', { name: v.administered_by })}
+                  {t('card.vaccineType', { value: t(`vaccineTypes.${v.vaccine_type}`, { defaultValue: v.vaccine_type }) })}
                 </Text>
-              )}
-              {v.notes && (
-                <Text style={styles.cardNote}>{v.notes}</Text>
               )}
 
               <View style={styles.cardActions}>
@@ -999,7 +1179,7 @@ export default function MedicalScreen() {
                   <Text style={styles.actionDelete}>{t('card.delete')}</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })
       )}
@@ -1018,22 +1198,28 @@ export default function MedicalScreen() {
         </View>
       ) : (
         medications.map(m => (
-          <View key={m.id} style={styles.card}>
+          <TouchableOpacity
+            key={m.id}
+            style={styles.card}
+            activeOpacity={0.7}
+            disabled={!m.record_id}
+            onPress={m.record_id ? () => navigation.navigate('RecordDetail', { recordId: m.record_id, petId: selectedPet.id }) : undefined}
+          >
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{m.medication_name}</Text>
+              <Text style={styles.cardTitle}>{m.name}</Text>
               <View style={[
                 styles.statusBadge,
-                m.is_active ? styles.badgeGreen : styles.badgeGray,
+                m.active ? styles.badgeGreen : styles.badgeGray,
               ]}>
                 <Text style={styles.statusText}>
-                  {m.is_active ? t('status.active') : t('status.inactive')}
+                  {m.active ? t('status.active') : t('status.inactive')}
                 </Text>
               </View>
             </View>
 
-            {m.dosage && (
+            {m.dose && (
               <Text style={styles.cardMeta}>
-                {t('card.dosage', { value: m.dosage })}
+                {t('card.dosage', { value: m.dose })}
               </Text>
             )}
             {m.frequency && (
@@ -1051,13 +1237,8 @@ export default function MedicalScreen() {
                 {t('card.ends', { date: fmt(m.end_date) })}
               </Text>
             )}
-            {m.prescribed_by && (
-              <Text style={styles.cardMeta}>
-                {t('card.prescribedBy', { name: m.prescribed_by })}
-              </Text>
-            )}
-            {m.notes && (
-              <Text style={styles.cardNote}>{m.notes}</Text>
+            {m.instruction && (
+              <Text style={styles.cardNote}>{m.instruction}</Text>
             )}
 
             <View style={styles.cardActions}>
@@ -1074,7 +1255,7 @@ export default function MedicalScreen() {
                 <Text style={styles.actionDelete}>{t('card.delete')}</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>
@@ -1092,15 +1273,20 @@ export default function MedicalScreen() {
         </View>
       ) : (
         records.map(r => (
-          <View key={r.id} style={styles.card}>
+          <TouchableOpacity
+            key={r.id}
+            style={styles.card}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('RecordDetail', { record: r, recordId: r.id, petId: selectedPet.id })}
+          >
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{fmt(r.visit_date)}</Text>
+              <Text style={styles.cardTitle}>{fmt(r.occurred_at ?? r.date)}</Text>
               <View style={[styles.statusBadge, styles.badgePurple]}>
                 <Text style={styles.statusText}>
-                  {r.reason
-                    ? t(`recordTypes.${r.reason}`, {
+                  {r.record_type
+                    ? t(`recordTypes.${r.record_type}`, {
                         defaultValue:
-                          r.reason.charAt(0).toUpperCase() + r.reason.slice(1),
+                          r.record_type.charAt(0).toUpperCase() + r.record_type.slice(1),
                       })
                     : t('status.visit')}
                 </Text>
@@ -1122,18 +1308,35 @@ export default function MedicalScreen() {
                 {t('card.diagnosis', { value: r.diagnosis })}
               </Text>
             )}
-            {r.treatment && (
-              <Text style={styles.cardNote}>
-                {t('card.treatment', { value: r.treatment })}
-              </Text>
-            )}
-            {r.cost && (
+            {r.diagnosis_code && (
               <Text style={styles.cardMeta}>
-                {t('card.cost', { value: Number(r.cost).toFixed(2) })}
+                {t('card.diagnosisCode', { value: r.diagnosis_code })}
               </Text>
             )}
-            {r.notes && (
-              <Text style={styles.cardNote}>{r.notes}</Text>
+            {r.symptoms && (
+              <Text style={styles.cardMeta}>
+                {t('card.symptoms', { value: r.symptoms })}
+              </Text>
+            )}
+            {r.weight != null && r.weight !== '' && (
+              <Text style={styles.cardMeta}>
+                {t('card.weight', { value: r.weight })}
+              </Text>
+            )}
+            {r.temperature != null && r.temperature !== '' && (
+              <Text style={styles.cardMeta}>
+                {t('card.temperature', { value: r.temperature })}
+              </Text>
+            )}
+            {r.follow_up_date && (
+              <Text style={styles.cardMeta}>
+                {t('card.followUp', { date: fmt(r.follow_up_date) })}
+              </Text>
+            )}
+            {r.recommendations && (
+              <Text style={styles.cardNote}>
+                {t('card.recommendations', { value: r.recommendations })}
+              </Text>
             )}
 
             <View style={styles.cardActions}>
@@ -1150,7 +1353,7 @@ export default function MedicalScreen() {
                 <Text style={styles.actionDelete}>{t('card.delete')}</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>
@@ -1171,22 +1374,31 @@ export default function MedicalScreen() {
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('header.title')}</Text>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => {
-            if (activeTab === 'vaccines') {
-              setEditVaccine(null); setVaccineModal(true);
-            } else if (activeTab === 'medications') {
-              setEditMed(null); setMedModal(true);
-            } else if (activeTab === 'records') {
-              setEditRecord(null); setRecordModal(true);
-            }
-          }}
-        >
-          <Text style={styles.addBtnText}>
-            {activeTab === 'overview' ? '···' : '+'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.scanBtn}
+            onPress={handleScan}
+            disabled={scanning}
+          >
+            <Ionicons name="scan-outline" size={20} color="#6366F1" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => {
+              if (activeTab === 'vaccines') {
+                setEditVaccine(null); setVaccineModal(true);
+              } else if (activeTab === 'medications') {
+                setEditMed(null); setMedModal(true);
+              } else if (activeTab === 'records') {
+                setEditRecord(null); setRecordModal(true);
+              }
+            }}
+          >
+            <Text style={styles.addBtnText}>
+              {activeTab === 'overview' ? '···' : '+'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Pet Switcher */}
@@ -1206,7 +1418,7 @@ export default function MedicalScreen() {
                 styles.petChip,
                 selectedPet?.id === pet.id && styles.petChipActive,
               ]}
-              onPress={() => setSelectedPet(pet)}
+              onPress={() => selectPet(pet.id)}
             >
               <Text style={[
                 styles.petChipText,
@@ -1268,6 +1480,13 @@ export default function MedicalScreen() {
         onSave={saveRecord}
         editData={editRecord}
       />
+
+      {scanning && (
+        <View style={styles.scanOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.scanOverlayText}>{t('scan.loading')}</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1282,6 +1501,10 @@ const styles = StyleSheet.create({
   headerTitle:          { fontSize: 18, fontWeight: '700', color: '#1F2937' },
   addBtn:               { width: 36, height: 36, backgroundColor: '#6366F1', borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   addBtnText:           { color: '#fff', fontSize: 22, fontWeight: '300', lineHeight: 28 },
+  headerActions:        { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  scanBtn:              { width: 36, height: 36, backgroundColor: '#EEF2FF', borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  scanOverlay:          { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', gap: 14 },
+  scanOverlayText:      { color: '#fff', fontSize: 15, fontWeight: '600' },
   petSwitcher:          { maxHeight: 52, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   petSwitcherContent:   { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   petChip:              { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },

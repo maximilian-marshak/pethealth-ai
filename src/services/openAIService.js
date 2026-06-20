@@ -1,40 +1,14 @@
 // ══════════════════════════════════════════════════════════════════════════════
 // src/services/openAIService.js
-// AI Service: OpenRouter API (Multi-Model Support)
-// Updated: January 2025 - Fixed model availability issues
+// Чат-сервис: все вызовы идут через Edge Function ai-proxy (purpose:'chat').
+// Ключ OpenRouter в приложении НЕ хранится; цепочка моделей живёт в функции.
 // ══════════════════════════════════════════════════════════════════════════════
 
-import OpenAI from 'openai';
-import { OPENROUTER_API_KEY } from '@env';
 import i18n from '../utils/i18n';
-
-// ============================================
-// КОНФИГУРАЦИЯ AI МОДЕЛЕЙ
-// ============================================
-
-const AI_MODELS = [
-  // 🆓 Только бесплатные :free-слаги; перебор по порядку (см. callOpenRouterAPI)
-  'google/gemma-4-31b-it:free',
-  'google/gemma-4-26b-a4b-it:free',
-  'nvidia/nemotron-3-ultra-550b-a55b:free',
-  'openrouter/free',                               // самозалечивающийся роутер бесплатных моделей
-];
+import { callAIProxy } from './aiProxyClient';
 
 // Код языка i18n -> имя языка для инструкции модели
 const LANG_NAMES = { en: 'English', ru: 'Russian' };
-
-// ============================================
-// ИНИЦИАЛИЗАЦИЯ КЛИЕНТА
-// ============================================
-
-const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: OPENROUTER_API_KEY,
-  defaultHeaders: {
-    'HTTP-Referer': 'https://pethealth.app',        // Для аналитики OpenRouter
-    'X-Title': 'PetHealth AI Assistant',
-  },
-});
 
 // ============================================
 // УТИЛИТЫ
@@ -63,7 +37,7 @@ const EMERGENCY_KEYWORDS = [
   'bleeding', 'blood', 'poisoning', 'poison', 'seizure', 'convulsion',
   'unconscious', 'not breathing', 'choking', 'broken bone', 'fracture',
   'hit by car', 'attack', 'bite', 'snake bite', 'emergency', 'urgent',
-  
+
   // Русские ключевые слова
   'кровотечение', 'кровь', 'отравление', 'яд', 'судороги', 'конвульсии',
   'без сознания', 'не дышит', 'задыхается', 'удушье', 'перелом', 'сломана',
@@ -72,103 +46,13 @@ const EMERGENCY_KEYWORDS = [
 
 export const detectEmergency = (message) => {
   const lowerMessage = message.toLowerCase();
-  return EMERGENCY_KEYWORDS.some(keyword => 
+  return EMERGENCY_KEYWORDS.some(keyword =>
     lowerMessage.includes(keyword.toLowerCase())
   );
 };
 
 // ============================================
-// AI SERVICE: OPENROUTER
-// ============================================
-
-const callOpenRouterAPI = async (messages, options = {}) => {
-  const isEmergency = options.isEmergency || false;
-  
-  // Счетчик попыток для детального логирования
-  let attemptCount = 0;
-
-  // Пробуем модели по очереди
-  for (const model of AI_MODELS) {
-    attemptCount++;
-    
-    try {
-      console.log(`🔄 Trying model ${attemptCount}/${AI_MODELS.length}: ${model}...`);
-
-      const completion = await openai.chat.completions.create({
-        model: model,
-        messages: messages,
-        temperature: isEmergency ? 0.3 : 0.7,  // Строгий режим для экстренных случаев
-        max_tokens: 512,
-        top_p: 0.9,
-      });
-
-      const assistantMessage = completion.choices[0]?.message?.content;
-
-      if (assistantMessage) {
-        console.log(`✅ ${model} succeeded`);
-        
-        // Логируем использование токенов
-        if (completion.usage) {
-          console.log(`📊 Tokens used: ${completion.usage.total_tokens} (prompt: ${completion.usage.prompt_tokens}, completion: ${completion.usage.completion_tokens})`);
-        }
-
-        return {
-          success: true,
-          message: assistantMessage.trim(),
-          service: 'openrouter',
-          model: model,
-          usage: completion.usage,
-        };
-      }
-
-      throw new Error('Empty response from model');
-
-    } catch (error) {
-      const errorStatus = error.status || 'unknown';
-      const errorMsg = error.message || 'Unknown error';
-      
-      console.error(`❌ ${model} failed:`, errorStatus, errorMsg);
-
-      // Обработка специфичных ошибок
-      if (errorStatus === 404) {
-        console.log(`⏭️ Model not found or unavailable, trying next...`);
-        continue;
-      }
-      
-      if (errorStatus === 429) {
-        console.log(`⏭️ Rate limit exceeded, trying next model...`);
-        continue;
-      }
-      
-      if (errorStatus === 503) {
-        console.log(`⏭️ Service temporarily unavailable, trying next...`);
-        continue;
-      }
-
-      // Если это критическая ошибка (не 404/429/503) - логируем подробно
-      if (![404, 429, 503].includes(errorStatus)) {
-        console.error(`🚨 Critical error with ${model}:`, error);
-      }
-
-      // Если это последняя модель - возвращаем ошибку
-      if (attemptCount === AI_MODELS.length) {
-        return { 
-          success: false, 
-          error: `All ${AI_MODELS.length} models failed. Last error: ${errorMsg}`,
-          lastStatus: errorStatus,
-        };
-      }
-    }
-  }
-
-  return { 
-    success: false, 
-    error: 'All models exhausted without success' 
-  };
-};
-
-// ============================================
-// ✅ ОСНОВНАЯ ФУНКЦИЯ: ОТПРАВКА СООБЩЕНИЯ
+// ✅ ОСНОВНАЯ ФУНКЦИЯ: ОТПРАВКА СООБЩЕНИЯ (через ai-proxy)
 // ============================================
 
 export async function sendMessageToOpenAI(userMessage, conversationHistory = [], context = {}) {
@@ -190,6 +74,33 @@ export async function sendMessageToOpenAI(userMessage, conversationHistory = [],
       systemContent += '.';
     }
 
+    // Здоровье питомца (справочный контекст + safety-инструкция); пустые списки пропускаем.
+    if (context.health) {
+      const { allergies = [], conditions = [], medications = [] } = context.health;
+      const lines = [];
+      if (allergies.length) {
+        const items = allergies
+          .map((a) => (a.severity ? `${a.substance} [${a.severity}]` : a.substance))
+          .join(', ');
+        lines.push(`- ALLERGIES (respect strictly): ${items}.`);
+      }
+      if (conditions.length) {
+        const items = conditions
+          .map((c) => (c.code ? `${c.condition} (${c.code})` : c.condition))
+          .join(', ');
+        lines.push(`- CHRONIC CONDITIONS: ${items}.`);
+      }
+      if (medications.length) {
+        const items = medications
+          .map((m) => (m.dose ? `${m.name} (${m.dose})` : m.name))
+          .join(', ');
+        lines.push(`- ACTIVE MEDICATIONS: ${items}.`);
+      }
+      if (lines.length) {
+        systemContent += ` PET HEALTH CONTEXT (reference only, not a diagnosis):\n${lines.join('\n')}\nINSTRUCTION: If any advice or medication you suggest could conflict with a listed allergy, warn the user explicitly and avoid it. Take chronic conditions and active medications into account (interactions/contraindications). Do not invent health data — absent categories are simply not listed. This is reference context, not a diagnosis.`;
+      }
+    }
+
     // Добавляем контекст категории
     if (context.category && context.category !== 'free-chat') {
       systemContent += ` Focus on ${context.category}-related questions.`;
@@ -209,67 +120,36 @@ export async function sendMessageToOpenAI(userMessage, conversationHistory = [],
       { role: 'system', content: systemContent },
       ...conversationHistory.slice(-6).map(msg => ({
         role: msg.role,
-        content: msg.content
+        content: msg.content,
       })),
       { role: 'user', content: validatedMessage },
     ];
 
-    console.log('🤖 Sending to OpenRouter API...');
-    const result = await callOpenRouterAPI(messages, { isEmergency });
-    
+    console.log('🤖 Sending to ai-proxy (chat)...');
+    const result = await callAIProxy({
+      purpose: 'chat',
+      messages,
+      temperature: isEmergency ? 0.3 : 0.7,
+      max_tokens: 512,
+    });
+
     if (result.success) {
+      const content = result.content || '';
       return {
-        message: result.message,
+        message: content.trim(),
         timestamp: new Date().toISOString(),
-        isEmergency: isEmergency || result.message.includes('⚠️'),
-        service: result.service,
+        isEmergency: isEmergency || content.includes('⚠️'),
+        service: 'ai-proxy',
         model: result.model,
-        usage: result.usage,
       };
     }
 
-    // Если все модели провалились - выбрасываем ошибку
+    // Прокси исчерпал цепочку моделей или вернул ошибку — пробрасываем
     throw new Error(result.error || 'AI service unavailable');
-    
+
   } catch (error) {
     console.error('❌ sendMessageToOpenAI error:', error.message);
     throw error;
-  }
-}
-
-// ============================================
-// ✅ ПРОВЕРКА ЗДОРОВЬЯ API
-// ============================================
-
-export async function checkAPIHealth() {
-  const testMessages = [
-    { role: 'system', content: 'You are a helpful assistant.' },
-    { role: 'user', content: 'Test' }
-  ];
-  
-  try {
-    console.log('🏥 Running API health check...');
-    const result = await callOpenRouterAPI(testMessages);
-    
-    if (result.success) {
-      console.log(`✅ API Health: OK (model: ${result.model})`);
-    } else {
-      console.log(`⚠️ API Health: DEGRADED (${result.error})`);
-    }
-    
-    return {
-      openrouter: result.success,
-      model: result.model || 'unknown',
-      status: result.success ? 'operational' : 'degraded',
-      error: result.error,
-    };
-  } catch (error) {
-    console.error('❌ API Health check failed:', error.message);
-    return {
-      openrouter: false,
-      status: 'error',
-      error: error.message,
-    };
   }
 }
 
@@ -304,7 +184,7 @@ export function generateContextualQuestion(context = {}) {
     "Has your pet's appetite changed recently?",
     "Is your pet drinking water normally?",
   ];
-  
+
   return questions[Math.floor(Math.random() * questions.length)];
 }
 

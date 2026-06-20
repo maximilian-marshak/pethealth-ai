@@ -18,6 +18,8 @@ import ActivityScreen from '../screens/ActivityScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AddPetScreen from '../screens/AddPetScreen';
 import PetDetailScreen from '../screens/PetDetailScreen'; // ✅ НОВЫЙ ИМПОРТ
+import OCRReviewScreen from '../screens/OCRReviewScreen';
+import RecordDetailScreen from '../screens/RecordDetailScreen';
 
 // ═══ ИМПОРТ AI ASSISTANT ЭКРАНОВ ═══
 import AIAssistantHubScreen from '../screens/AIAssistantHubScreen';
@@ -176,6 +178,26 @@ export default function AppNavigator() {
           <Stack.Screen 
             name="PetDetail" 
             component={PetDetailScreen}
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
+
+          {/* ═══ OCR REVIEW (вне PetProvider, по petId) ═══ */}
+          <Stack.Screen
+            name="OCRReview"
+            component={OCRReviewScreen}
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
+
+          {/* ═══ RECORD DETAIL (вне PetProvider, по recordId) ═══ */}
+          <Stack.Screen
+            name="RecordDetail"
+            component={RecordDetailScreen}
             options={{
               headerShown: false,
               animation: 'slide_from_right',

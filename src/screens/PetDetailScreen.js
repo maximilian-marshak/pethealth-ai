@@ -18,15 +18,62 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LineChart } from 'react-native-chart-kit';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { usePets } from '../hooks/usePets';
 import { supabase } from '../utils/supabase';
 import { pickAndUpload } from '../services/imageUploadService';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+
+// Тяжесть аллергии: хранится mild/moderate/severe или null (CHECK в БД).
+const SEVERITY_OPTIONS = [
+  { value: null,       label: 'Не указано' },
+  { value: 'mild',     label: 'Лёгкая' },
+  { value: 'moderate', label: 'Средняя' },
+  { value: 'severe',   label: 'Тяжёлая' },
+];
+
+// Поле даты для модалок паспорта: хранит YYYY-MM-DD, показывает DD.MM.YYYY.
+const PassportDateField = ({ label, value, onChange }) => {
+  const [show, setShow] = useState(false);
+  const dateVal = value ? new Date(value + 'T00:00:00') : new Date();
+  const handle = (event, selected) => {
+    if (Platform.OS === 'android') setShow(false);
+    if (event.type === 'dismissed') { setShow(false); return; }
+    if (selected) {
+      const y = selected.getFullYear();
+      const m = String(selected.getMonth() + 1).padStart(2, '0');
+      const d = String(selected.getDate()).padStart(2, '0');
+      onChange(`${y}-${m}-${d}`);
+    }
+    if (Platform.OS === 'ios') setShow(false);
+  };
+  const display = value ? `${value.slice(8, 10)}.${value.slice(5, 7)}.${value.slice(0, 4)}` : 'Выберите дату';
+  return (
+    <View style={styles.modalInputGroup}>
+      <Text style={styles.modalInputLabel}>{label}</Text>
+      <View style={styles.modalInputRow}>
+        <TouchableOpacity style={[styles.modalInput, styles.passportDateField]} onPress={() => setShow(true)} activeOpacity={0.7}>
+          <Ionicons name="calendar-outline" size={18} color={value ? '#6B4EFF' : '#C0C0C0'} />
+          <Text style={[styles.passportDateText, !value && { color: '#C0C0C0' }]}>{display}</Text>
+          {value ? (
+            <TouchableOpacity onPress={() => onChange('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={18} color="#C0C0C0" />
+            </TouchableOpacity>
+          ) : null}
+        </TouchableOpacity>
+      </View>
+      {show && (
+        <DateTimePicker value={dateVal} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={handle} />
+      )}
+    </View>
+  );
+};
 
 // ══════════════════════════════════════════════════
 // MAIN SCREEN
@@ -49,6 +96,8 @@ export default function PetDetailScreen({ route, navigation }) {
   });
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [recentRecords, setRecentRecords]   = useState([]);
+  const [allergies, setAllergies]           = useState([]);
+  const [conditions, setConditions]         = useState([]);
 
   // ─── Weight state ─────────────────────────────
   const [weightHistory, setWeightHistory]     = useState([]);
@@ -57,6 +106,24 @@ export default function PetDetailScreen({ route, navigation }) {
   const [newWeight, setNewWeight]             = useState('');
   const [weightNote, setWeightNote]           = useState('');
   const [savingWeight, setSavingWeight]       = useState(false);
+
+  // ─── Passport (allergies / conditions) modal state ───
+  const [allergyModal, setAllergyModal]   = useState(false);
+  const [editAllergy, setEditAllergy]     = useState(null);
+  const [aSubstance, setASubstance]       = useState('');
+  const [aReaction, setAReaction]         = useState('');
+  const [aSeverity, setASeverity]         = useState(null);
+  const [aNotedOn, setANotedOn]           = useState('');
+  const [savingAllergy, setSavingAllergy] = useState(false);
+
+  const [condModal, setCondModal]         = useState(false);
+  const [editCondition, setEditCondition] = useState(null);
+  const [cCondition, setCCondition]       = useState('');
+  const [cCode, setCCode]                 = useState('');
+  const [cSince, setCSince]               = useState('');
+  const [cActive, setCActive]             = useState(true);
+  const [cNotes, setCNotes]               = useState('');
+  const [savingCondition, setSavingCondition] = useState(false);
 
   // ═══ GUARD: нет petId ════════════════════════
   useEffect(() => {
@@ -80,6 +147,8 @@ export default function PetDetailScreen({ route, navigation }) {
       loadUpcomingEvents();
       loadRecentRecords();
       loadWeightHistory();
+      loadAllergies();
+      loadConditions();
     }
     setLoading(false);
   };
@@ -91,6 +160,8 @@ export default function PetDetailScreen({ route, navigation }) {
       loadUpcomingEvents(),
       loadRecentRecords(),
       loadWeightHistory(),
+      loadAllergies(),
+      loadConditions(),
     ]);
     setRefreshing(false);
   };
@@ -284,6 +355,37 @@ export default function PetDetailScreen({ route, navigation }) {
     }
   };
 
+  // ═══ ALLERGIES / CONDITIONS (паспорт) ════════
+  const loadAllergies = async () => {
+    if (!petId) return;
+    try {
+      const { data, error } = await supabase
+        .from('pet_allergies')
+        .select('*')
+        .eq('pet_id', petId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setAllergies(data || []);
+    } catch (error) {
+      console.error('Error loading allergies:', error);
+    }
+  };
+
+  const loadConditions = async () => {
+    if (!petId) return;
+    try {
+      const { data, error } = await supabase
+        .from('pet_conditions')
+        .select('*')
+        .eq('pet_id', petId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setConditions(data || []);
+    } catch (error) {
+      console.error('Error loading conditions:', error);
+    }
+  };
+
   // ─── Save new weight ──────────────────────
   const handleSaveWeight = async () => {
     const parsed = parseFloat(newWeight.replace(',', '.'));
@@ -331,6 +433,106 @@ export default function PetDetailScreen({ route, navigation }) {
     } finally {
       setSavingWeight(false);
     }
+  };
+
+  // ═══ ALLERGY CRUD ════════════════════════════
+  const openAddAllergy = () => {
+    setEditAllergy(null);
+    setASubstance(''); setAReaction(''); setASeverity(null); setANotedOn('');
+    setAllergyModal(true);
+  };
+  const openEditAllergy = (row) => {
+    setEditAllergy(row);
+    setASubstance(row.substance || '');
+    setAReaction(row.reaction || '');
+    setASeverity(row.severity || null);
+    setANotedOn(row.noted_on ? row.noted_on.slice(0, 10) : '');
+    setAllergyModal(true);
+  };
+  const saveAllergy = async () => {
+    if (!aSubstance.trim()) { Alert.alert('Ошибка', 'Укажите вещество (аллерген)'); return; }
+    setSavingAllergy(true);
+    try {
+      const payload = {
+        substance: aSubstance.trim(),
+        reaction: aReaction.trim() || null,
+        severity: aSeverity || null,
+        noted_on: aNotedOn || null,
+      };
+      const { error } = editAllergy
+        ? await supabase.from('pet_allergies').update(payload).eq('id', editAllergy.id)
+        : await supabase.from('pet_allergies').insert({ pet_id: petId, ...payload });
+      if (error) throw error;
+      setAllergyModal(false); setEditAllergy(null);
+      await loadAllergies();
+    } catch (e) {
+      Alert.alert('Ошибка', e.message);
+    } finally {
+      setSavingAllergy(false);
+    }
+  };
+  const deleteAllergy = (row) => {
+    Alert.alert('Удалить аллергию?', row.substance, [
+      { text: 'Отмена', style: 'cancel' },
+      { text: 'Удалить', style: 'destructive', onPress: async () => {
+        try {
+          const { error } = await supabase.from('pet_allergies').delete().eq('id', row.id);
+          if (error) throw error;
+          await loadAllergies();
+        } catch (e) { Alert.alert('Ошибка', e.message); }
+      } },
+    ]);
+  };
+
+  // ═══ CONDITION CRUD ══════════════════════════
+  const openAddCondition = () => {
+    setEditCondition(null);
+    setCCondition(''); setCCode(''); setCSince(''); setCActive(true); setCNotes('');
+    setCondModal(true);
+  };
+  const openEditCondition = (row) => {
+    setEditCondition(row);
+    setCCondition(row.condition || '');
+    setCCode(row.code || '');
+    setCSince(row.since_date ? row.since_date.slice(0, 10) : '');
+    setCActive(row.active !== false);
+    setCNotes(row.notes || '');
+    setCondModal(true);
+  };
+  const saveCondition = async () => {
+    if (!cCondition.trim()) { Alert.alert('Ошибка', 'Укажите название заболевания'); return; }
+    setSavingCondition(true);
+    try {
+      const payload = {
+        condition: cCondition.trim(),
+        code: cCode.trim() || null,
+        since_date: cSince || null,
+        active: cActive,
+        notes: cNotes.trim() || null,
+      };
+      const { error } = editCondition
+        ? await supabase.from('pet_conditions').update(payload).eq('id', editCondition.id)
+        : await supabase.from('pet_conditions').insert({ pet_id: petId, ...payload });
+      if (error) throw error;
+      setCondModal(false); setEditCondition(null);
+      await loadConditions();
+    } catch (e) {
+      Alert.alert('Ошибка', e.message);
+    } finally {
+      setSavingCondition(false);
+    }
+  };
+  const deleteCondition = (row) => {
+    Alert.alert('Удалить заболевание?', row.condition, [
+      { text: 'Отмена', style: 'cancel' },
+      { text: 'Удалить', style: 'destructive', onPress: async () => {
+        try {
+          const { error } = await supabase.from('pet_conditions').delete().eq('id', row.id);
+          if (error) throw error;
+          await loadConditions();
+        } catch (e) { Alert.alert('Ошибка', e.message); }
+      } },
+    ]);
   };
 
   // ─── Weight chart data ────────────────────
@@ -550,6 +752,19 @@ export default function PetDetailScreen({ route, navigation }) {
           </Text>
         </View>
 
+        {/* ─── ⚠️ ALLERGY ALERT (safety-critical, над плитками) ─── */}
+        {allergies.length > 0 && (
+          <View style={styles.allergyBanner}>
+            <Ionicons name="warning" size={22} color="#EF4444" />
+            <View style={styles.allergyBannerText}>
+              <Text style={styles.allergyBannerTitle}>Аллергии</Text>
+              <Text style={styles.allergyBannerList}>
+                {allergies.map((a) => a.substance).filter(Boolean).join(', ')}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* ─── QUICK STATS ──────────────────── */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
@@ -687,6 +902,90 @@ export default function PetDetailScreen({ route, navigation }) {
                 ))}
               </View>
             </View>
+          )}
+        </View>
+
+        {/* ─── 🤧 ALLERGIES (паспорт) ─── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🤧 Аллергии</Text>
+            <TouchableOpacity style={styles.addWeightBtn} onPress={openAddAllergy}>
+              <Ionicons name="add" size={18} color="#fff" />
+              <Text style={styles.addWeightBtnText}>Добавить</Text>
+            </TouchableOpacity>
+          </View>
+          {allergies.length === 0 ? (
+            <Text style={styles.emptyText}>Нет данных об аллергиях</Text>
+          ) : (
+            allergies.map((a) => {
+              const parts = [];
+              if (a.reaction) parts.push(a.reaction);
+              if (a.severity) parts.push(a.severity);
+              if (a.noted_on) parts.push(formatDate(a.noted_on));
+              return (
+                <View key={a.id} style={styles.passportRow}>
+                  <View style={styles.passportHeadRow}>
+                    <Text style={styles.passportName}>{a.substance}</Text>
+                    <View style={styles.passportActions}>
+                      <TouchableOpacity onPress={() => openEditAllergy(a)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="create-outline" size={18} color="#6B4EFF" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => deleteAllergy(a)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  {parts.length > 0 && (
+                    <Text style={styles.passportSub}>{parts.join(' · ')}</Text>
+                  )}
+                </View>
+              );
+            })
+          )}
+        </View>
+
+        {/* ─── 🩺 CHRONIC CONDITIONS ─── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🩺 Хронические заболевания</Text>
+            <TouchableOpacity style={styles.addWeightBtn} onPress={openAddCondition}>
+              <Ionicons name="add" size={18} color="#fff" />
+              <Text style={styles.addWeightBtnText}>Добавить</Text>
+            </TouchableOpacity>
+          </View>
+          {conditions.length === 0 ? (
+            <Text style={styles.emptyText}>Нет хронических заболеваний</Text>
+          ) : (
+            conditions.map((c) => {
+              const sub = [];
+              if (c.since_date) sub.push(`С ${formatDate(c.since_date)}`);
+              if (c.notes) sub.push(c.notes);
+              return (
+                <View key={c.id} style={styles.passportRow}>
+                  <View style={styles.passportHeadRow}>
+                    <Text style={styles.passportName}>
+                      {c.condition}{c.code ? ` (${c.code})` : ''}
+                    </Text>
+                    <View style={styles.passportHeadRight}>
+                      <View style={[styles.condBadge, c.active ? styles.condBadgeActive : styles.condBadgeRemission]}>
+                        <Text style={[styles.condBadgeText, c.active ? styles.condBadgeTextActive : styles.condBadgeTextRemission]}>
+                          {c.active ? 'Активно' : 'В ремиссии'}
+                        </Text>
+                      </View>
+                      <TouchableOpacity onPress={() => openEditCondition(c)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="create-outline" size={18} color="#6B4EFF" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => deleteCondition(c)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  {sub.length > 0 && (
+                    <Text style={styles.passportSub}>{sub.join(' · ')}</Text>
+                  )}
+                </View>
+              );
+            })
           )}
         </View>
 
@@ -906,6 +1205,100 @@ export default function PetDetailScreen({ route, navigation }) {
               ) : (
                 <Text style={styles.modalSaveBtnText}>Сохранить</Text>
               )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ══════ ALLERGY MODAL ══════ */}
+      <Modal visible={allergyModal} animationType="slide" transparent onRequestClose={() => setAllergyModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{editAllergy ? 'Изменить аллергию' : 'Добавить аллергию'}</Text>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setAllergyModal(false)}>
+                <Ionicons name="close" size={22} color="#888" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalInputLabel}>Вещество (аллерген) *</Text>
+              <View style={styles.modalInputRow}>
+                <TextInput style={styles.modalInput} placeholder="Напр.: курица, амоксициллин" placeholderTextColor="#C0C0C0" value={aSubstance} onChangeText={setASubstance} />
+              </View>
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalInputLabel}>Реакция</Text>
+              <View style={styles.modalInputRow}>
+                <TextInput style={styles.modalInput} placeholder="Напр.: зуд, отёк" placeholderTextColor="#C0C0C0" value={aReaction} onChangeText={setAReaction} />
+              </View>
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalInputLabel}>Тяжесть</Text>
+              <View style={styles.sevRow}>
+                {SEVERITY_OPTIONS.map((opt) => {
+                  const active = aSeverity === opt.value;
+                  return (
+                    <TouchableOpacity key={String(opt.value)} style={[styles.sevChip, active && styles.sevChipActive]} onPress={() => setASeverity(opt.value)}>
+                      <Text style={[styles.sevChipText, active && styles.sevChipTextActive]}>{opt.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <PassportDateField label="Дата выявления" value={aNotedOn} onChange={setANotedOn} />
+
+            <TouchableOpacity style={[styles.modalSaveBtn, savingAllergy && styles.modalSaveBtnDisabled]} onPress={saveAllergy} disabled={savingAllergy}>
+              {savingAllergy ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSaveBtnText}>Сохранить</Text>}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ══════ CONDITION MODAL ══════ */}
+      <Modal visible={condModal} animationType="slide" transparent onRequestClose={() => setCondModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{editCondition ? 'Изменить заболевание' : 'Добавить заболевание'}</Text>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setCondModal(false)}>
+                <Ionicons name="close" size={22} color="#888" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalInputLabel}>Заболевание *</Text>
+              <View style={styles.modalInputRow}>
+                <TextInput style={styles.modalInput} placeholder="Напр.: атопический дерматит" placeholderTextColor="#C0C0C0" value={cCondition} onChangeText={setCCondition} />
+              </View>
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalInputLabel}>Код (МКБ/прочее)</Text>
+              <View style={styles.modalInputRow}>
+                <TextInput style={styles.modalInput} placeholder="Напр.: L20" placeholderTextColor="#C0C0C0" value={cCode} onChangeText={setCCode} />
+              </View>
+            </View>
+
+            <PassportDateField label="С какого времени" value={cSince} onChange={setCSince} />
+
+            <View style={styles.toggleRow}>
+              <Text style={styles.modalInputLabel}>Активно</Text>
+              <Switch value={cActive} onValueChange={setCActive} trackColor={{ true: '#6B4EFF', false: '#D1D5DB' }} thumbColor="#fff" />
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalInputLabel}>Заметки</Text>
+              <View style={styles.modalInputRow}>
+                <TextInput style={[styles.modalInput, styles.modalInputNote]} placeholder="Доп. информация" placeholderTextColor="#C0C0C0" value={cNotes} onChangeText={setCNotes} multiline maxLength={300} />
+              </View>
+            </View>
+
+            <TouchableOpacity style={[styles.modalSaveBtn, savingCondition && styles.modalSaveBtnDisabled]} onPress={saveCondition} disabled={savingCondition}>
+              {savingCondition ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSaveBtnText}>Сохранить</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -1151,6 +1544,30 @@ const styles = StyleSheet.create({
     padding: 24, alignItems: 'center', gap: 8,
   },
   emptyText: { fontSize: 14, color: '#B0B0B0' },
+  allergyBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 20, marginTop: 16, padding: 14, backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#EF4444', borderRadius: 12 },
+  allergyBannerText: { flex: 1 },
+  allergyBannerTitle: { fontSize: 14, fontWeight: '700', color: '#B91C1C' },
+  allergyBannerList: { fontSize: 13, color: '#B91C1C', marginTop: 2 },
+  passportRow: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginTop: 8, borderWidth: 1, borderColor: '#F0F0F5' },
+  passportHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  passportName: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', flexShrink: 1 },
+  passportSub: { fontSize: 13, color: '#6B7280', marginTop: 4 },
+  condBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
+  condBadgeActive: { backgroundColor: '#FEE2E2' },
+  condBadgeRemission: { backgroundColor: '#E5E7EB' },
+  condBadgeText: { fontSize: 11, fontWeight: '700' },
+  condBadgeTextActive: { color: '#B91C1C' },
+  condBadgeTextRemission: { color: '#6B7280' },
+  passportActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  passportHeadRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  passportDateField: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  passportDateText: { flex: 1, fontSize: 15, color: '#1A1A2E' },
+  sevRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  sevChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  sevChipActive: { backgroundColor: '#6B4EFF', borderColor: '#6B4EFF' },
+  sevChipText: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
+  sevChipTextActive: { color: '#fff', fontWeight: '600' },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 8 },
 
   // ─── Actions ──────────────────────────────────
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },

@@ -65,6 +65,13 @@
       "diagnosis": "Диагноз: {{value}}",
       "treatment": "Лечение: {{value}}",
       "cost": "Стоимость: ${{value}}",
+      "vaccineType": "Тип: {{value}}",
+      "diagnosisCode": "Код: {{value}}",
+      "symptoms": "Симптомы: {{value}}",
+      "recommendations": "Рекомендации: {{value}}",
+      "weight": "Вес: {{value}} кг",
+      "temperature": "Темп.: {{value}}°C",
+      "followUp": "Повторный приём: {{date}}",
       "edit": "Изменить",
       "delete": "Удалить"
     },
@@ -82,6 +89,7 @@
         "adminByPlaceholder": "Д-р Иванов",
         "notesLabel": "Заметки",
         "notesPlaceholder": "Дополнительная информация...",
+        "typeLabel": "Тип вакцины",
         "required": "Пожалуйста, введите название вакцины."
       },
       "medication": {
@@ -121,6 +129,19 @@
         "costLabel": "Стоимость ($)",
         "costPlaceholder": "150.00",
         "notesLabel": "Заметки",
+        "diagnosisCodeLabel": "Код диагноза",
+        "diagnosisCodePlaceholder": "напр. H66.9",
+        "symptomsLabel": "Симптомы",
+        "symptomsPlaceholder": "напр. зуд, выделения из уха",
+        "recommendationsLabel": "Рекомендации",
+        "recommendationsPlaceholder": "напр. назначены антибиотики",
+        "weightLabel": "Вес (кг)",
+        "weightPlaceholder": "напр. 12.5",
+        "temperatureLabel": "Температура (°C)",
+        "temperaturePlaceholder": "напр. 38.5",
+        "followUpLabel": "Дата повторного приёма",
+        "followUpPlaceholder": "Выберите дату",
+        "urgencyLabel": "Срочность",
         "notesPlaceholder": "Дополнительная информация...",
         "required": "Пожалуйста, выберите дату визита."
       },
@@ -146,6 +167,12 @@
       "cancel": "Отмена"
     },
     "recordTypes": {
+      "visit": "Визит",
+      "vaccination": "Вакцинация",
+      "medication_course": "Курс лечения",
+      "procedure": "Процедура",
+      "lab_test": "Анализ",
+      "parasite_treatment": "Обработка от паразитов",
       "checkup": "Осмотр",
       "surgery": "Операция",
       "emergency": "Экстренный",
@@ -153,9 +180,104 @@
       "grooming": "Груминг",
       "other": "Другое"
     },
+    "urgency": {
+      "normal": "Обычная",
+      "elevated": "Повышенная",
+      "high": "Высокая"
+    },
+    "vaccineTypes": {
+      "primary": "Первичная",
+      "booster": "Ревакцинация"
+    },
     "errors": {
       "loadPets": "Не удалось загрузить питомцев.",
       "loadData": "Не удалось загрузить медданные."
+    },
+    "review": {
+      "title": "Проверка скана",
+      "checkHint": "проверьте",
+      "clearAll": "Очистить всё",
+      "clearAllConfirm": "Удалить все записи в этом списке?",
+      "pickDate": "Выберите дату",
+      "addItem": "Добавить",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "savedTitle": "Сохранено",
+      "savedMessage": "Запись добавлена в медкарту.",
+      "attachWarning": "Запись сохранена, но не удалось приложить скан.",
+      "errorTitle": "Ошибка сохранения",
+      "sections": {
+        "vaccines": "Вакцины",
+        "prescriptions": "Лекарства",
+        "parasites": "Обработки от паразитов",
+        "labs": "Анализы"
+      },
+      "kinds": {
+        "deworming": "Дегельминтизация",
+        "ectoparasite": "Эктопаразиты"
+      },
+      "labStatus": {
+        "ordered": "Назначен",
+        "completed": "Готов"
+      },
+      "weightUnits": {
+        "kg": "кг",
+        "lb": "фунт"
+      },
+      "fields": {
+        "recordType": "Тип записи",
+        "occurredAt": "Дата",
+        "vetName": "Ветеринар",
+        "clinicName": "Клиника",
+        "diagnosis": "Диагноз",
+        "diagnosisCode": "Код диагноза",
+        "symptoms": "Симптомы",
+        "recommendations": "Рекомендации",
+        "weight": "Вес",
+        "temperature": "Температура (°C)",
+        "followUp": "Повторный приём",
+        "urgency": "Срочность",
+        "vaccineName": "Вакцина",
+        "vaccineType": "Тип",
+        "kind": "Вид",
+        "status": "Статус",
+        "dateGiven": "Дата введения",
+        "nextDue": "Следующая",
+        "name": "Название",
+        "dose": "Доза",
+        "frequency": "Частота",
+        "startDate": "Начало",
+        "endDate": "Окончание",
+        "active": "Активно",
+        "instruction": "Инструкция",
+        "product": "Препарат",
+        "treatedOn": "Дата обработки",
+        "testType": "Анализ",
+        "result": "Результат"
+      }
+    },
+    "detail": {
+      "title": "Запись",
+      "attachment": "Скан",
+      "attachmentUnavailable": "Превью недоступно",
+      "loadError": "Не удалось загрузить запись"
+    },
+    "scan": {
+      "button": "Сканировать",
+      "sourceTitle": "Сканировать документ",
+      "sourceMessage": "Выберите источник",
+      "hint": "Снимайте лист ровно сверху, правильной стороной, при хорошем свете.",
+      "camera": "📷 Камера",
+      "gallery": "🖼️ Галерея",
+      "loading": "Распознаю документ…",
+      "emptyTitle": "Не удалось распознать",
+      "emptyMessage": "Не удалось распознать документ. Переснимите фото чётче и ближе или заполните вручную.",
+      "fillManually": "Заполнить вручную",
+      "resultTitle": "Распознано (тест)",
+      "errorTitle": "Ошибка распознавания",
+      "error": "Не удалось распознать документ.",
+      "permissionTitle": "Нужно разрешение",
+      "permissionMessage": "Для сканирования нужен доступ к камере/фото."
     },
     "hub": {
       "title": "Медицинский центр 🏥"
