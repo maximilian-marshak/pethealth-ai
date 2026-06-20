@@ -248,8 +248,8 @@ export default function PetDetailScreen({ route, navigation }) {
       if (reminders) {
         const iconMap = {
           vaccination: 'medkit-outline',
-          checkup:     'stethoscope-outline',
-          vet_visit:   'hospital-outline',
+          checkup:     'pulse-outline',
+          vet_visit:   'medical-outline',
           medication:  'medical-outline',
           grooming:    'cut-outline',
         };
@@ -292,7 +292,7 @@ export default function PetDetailScreen({ route, navigation }) {
       const typeIconMap = {
         vaccination:        { icon: 'medkit-outline',      color: '#FF6B6B' },
         parasite_treatment: { icon: 'bug-outline',         color: '#8BC34A' },
-        checkup:            { icon: 'stethoscope-outline', color: '#2196F3' },
+        checkup:            { icon: 'pulse-outline',       color: '#2196F3' },
         surgery:            { icon: 'cut-outline',         color: '#FF9800' },
         diagnosis:          { icon: 'clipboard-outline',   color: '#9C27B0' },
         other:              { icon: 'document-outline',    color: '#9E9E9E' },
