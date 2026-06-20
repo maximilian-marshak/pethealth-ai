@@ -260,6 +260,7 @@
       "title": "Record",
       "attachment": "Scan",
       "attachmentUnavailable": "Preview unavailable",
+      "recommendations": "Vet recommendations",
       "loadError": "Couldn't load the record"
     },
     "scan": {

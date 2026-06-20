@@ -260,6 +260,7 @@
       "title": "Запись",
       "attachment": "Скан",
       "attachmentUnavailable": "Превью недоступно",
+      "recommendations": "Рекомендации врача",
       "loadError": "Не удалось загрузить запись"
     },
     "scan": {

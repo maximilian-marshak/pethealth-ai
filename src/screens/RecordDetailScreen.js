@@ -183,12 +183,20 @@ export default function RecordDetailScreen() {
             <Row label={t('review.fields.diagnosis')} value={record.diagnosis} />
             <Row label={t('review.fields.diagnosisCode')} value={record.diagnosis_code} />
             <Row label={t('review.fields.symptoms')} value={record.symptoms} />
-            <Row label={t('review.fields.recommendations')} value={record.recommendations} />
             <Row label={t('review.fields.weight')} value={weightValue} />
             <Row label={t('review.fields.temperature')} value={record.temperature} />
             <Row label={t('review.fields.followUp')} value={record.follow_up_date ? fmt(record.follow_up_date) : null} />
             <Row label={t('review.fields.urgency')} value={record.urgency ? t(`urgency.${record.urgency}`, { defaultValue: record.urgency }) : null} />
           </View>
+
+          {record.recommendations ? (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>{t('detail.recommendations')}</Text>
+              <View style={s.recoCard}>
+                <Text style={s.recoText}>{String(record.recommendations)}</Text>
+              </View>
+            </View>
+          ) : null}
 
           {/* Children */}
           <ChildSection
@@ -330,6 +338,8 @@ const s = StyleSheet.create({
   rowValue:    { fontSize: 13, color: '#1F2937', fontWeight: '500', flex: 1, textAlign: 'right' },
   childCard:   { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
   childTitle:  { fontSize: 15, fontWeight: '600', color: '#1F2937', marginBottom: 6 },
+  recoCard:    { backgroundColor: '#F5F3FF', borderLeftWidth: 3, borderLeftColor: ACCENT, borderRadius: 10, padding: 12 },
+  recoText:    { fontSize: 14, color: '#1F2937', lineHeight: 20 },
   attachment:  { width: '100%', height: 240, borderRadius: 12, backgroundColor: '#E5E7EB' },
   attachmentUnavailable: { fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' },
   footer:      { flexDirection: 'row', gap: 12, marginTop: 8 },
