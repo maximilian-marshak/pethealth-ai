@@ -42,11 +42,6 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   const { t } = useTranslation('ai');
   const health = usePetHealth(selectedPet?.id);
 
-  // ⏳ ВРЕМЕННЫЙ ЛОГ (Коммит 1, удалить в Коммите 2)
-  useEffect(() => {
-    console.log('PET HEALTH', health);
-  }, [health]);
-
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -259,7 +254,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     setIsLoading(true);
 
     try {
-      const response = await sendMessageToOpenAI(text.trim(), messages, { selectedPet, category });
+      const response = await sendMessageToOpenAI(text.trim(), messages, { selectedPet, category, health });
 
       const assistantMessage = {
         id: (Date.now() + 1).toString(),

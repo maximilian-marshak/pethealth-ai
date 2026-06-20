@@ -74,6 +74,33 @@ export async function sendMessageToOpenAI(userMessage, conversationHistory = [],
       systemContent += '.';
     }
 
+    // Здоровье питомца (справочный контекст + safety-инструкция); пустые списки пропускаем.
+    if (context.health) {
+      const { allergies = [], conditions = [], medications = [] } = context.health;
+      const lines = [];
+      if (allergies.length) {
+        const items = allergies
+          .map((a) => (a.severity ? `${a.substance} [${a.severity}]` : a.substance))
+          .join(', ');
+        lines.push(`- ALLERGIES (respect strictly): ${items}.`);
+      }
+      if (conditions.length) {
+        const items = conditions
+          .map((c) => (c.code ? `${c.condition} (${c.code})` : c.condition))
+          .join(', ');
+        lines.push(`- CHRONIC CONDITIONS: ${items}.`);
+      }
+      if (medications.length) {
+        const items = medications
+          .map((m) => (m.dose ? `${m.name} (${m.dose})` : m.name))
+          .join(', ');
+        lines.push(`- ACTIVE MEDICATIONS: ${items}.`);
+      }
+      if (lines.length) {
+        systemContent += ` PET HEALTH CONTEXT (reference only, not a diagnosis):\n${lines.join('\n')}\nINSTRUCTION: If any advice or medication you suggest could conflict with a listed allergy, warn the user explicitly and avoid it. Take chronic conditions and active medications into account (interactions/contraindications). Do not invent health data — absent categories are simply not listed. This is reference context, not a diagnosis.`;
+      }
+    }
+
     // Добавляем контекст категории
     if (context.category && context.category !== 'free-chat') {
       systemContent += ` Focus on ${context.category}-related questions.`;
