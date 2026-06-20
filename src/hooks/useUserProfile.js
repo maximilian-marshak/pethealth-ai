@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
+import { getUserProfile, upsertUserProfile } from '../services/userService';
 
 export function useUserProfile() {
   const { user } = useAuth();
@@ -19,13 +20,23 @@ export function useUserProfile() {
       setLoading(true);
       setError(null);
 
-      // Получаем данные профиля из user_metadata
+      // Телефон владельца живёт в public.users (не в metadata) — дочитываем не критично.
+      let phone = '';
+      try {
+        const row = await getUserProfile(user.id);
+        phone = row?.phone || '';
+      } catch (e) {
+        console.warn('useUserProfile: phone load failed (non-critical):', e?.message);
+      }
+
+      // Профиль из user_metadata + phone из public.users
       const currentProfile = {
         id: user.id,
         email: user.email,
         full_name: user.user_metadata?.full_name || '',
         avatar_url: user.user_metadata?.avatar_url || null,
         is_premium: user.user_metadata?.is_premium || false,
+        phone,
       };
 
       setProfile(currentProfile);
@@ -111,12 +122,32 @@ export function useUserProfile() {
     }
   };
 
+  /**
+   * Обновляет телефон владельца в public.users (upsert). Пустое значение → null.
+   * @param {string} phoneInput
+   */
+  const updatePhone = async (phoneInput) => {
+    if (!user) {
+      throw new Error('Пользователь не авторизован');
+    }
+    const trimmed = (phoneInput || '').trim();
+    const value = trimmed === '' ? null : trimmed;
+    try {
+      await upsertUserProfile(user.id, { phone: value });
+      setProfile((prev) => ({ ...prev, phone: value || '' }));
+    } catch (err) {
+      console.error('❌ Error updating phone:', err);
+      throw err;
+    }
+  };
+
   return {
     profile,
     loading,
     error,
     updateAvatar,
     updateName,
+    updatePhone,
     refetch: fetchProfile,
   };
 }

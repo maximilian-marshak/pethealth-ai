@@ -9,6 +9,8 @@ import {
   Alert,
   RefreshControl,
   ActivityIndicator,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -163,10 +165,13 @@ export default function ProfileScreen({ navigation }) {
   const { totalDonated, shelterCount, loading: loadingCharity, refetch: refetchCharity } = useCharity();
   const { badges, nextBadge, unlockedCount, totalBadges, progressToNext, loading: loadingBadges } = useBadges();
   const { pets, loading: loadingPets, refetch: refetchPets } = usePets();
-  const { profile, loading: loadingProfile, updateAvatar, refetch: refetchProfile } = useUserProfile();
+  const { profile, loading: loadingProfile, updateAvatar, updatePhone, refetch: refetchProfile } = useUserProfile();
 
   const [refreshing, setRefreshing] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [phoneModalVisible, setPhoneModalVisible] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [savingPhone, setSavingPhone] = useState(false);
 
   // ─── Фокус ──────────────────────────────────────────────
   useFocusEffect(
@@ -250,6 +255,23 @@ export default function ProfileScreen({ navigation }) {
     Alert.alert('Coming Soon', `${screen}`);
   };
 
+  const openPhoneModal = () => {
+    setPhoneInput(profile?.phone || '');
+    setPhoneModalVisible(true);
+  };
+
+  const savePhone = async () => {
+    setSavingPhone(true);
+    try {
+      await updatePhone(phoneInput);
+      setPhoneModalVisible(false);
+    } catch (err) {
+      Alert.alert(t('common:ok'), err.message);
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
   // ─── Имя и аватар ───────────────────────────────────────
   const getUserName = () => {
     if (profile?.full_name) return profile.full_name;
@@ -271,6 +293,7 @@ export default function ProfileScreen({ navigation }) {
 
   // ─── Render ─────────────────────────────────────────────
   return (
+    <>
     <ScrollView
       style={styles.container}
       refreshControl={
@@ -460,6 +483,17 @@ export default function ProfileScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.settingItem}
+          onPress={openPhoneModal}
+        >
+          <View style={[styles.settingIcon, { backgroundColor: '#E8F4FD' }]}>
+            <Ionicons name="call" size={20} color="#4ECDC4" />
+          </View>
+          <Text style={styles.settingText}>{t('profile:phone')}</Text>
+          <Text style={styles.settingValue} numberOfLines={1}>{profile?.phone || '—'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.settingItem}
           onPress={() => navigateToSettings('Notifications')}
         >
           <View style={[styles.settingIcon, { backgroundColor: '#E8F4FD' }]}>
@@ -506,6 +540,45 @@ export default function ProfileScreen({ navigation }) {
       <Text style={styles.versionText}>PetHealth AI v1.0.0</Text>
       <View style={styles.bottomPadding} />
     </ScrollView>
+
+    <Modal
+      visible={phoneModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setPhoneModalVisible(false)}
+    >
+      <View style={styles.phoneModalOverlay}>
+        <View style={styles.phoneModalCard}>
+          <Text style={styles.phoneModalTitle}>{t('profile:phone')}</Text>
+          <TextInput
+            style={styles.phoneInput}
+            value={phoneInput}
+            onChangeText={setPhoneInput}
+            keyboardType="phone-pad"
+            placeholder={t('profile:phone')}
+            placeholderTextColor="#9CA3AF"
+            autoFocus
+          />
+          <View style={styles.phoneModalButtons}>
+            <TouchableOpacity
+              style={[styles.phoneBtn, styles.phoneBtnCancel]}
+              onPress={() => setPhoneModalVisible(false)}
+              disabled={savingPhone}
+            >
+              <Text style={styles.phoneBtnCancelText}>{t('common:cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.phoneBtn, styles.phoneBtnSave]}
+              onPress={savePhone}
+              disabled={savingPhone}
+            >
+              <Text style={styles.phoneBtnSaveText}>{savingPhone ? '...' : t('common:save')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -672,6 +745,17 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   settingText: { flex: 1, fontSize: 15, color: '#1A1A2E', fontWeight: '500' },
+  settingValue: { fontSize: 14, color: '#888', maxWidth: 150, textAlign: 'right' },
+  phoneModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 24 },
+  phoneModalCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20 },
+  phoneModalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A2E', marginBottom: 16 },
+  phoneInput: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: '#1A1A2E', marginBottom: 16 },
+  phoneModalButtons: { flexDirection: 'row', gap: 12 },
+  phoneBtn: { flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center' },
+  phoneBtnCancel: { backgroundColor: '#F1F1F4' },
+  phoneBtnSave: { backgroundColor: '#6C63FF' },
+  phoneBtnCancelText: { color: '#1A1A2E', fontWeight: '600', fontSize: 15 },
+  phoneBtnSaveText: { color: '#fff', fontWeight: '600', fontSize: 15 },
   logoutItem: { borderWidth: 1, borderColor: '#FFE8E8' },
   logoutText: { color: '#FF6B6B' },
   emptyCard: {
