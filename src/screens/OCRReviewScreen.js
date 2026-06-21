@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
+import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import * as FileSystem from 'expo-file-system';
 import { decode } from 'base64-arraybuffer';
 import { supabase } from '../utils/supabase';
@@ -149,6 +150,7 @@ export default function OCRReviewScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { t } = useTranslation('medical');
+  const { awardEvent } = useLoyaltyPoints();
 
   const { data = {}, imageUri, petId } = route.params || {};
   const conf = data.confidence || {};
@@ -273,6 +275,9 @@ export default function OCRReviewScreen() {
 
       const { data: saveResult, error } = await supabase.rpc('save_medical_record', { p_payload });
       if (error) throw error;
+
+      // Начисление за сохранённый OCR-документ (идемпотентно по dedup_key на сервере).
+      await awardEvent('ocr_document', `${petId}|ocr_doc|${occurredAt}|${recordType}`, { sourceType: 'ocr' });
 
       // Вложение оригинала в бакет — НЕ фатально: запись уже сохранена (RPC прошёл).
       let attachFailed = false;

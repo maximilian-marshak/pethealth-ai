@@ -18,6 +18,7 @@ import { useNavigation, useRoute, useFocusEffect, StackActions } from '@react-na
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { usePetContext } from '../context/PetContext';
+import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { parseMedicalDocument } from '../services/ocrService';
@@ -652,6 +653,7 @@ export default function MedicalScreen() {
   const fmt    = (dateStr) => formatDate(dateStr, locale);
 
   const { pets, selectedPet, selectPet, loading: petsLoading } = usePetContext();
+  const { awardEvent } = useLoyaltyPoints();
 
   const [activeTab,   setActiveTab]   = useState('overview');
   const [scanning,    setScanning]    = useState(false);
@@ -749,6 +751,8 @@ export default function MedicalScreen() {
         };
         const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
+        // Начисление за первую ручную медзапись (идемпотентно по dedup_key на сервере).
+        await awardEvent('manual_first', `${selectedPet.id}|manual_first`, { sourceType: 'manual' });
       }
       setVaccineModal(false); setEditVaccine(null);
       await loadMedicalData();
@@ -818,6 +822,8 @@ export default function MedicalScreen() {
         };
         const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
+        // Начисление за первую ручную медзапись (идемпотентно по dedup_key на сервере).
+        await awardEvent('manual_first', `${selectedPet.id}|manual_first`, { sourceType: 'manual' });
       }
       setMedModal(false); setEditMed(null);
       await loadMedicalData();
@@ -884,6 +890,8 @@ export default function MedicalScreen() {
         };
         const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
+        // Начисление за первую ручную медзапись (идемпотентно по dedup_key на сервере).
+        await awardEvent('manual_first', `${selectedPet.id}|manual_first`, { sourceType: 'manual' });
       }
       setRecordModal(false); setEditRecord(null);
       await loadMedicalData();
