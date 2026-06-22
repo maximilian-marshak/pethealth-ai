@@ -9,6 +9,16 @@
         "reminder": "Напоминание"
       }
     },
+    "appointments": {
+      "title": "Мои записи",
+      "create": "Создать запись",
+      "untitled": "Запись",
+      "sections": { "upcoming": "Предстоящие", "past": "Прошедшие" },
+      "empty": { "upcoming": "Нет предстоящих записей", "past": "Нет прошедших записей" },
+      "status": { "requested": "Заявка", "confirmed": "Подтверждена", "cancelled": "Отменена", "completed": "Завершена" },
+      "actions": { "cancel": "Отменить", "delete": "Удалить" },
+      "confirmDelete": { "title": "Удалить запись?", "message": "Это действие нельзя отменить." }
+    },
     "header": {
       "title": "Медкарта",
       "back": "Назад"

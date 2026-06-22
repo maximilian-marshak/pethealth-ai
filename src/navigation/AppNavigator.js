@@ -20,6 +20,7 @@ import AddPetScreen from '../screens/AddPetScreen';
 import PetDetailScreen from '../screens/PetDetailScreen'; // ✅ НОВЫЙ ИМПОРТ
 import OCRReviewScreen from '../screens/OCRReviewScreen';
 import RecordDetailScreen from '../screens/RecordDetailScreen';
+import AppointmentsScreen from '../screens/AppointmentsScreen';
 
 // ═══ ИМПОРТ AI ASSISTANT ЭКРАНОВ ═══
 import AIAssistantHubScreen from '../screens/AIAssistantHubScreen';
@@ -204,6 +205,18 @@ export default function AppNavigator() {
             }}
           />
           
+          {/* ═══ APPOINTMENTS (вне PetProvider, по petId) ═══ */}
+          <Stack.Screen
+            name="Appointments"
+            component={AppointmentsScreen}
+            options={{
+              headerShown: true,
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
+              headerTintColor: '#6B4EFF',
+              animation: 'slide_from_right',
+            }}
+          />
+
           {/* ═══ CHARITY ЭКРАНЫ ═══ */}
           <Stack.Screen 
             name="CharityStore" 

@@ -1394,6 +1394,12 @@ export default function MedicalScreen() {
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.scanBtn}
+            onPress={() => { if (selectedPet?.id) navigation.navigate('Appointments', { petId: selectedPet.id }); }}
+          >
+            <Ionicons name="today-outline" size={20} color="#6366F1" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.scanBtn}
             onPress={handleScan}
             disabled={scanning}
           >

@@ -9,6 +9,16 @@
         "reminder": "Reminder"
       }
     },
+    "appointments": {
+      "title": "My Appointments",
+      "create": "New appointment",
+      "untitled": "Appointment",
+      "sections": { "upcoming": "Upcoming", "past": "Past" },
+      "empty": { "upcoming": "No upcoming appointments", "past": "No past appointments" },
+      "status": { "requested": "Requested", "confirmed": "Confirmed", "cancelled": "Cancelled", "completed": "Completed" },
+      "actions": { "cancel": "Cancel", "delete": "Delete" },
+      "confirmDelete": { "title": "Delete appointment?", "message": "This action cannot be undone." }
+    },
     "header": {
       "title": "Medical Records",
       "back": "Back"
