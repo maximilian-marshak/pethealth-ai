@@ -502,9 +502,9 @@ export default function PetDetailScreen({ route, navigation }) {
     }
   };
   const deleteAllergy = (row) => {
-    Alert.alert('Удалить аллергию?', row.substance, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: async () => {
+    Alert.alert(t('alerts.deleteAllergy.title'), t('alerts.deleteAllergy.message', { name: row.substance }), [
+      { text: t('common:cancel'), style: 'cancel' },
+      { text: t('common:delete'), style: 'destructive', onPress: async () => {
         try {
           const { error } = await supabase.from('pet_allergies').delete().eq('id', row.id);
           if (error) throw error;
@@ -553,9 +553,9 @@ export default function PetDetailScreen({ route, navigation }) {
     }
   };
   const deleteCondition = (row) => {
-    Alert.alert('Удалить заболевание?', row.condition, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: async () => {
+    Alert.alert(t('alerts.deleteCondition.title'), t('alerts.deleteCondition.message', { name: row.condition }), [
+      { text: t('common:cancel'), style: 'cancel' },
+      { text: t('common:delete'), style: 'destructive', onPress: async () => {
         try {
           const { error } = await supabase.from('pet_conditions').delete().eq('id', row.id);
           if (error) throw error;

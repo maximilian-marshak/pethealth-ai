@@ -1,4 +1,8 @@
 {
+  "alerts": {
+    "deleteAllergy": { "title": "Delete allergy?", "message": "{{name}}" },
+    "deleteCondition": { "title": "Delete condition?", "message": "{{name}}" }
+  },
   "passport": {
     "title": "Passport",
     "editTitle": "Edit passport",

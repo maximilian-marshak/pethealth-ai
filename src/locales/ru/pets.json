@@ -1,4 +1,8 @@
 {
+  "alerts": {
+    "deleteAllergy": { "title": "Удалить аллергию?", "message": "{{name}}" },
+    "deleteCondition": { "title": "Удалить заболевание?", "message": "{{name}}" }
+  },
   "passport": {
     "title": "Паспорт",
     "editTitle": "Редактировать паспорт",
