@@ -46,6 +46,7 @@
       "medication_taken": "Отметка приёма лекарства"
     }
   },
+  "rank": { "title": "Ранг" },
   "health": {
     "sectionTitle": "Здоровье",
     "allergyBanner": { "title": "⚠️ Аллергии" },

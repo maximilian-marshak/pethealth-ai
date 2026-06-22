@@ -46,6 +46,7 @@
       "medication_taken": "Marked medication as taken"
     }
   },
+  "rank": { "title": "Rank" },
   "health": {
     "sectionTitle": "Health Overview",
     "allergyBanner": { "title": "⚠️ Allergies" },

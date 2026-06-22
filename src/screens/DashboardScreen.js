@@ -20,11 +20,13 @@ import RecentActivityCard from '../components/RecentActivityCard';
 import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useDashboardStatus } from '../hooks/useDashboardStatus';
 import { usePetHealth } from '../hooks/usePetHealth';
+import { useCharity } from '../hooks/useCharity';
+import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
 import { StatusCards } from '../components/dashboard/StatusCards';
 import ProgressBar from '../components/ProgressBar';
 
 export default function DashboardScreen({ navigation }) {
-  const { t } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation('dashboard');
 
   // ─── State ──────────────────────────────────────
   const [user, setUser] = useState(null);
@@ -45,6 +47,8 @@ export default function DashboardScreen({ navigation }) {
     refetch: refetchStatus,
   } = useDashboardStatus(selectedPet?.id);
   const { allergies } = usePetHealth(selectedPet?.id);
+  const { lifetimeDonated } = useCharity();
+  const { currentRank, loading: loadingRanks } = useCharityRanks(lifetimeDonated);
 
   // ─── Совет дня (статичный, детерминированная ротация по дню года) ───
   const _now = new Date();
@@ -54,6 +58,11 @@ export default function DashboardScreen({ navigation }) {
   const _tipsItems = t('tips.items', { returnObjects: true });
   const _tipsList = Array.isArray(_tipsItems) ? _tipsItems : [];
   const tipText = _tipsList.length ? _tipsList[dayOfYear % _tipsList.length] : '';
+
+  // ─── Ранг: имя реактивно по языку (из raw name_ru/name_en) ───
+  const _lang = i18n.language || 'en';
+  const rankName = (r) => (_lang.startsWith('ru') ? r?.name_ru : r?.name_en) || r?.name_en || r?.name_ru || '';
+  const rankAccent = leagueColor(currentRank?.league);
 
   // ─── Effects ────────────────────────────────────
 
@@ -532,6 +541,27 @@ export default function DashboardScreen({ navigation }) {
             </View>
           )}
 
+          {/* ── RANK CARD ──────────────────────── */}
+          {!loadingRanks && currentRank && (
+            <TouchableOpacity
+              style={[styles.rankCard, { borderColor: rankAccent, backgroundColor: rankAccent + '12' }]}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Profile')}
+            >
+              <Text style={styles.rankCardIcon}>{currentRank.icon || '🏅'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rankCardLabel}>{t('rank.title')}</Text>
+                <Text style={styles.rankCardName}>{rankName(currentRank)}</Text>
+                {currentRank.league ? (
+                  <Text style={[styles.rankCardLeague, { color: rankAccent }]}>
+                    {t(`profile:rank.league.${currentRank.league}`, { defaultValue: currentRank.league })}
+                  </Text>
+                ) : null}
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={rankAccent} />
+            </TouchableOpacity>
+          )}
+
           {/* ── QUICK ACTIONS ──────────────────── */}
           <Text style={styles.sectionTitle}>{t('quickActions.sectionTitle')}</Text>
           <View style={styles.quickActions}>
@@ -916,6 +946,11 @@ const styles = StyleSheet.create({
   donateButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   supportButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#6B4EFF', paddingVertical: 14, borderRadius: 12, gap: 8, marginBottom: 8, shadowColor: '#6B4EFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   supportButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  rankCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, padding: 16, marginHorizontal: 20, marginBottom: 8 },
+  rankCardIcon: { fontSize: 34 },
+  rankCardLabel: { fontSize: 12, color: '#888', fontWeight: '600', textTransform: 'uppercase' },
+  rankCardName: { fontSize: 17, fontWeight: '700', color: '#1A1A2E', marginTop: 1 },
+  rankCardLeague: { fontSize: 12, fontWeight: '700', marginTop: 1, textTransform: 'uppercase' },
   earnMoreButton: { alignItems: 'center', paddingVertical: 10 },
   earnMoreText: { fontSize: 14, color: '#6C63FF', fontWeight: '600' },
 
