@@ -5,12 +5,14 @@
 // Модалка создания подключается в K3 (кнопка «создать» пока no-op).
 // ══════════════════════════════════════════════════════════════
 
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator,
+  Modal, TextInput, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAppointments } from '../hooks/useAppointments';
@@ -32,18 +34,83 @@ export default function AppointmentsScreen() {
   const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
 
   const { petId } = route.params || {};
-  const { future, past, loading, updateStatus, remove } = useAppointments(petId);
+  const { future, past, loading, create, updateStatus, remove } = useAppointments(petId);
+
+  // ── Create-modal state ──
+  const [createOpen, setCreateOpen] = useState(false);
+  const [clinicName, setClinicName] = useState('');
+  const [reason, setReason] = useState('');
+  const [requestedAt, setRequestedAt] = useState(null); // Date | null
+  const [clinicErr, setClinicErr] = useState(false);
+  const [dateErr, setDateErr] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [pickerShow, setPickerShow] = useState(false);
+  const [androidStep, setAndroidStep] = useState('date'); // 'date' | 'time'
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: t('appointments.title') });
   }, [navigation, t]);
 
-  const fmt = (ts) =>
-    ts
-      ? new Date(ts).toLocaleString(locale, {
+  const fmtDate = (d) =>
+    d
+      ? d.toLocaleString(locale, {
           day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
         })
       : '';
+  const fmt = (ts) => (ts ? fmtDate(new Date(ts)) : '');
+
+  const openCreate = () => {
+    setClinicName(''); setReason(''); setRequestedAt(null);
+    setClinicErr(false); setDateErr(false);
+    setPickerShow(false); setAndroidStep('date');
+    setCreateOpen(true);
+  };
+
+  // datetimepicker: iOS — единый 'datetime'; Android — двухшаговый date → time.
+  const onPickerChange = (event, selected) => {
+    if (Platform.OS !== 'ios') {
+      if (event.type === 'dismissed') { setPickerShow(false); setAndroidStep('date'); return; }
+      const base = requestedAt ? new Date(requestedAt) : new Date();
+      if (androidStep === 'date' && selected) {
+        base.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
+        setRequestedAt(base);
+        setAndroidStep('time'); // показываем следующий шаг — время
+        return;
+      }
+      if (androidStep === 'time' && selected) {
+        base.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
+        setRequestedAt(base);
+      }
+      setPickerShow(false); setAndroidStep('date');
+      return;
+    }
+    // iOS
+    if (selected) { setRequestedAt(selected); setDateErr(false); }
+  };
+
+  const save = async () => {
+    const okClinic = clinicName.trim().length > 0;
+    const okDate = !!requestedAt;
+    setClinicErr(!okClinic);
+    setDateErr(!okDate);
+    if (!okClinic || !okDate) {
+      Alert.alert(t('common:error'), t('appointments.validation'));
+      return;
+    }
+    setSaving(true);
+    try {
+      await create({
+        clinic_name: clinicName.trim(),
+        reason: reason.trim() || null,
+        requested_at: requestedAt.toISOString(),
+      });
+      setCreateOpen(false);
+    } catch (e) {
+      Alert.alert(t('common:error'), e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const onCancel = (id) => {
     updateStatus(id, 'cancelled').catch((e) => Alert.alert(t('common:error'), e.message));
@@ -125,14 +192,84 @@ export default function AppointmentsScreen() {
         </ScrollView>
       )}
 
-      <TouchableOpacity
-        style={s.fab}
-        activeOpacity={0.85}
-        onPress={() => { /* K3: открыть модалку создания приёма */ }}
-      >
+      <TouchableOpacity style={s.fab} activeOpacity={0.85} onPress={openCreate}>
         <Ionicons name="add" size={22} color="#fff" />
         <Text style={s.fabText}>{t('appointments.create')}</Text>
       </TouchableOpacity>
+
+      {/* ── Create modal ── */}
+      <Modal
+        visible={createOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !saving && setCreateOpen(false)}
+      >
+        <View style={s.overlay}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>{t('appointments.create')}</Text>
+
+            <Text style={s.label}>{t('appointments.form.clinicLabel')}</Text>
+            <TextInput
+              style={[s.input, clinicErr && s.inputErr]}
+              value={clinicName}
+              onChangeText={(v) => { setClinicName(v); if (v.trim()) setClinicErr(false); }}
+              placeholder={t('appointments.form.clinicPlaceholder')}
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <Text style={s.label}>{t('appointments.form.reasonLabel')}</Text>
+            <TextInput
+              style={s.input}
+              value={reason}
+              onChangeText={setReason}
+              placeholder={t('appointments.form.reasonPlaceholder')}
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <Text style={s.label}>{t('appointments.form.dateLabel')}</Text>
+            <TouchableOpacity
+              style={[s.input, s.dateField, dateErr && s.inputErr]}
+              onPress={() => { setAndroidStep('date'); setPickerShow(true); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="time-outline" size={18} color={requestedAt ? ACCENT : '#9CA3AF'} />
+              <Text style={[s.dateText, !requestedAt && s.datePlaceholder]}>
+                {requestedAt ? fmtDate(requestedAt) : t('appointments.form.datePlaceholder')}
+              </Text>
+            </TouchableOpacity>
+
+            {pickerShow && (
+              <DateTimePicker
+                value={requestedAt || new Date()}
+                mode={Platform.OS === 'ios' ? 'datetime' : androidStep}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onPickerChange}
+              />
+            )}
+
+            <View style={s.modalButtons}>
+              <TouchableOpacity
+                style={[s.modalBtn, s.modalBtnCancel]}
+                onPress={() => setCreateOpen(false)}
+                disabled={saving}
+              >
+                <Text style={s.modalBtnCancelText}>{t('common:cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.modalBtn, s.modalBtnSave]}
+                onPress={save}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={s.modalBtnSaveText}>{t('common:save')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -156,4 +293,20 @@ const s = StyleSheet.create({
   actionText:   { fontSize: 13, fontWeight: '600' },
   fab:          { position: 'absolute', right: 16, bottom: 24, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: ACCENT, paddingHorizontal: 18, paddingVertical: 13, borderRadius: 26, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
   fabText:      { color: '#fff', fontSize: 15, fontWeight: '600' },
+
+  overlay:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 24 },
+  modalCard:    { backgroundColor: '#fff', borderRadius: 16, padding: 20 },
+  modalTitle:   { fontSize: 18, fontWeight: '700', color: '#1F2937', marginBottom: 14 },
+  label:        { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 8 },
+  input:        { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#1F2937' },
+  inputErr:     { borderColor: '#EF4444' },
+  dateField:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dateText:     { fontSize: 15, color: '#1F2937' },
+  datePlaceholder: { color: '#9CA3AF' },
+  modalButtons: { flexDirection: 'row', gap: 12, marginTop: 18 },
+  modalBtn:     { flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center' },
+  modalBtnCancel: { backgroundColor: '#F1F1F4' },
+  modalBtnSave: { backgroundColor: ACCENT },
+  modalBtnCancelText: { color: '#1F2937', fontWeight: '600', fontSize: 15 },
+  modalBtnSaveText: { color: '#fff', fontWeight: '600', fontSize: 15 },
 });

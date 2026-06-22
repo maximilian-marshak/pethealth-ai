@@ -17,7 +17,16 @@
       "empty": { "upcoming": "No upcoming appointments", "past": "No past appointments" },
       "status": { "requested": "Requested", "confirmed": "Confirmed", "cancelled": "Cancelled", "completed": "Completed" },
       "actions": { "cancel": "Cancel", "delete": "Delete" },
-      "confirmDelete": { "title": "Delete appointment?", "message": "This action cannot be undone." }
+      "confirmDelete": { "title": "Delete appointment?", "message": "This action cannot be undone." },
+      "validation": "Please enter a clinic and pick a date & time",
+      "form": {
+        "clinicLabel": "Clinic",
+        "clinicPlaceholder": "Clinic name",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. annual check-up",
+        "dateLabel": "Date & time",
+        "datePlaceholder": "Select date & time"
+      }
     },
     "header": {
       "title": "Medical Records",

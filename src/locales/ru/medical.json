@@ -17,7 +17,16 @@
       "empty": { "upcoming": "Нет предстоящих записей", "past": "Нет прошедших записей" },
       "status": { "requested": "Заявка", "confirmed": "Подтверждена", "cancelled": "Отменена", "completed": "Завершена" },
       "actions": { "cancel": "Отменить", "delete": "Удалить" },
-      "confirmDelete": { "title": "Удалить запись?", "message": "Это действие нельзя отменить." }
+      "confirmDelete": { "title": "Удалить запись?", "message": "Это действие нельзя отменить." },
+      "validation": "Укажите клинику и выберите дату и время",
+      "form": {
+        "clinicLabel": "Клиника",
+        "clinicPlaceholder": "Название клиники",
+        "reasonLabel": "Причина (необязательно)",
+        "reasonPlaceholder": "напр. ежегодный осмотр",
+        "dateLabel": "Дата и время",
+        "datePlaceholder": "Выберите дату и время"
+      }
     },
     "header": {
       "title": "Медкарта",
