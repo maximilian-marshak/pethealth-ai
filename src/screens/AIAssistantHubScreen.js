@@ -367,6 +367,21 @@ export default function AIAssistantHubScreen({ navigation }) {
           <Ionicons name="arrow-forward-circle" size={32} color="#6B4EFF" />
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.freeChatCard}
+          onPress={() => navigation.navigate('Relocation')}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.freeChatIcon, { backgroundColor: '#6B4EFF' }]}>
+            <Ionicons name="airplane" size={26} color="#FFFFFF" />
+          </View>
+          <View style={styles.freeChatContent}>
+            <Text style={styles.freeChatTitle}>{t('relocation.title')}</Text>
+            <Text style={styles.freeChatSubtitle}>{t('hub.relocationSubtitle')}</Text>
+          </View>
+          <Ionicons name="arrow-forward-circle" size={32} color="#6B4EFF" />
+        </TouchableOpacity>
+
         <View style={styles.footerSpacing} />
       </ScrollView>
 

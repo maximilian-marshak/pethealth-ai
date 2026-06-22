@@ -181,10 +181,99 @@
     }
   ]
 },
+    "relocation": {
+  "title": "Moving with a pet",
+  "disclaimer": "Import rules vary by country and change over time. Always verify the current requirements with official sources and your veterinarian before you travel.",
+  "progress": "{{done}} of {{total}} done",
+  "sections": [
+    {
+      "id": "documents",
+      "title": "Documents",
+      "icon": "document-text-outline",
+      "items": [
+        "Vet passport (international one if travelling abroad)",
+        "Pedigree / registration papers (if applicable)",
+        "Ownership document or sale contract",
+        "Keep paper copies and photos of every document"
+      ]
+    },
+    {
+      "id": "microchip",
+      "title": "Microchip & ID",
+      "icon": "hardware-chip-outline",
+      "items": [
+        "ISO 11784/11785 compatible microchip implanted",
+        "Microchip number matches the passport",
+        "ID tag with up-to-date contact details"
+      ]
+    },
+    {
+      "id": "vaccines",
+      "title": "Vaccines & timing",
+      "icon": "medkit-outline",
+      "items": [
+        "Rabies vaccine valid and done in time (often 21+ days before travel)",
+        "Core vaccinations up to date",
+        "All dates and next-due recorded in the passport"
+      ]
+    },
+    {
+      "id": "tests",
+      "title": "Tests & treatments",
+      "icon": "flask-outline",
+      "items": [
+        "Rabies antibody titre test if the destination requires it",
+        "Tapeworm / parasite treatment within the required window before departure",
+        "External parasite (tick/flea) treatment before travel"
+      ]
+    },
+    {
+      "id": "destination",
+      "title": "Destination rules",
+      "icon": "globe-outline",
+      "items": [
+        "Check the official import rules of the destination country",
+        "Check for quarantine, permits or import licences",
+        "Check breed or species restrictions"
+      ]
+    },
+    {
+      "id": "transport",
+      "title": "Transport",
+      "icon": "airplane-outline",
+      "items": [
+        "Confirm airline / carrier pet requirements and book the pet slot",
+        "Carrier of the correct size, ventilated and labelled",
+        "Water and a familiar item; plan feeding around travel"
+      ]
+    },
+    {
+      "id": "prep",
+      "title": "Preparing your pet",
+      "icon": "paw-outline",
+      "items": [
+        "Crate-train and let the pet get used to the carrier",
+        "Plan to reduce stress (calming routine, vet advice if needed)",
+        "Vet check that the pet is fit to travel"
+      ]
+    },
+    {
+      "id": "arrival",
+      "title": "On arrival",
+      "icon": "home-outline",
+      "items": [
+        "Allow time to acclimatize to the new home",
+        "Find and register with a local veterinarian",
+        "Complete any local pet registration if required"
+      ]
+    }
+  ]
+},
     "hub": {
       "title": "AI Pet Assistant",
       "sections": { "ai": "Ask AI", "reference": "Reference" },
       "knowledgeSubtitle": "Care & health articles",
+      "relocationSubtitle": "Relocation checklist",
       "choosePet": "Choose a pet",
       "subtitleWithPet": "Ask me anything about {{name}}'s care",
       "subtitleNoPet": "Ask me anything about pet care",

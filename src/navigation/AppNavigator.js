@@ -31,6 +31,7 @@ import AIAssistantHubScreen from '../screens/AIAssistantHubScreen';
 import AIAssistantChatScreen from '../screens/AIAssistantChatScreen';
 import KnowledgeBaseScreen from '../screens/KnowledgeBaseScreen';
 import KnowledgeArticleScreen from '../screens/KnowledgeArticleScreen';
+import RelocationScreen from '../screens/RelocationScreen';
 
 // ═══ ИМПОРТ CHARITY КОМПОНЕНТОВ ═══
 import CharityStoreScreen from '../components/charity/CharityStoreScreen';
@@ -66,6 +67,11 @@ function AssistantNavigator() {
       <AssistantStack.Screen
         name="KnowledgeArticle"
         component={KnowledgeArticleScreen}
+        options={{ headerShown: true, headerTintColor: '#6B4EFF', headerTitleStyle: { fontWeight: 'bold' } }}
+      />
+      <AssistantStack.Screen
+        name="Relocation"
+        component={RelocationScreen}
         options={{ headerShown: true, headerTintColor: '#6B4EFF', headerTitleStyle: { fontWeight: 'bold' } }}
       />
     </AssistantStack.Navigator>
