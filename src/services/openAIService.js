@@ -102,7 +102,9 @@ export async function sendMessageToOpenAI(userMessage, conversationHistory = [],
     }
 
     // Добавляем контекст категории
-    if (context.category && context.category !== 'free-chat') {
+    if (context.category === 'relocation') {
+      systemContent += ` Focus on helping the user relocate or travel with their pet: required documents (pet passport, health/veterinary certificates), vaccinations (especially rabies) and timing, microchipping, blood titer tests and parasite treatments, destination-country import requirements, quarantine, airline/IATA crate and carrier rules, and acclimatization on arrival. IMPORTANT: import and travel rules differ by country, airline and change over time — never state specific country rules as definitive fact. Always advise the user to verify current requirements with official sources (the destination country's authorities, embassy/consulate, the airline) and their veterinarian before relying on anything.`;
+    } else if (context.category && context.category !== 'free-chat') {
       systemContent += ` Focus on ${context.category}-related questions.`;
     }
 

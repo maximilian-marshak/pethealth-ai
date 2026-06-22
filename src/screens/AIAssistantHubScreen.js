@@ -91,6 +91,18 @@ export default function AIAssistantHubScreen({ navigation }) {
       ],
     },
     {
+      id: 'relocation',
+      title: t('hub.categories.relocation.title'),
+      icon: 'airplane',
+      color: '#5C9EFF',
+      description: t('hub.categories.relocation.description'),
+      questions: [
+        t('hub.categories.relocation.q1'),
+        t('hub.categories.relocation.q2'),
+        t('hub.categories.relocation.q3'),
+      ],
+    },
+    {
       id: 'general',
       title: t('hub.categories.general.title'),
       icon: 'help-circle',
