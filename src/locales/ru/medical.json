@@ -186,7 +186,19 @@
       "cancel": "Отмена",
       "save": "Сохранить",
       "requiredTitle": "Обязательное поле",
-      "errorTitle": "Ошибка"
+      "errorTitle": "Ошибка",
+      "addChooser": { "title": "Добавить запись" },
+      "procedure": {
+        "title": "Добавить процедуру",
+        "date": "Дата *",
+        "name": "Название процедуры *",
+        "namePlaceholder": "напр. чистка зубов, рентген",
+        "notes": "Детали",
+        "notesPlaceholder": "Любые детали или заметки...",
+        "clinic": "Клиника",
+        "vet": "Ветеринар",
+        "required": "Укажите дату и название процедуры."
+      }
     },
     "delete": {
       "vaccine": {

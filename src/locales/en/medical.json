@@ -186,7 +186,19 @@
       "cancel": "Cancel",
       "save": "Save",
       "requiredTitle": "Required",
-      "errorTitle": "Error"
+      "errorTitle": "Error",
+      "addChooser": { "title": "Add record" },
+      "procedure": {
+        "title": "Add procedure",
+        "date": "Date *",
+        "name": "Procedure name *",
+        "namePlaceholder": "e.g. Teeth cleaning, X-ray",
+        "notes": "Details",
+        "notesPlaceholder": "Any details or notes...",
+        "clinic": "Clinic Name",
+        "vet": "Vet Name",
+        "required": "Please enter a date and a procedure name."
+      }
     },
     "delete": {
       "vaccine": {

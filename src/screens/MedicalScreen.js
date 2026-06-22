@@ -647,6 +647,111 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
   );
 };
 
+const ProcedureModal = ({ visible, onClose, onSave }) => {
+  const { t } = useTranslation('medical');
+
+  const [occurredAt, setOccurredAt] = useState('');
+  const [name,       setName]       = useState('');
+  const [notes,      setNotes]      = useState('');
+  const [clinic,     setClinic]     = useState('');
+  const [vetName,    setVetName]    = useState('');
+  const [saving,     setSaving]     = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    setOccurredAt(''); setName(''); setNotes(''); setClinic(''); setVetName('');
+  }, [visible]);
+
+  const handleSave = async () => {
+    if (!occurredAt || !name.trim()) {
+      Alert.alert(t('modal.requiredTitle'), t('modal.procedure.required'));
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave({
+        occurred_at: occurredAt,
+        name:        name.trim(),
+        notes:       notes.trim() || null,
+        clinic_name: clinic.trim() || null,
+        vet_name:    vetName.trim() || null,
+      });
+    } catch (err) {
+      Alert.alert(t('modal.errorTitle'), err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={mStyles.overlay}>
+        <View style={mStyles.sheet}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={mStyles.title}>{t('modal.procedure.title')}</Text>
+
+            <DatePickerField
+              label={t('modal.procedure.date')}
+              value={occurredAt}
+              onChange={setOccurredAt}
+              placeholder={t('modal.record.visitDatePlaceholder')}
+            />
+
+            <Text style={mStyles.label}>{t('modal.procedure.name')}</Text>
+            <TextInput
+              style={mStyles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder={t('modal.procedure.namePlaceholder')}
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <Text style={mStyles.label}>{t('modal.procedure.notes')}</Text>
+            <TextInput
+              style={[mStyles.input, mStyles.textArea]}
+              value={notes}
+              onChangeText={setNotes}
+              placeholder={t('modal.procedure.notesPlaceholder')}
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={3}
+            />
+
+            <Text style={mStyles.label}>{t('modal.procedure.clinic')}</Text>
+            <TextInput
+              style={mStyles.input}
+              value={clinic}
+              onChangeText={setClinic}
+              placeholder={t('modal.record.clinicPlaceholder')}
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <Text style={mStyles.label}>{t('modal.procedure.vet')}</Text>
+            <TextInput
+              style={mStyles.input}
+              value={vetName}
+              onChangeText={setVetName}
+              placeholder={t('modal.record.vetNamePlaceholder')}
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <View style={mStyles.row}>
+              <TouchableOpacity style={[mStyles.btn, mStyles.btnCancel]} onPress={onClose}>
+                <Text style={mStyles.btnCancelText}>{t('modal.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[mStyles.btn, mStyles.btnSave]} onPress={handleSave} disabled={saving}>
+                {saving
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={mStyles.btnSaveText}>{t('common:save')}</Text>}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const AGENDA_TYPE = {
@@ -694,6 +799,7 @@ export default function MedicalScreen() {
   const [vaccineModal, setVaccineModal] = useState(false);
   const [medModal,     setMedModal]     = useState(false);
   const [recordModal,  setRecordModal]  = useState(false);
+  const [procedureModal, setProcedureModal] = useState(false);
   const [editVaccine,  setEditVaccine]  = useState(null);
   const [editMed,      setEditMed]      = useState(null);
   const [editRecord,   setEditRecord]   = useState(null);
@@ -923,6 +1029,32 @@ export default function MedicalScreen() {
         await awardEvent('manual_first', `${selectedPet.id}|manual_first`, { sourceType: 'manual' });
       }
       setRecordModal(false); setEditRecord(null);
+      await loadMedicalData();
+    } catch (err) {
+      Alert.alert(t('modal.errorTitle'), err.message);
+    }
+  };
+
+  const saveProcedure = async (formData) => {
+    try {
+      const fields = {
+        occurred_at:     formData.occurred_at || null,
+        diagnosis:       formData.name || null,          // название процедуры
+        recommendations: formData.notes || null,
+        clinic_name:     formData.clinic_name || null,
+        vet_name:        formData.vet_name || null,
+      };
+      const p_payload = {
+        pet_id:      selectedPet.id,
+        record_type: 'procedure',
+        source:      'manual',
+        ...fields,
+      };
+      const { error } = await supabase.rpc('save_medical_record', { p_payload });
+      if (error) throw error;
+      // Начисление за первую ручную медзапись (идемпотентно по dedup_key на сервере).
+      await awardEvent('manual_first', `${selectedPet.id}|manual_first`, { sourceType: 'manual' });
+      setProcedureModal(false);
       await loadMedicalData();
     } catch (err) {
       Alert.alert(t('modal.errorTitle'), err.message);
@@ -1517,7 +1649,11 @@ export default function MedicalScreen() {
               } else if (activeTab === 'medications') {
                 setEditMed(null); setMedModal(true);
               } else if (activeTab === 'records') {
-                setEditRecord(null); setRecordModal(true);
+                Alert.alert(t('modal.addChooser.title'), undefined, [
+                  { text: t('recordTypes.visit'), onPress: () => { setEditRecord(null); setRecordModal(true); } },
+                  { text: t('recordTypes.procedure'), onPress: () => setProcedureModal(true) },
+                  { text: t('modal.cancel'), style: 'cancel' },
+                ]);
               }
             }}
           >
@@ -1710,6 +1846,11 @@ export default function MedicalScreen() {
         onClose={() => { setRecordModal(false); setEditRecord(null); }}
         onSave={saveRecord}
         editData={editRecord}
+      />
+      <ProcedureModal
+        visible={procedureModal}
+        onClose={() => setProcedureModal(false)}
+        onSave={saveProcedure}
       />
 
       {scanning && (
