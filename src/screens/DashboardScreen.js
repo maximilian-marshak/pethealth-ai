@@ -386,7 +386,11 @@ export default function DashboardScreen({ navigation }) {
 
           {/* ── PET CARD ───────────────────────── */}
           {selectedPet && (
-            <View style={styles.petCard}>
+            <TouchableOpacity
+              style={styles.petCard}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('PetDetail', { petId: selectedPet.id })}
+            >
               <View style={styles.petCardLeft}>
                 <View style={styles.petAvatar}>
                   {selectedPet.avatar_url ? (
@@ -430,7 +434,7 @@ export default function DashboardScreen({ navigation }) {
                   </Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
 
           {/* ── ALLERGY BANNER ─────────────────── */}
@@ -549,16 +553,6 @@ export default function DashboardScreen({ navigation }) {
                 <Ionicons name="chatbubble-ellipses" size={24} color="#4ECDC4" />
               </View>
               <Text style={styles.actionText}>{t('quickActions.aiChat')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => navigation.navigate('Activity')}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#E8FFE8' }]}>
-                <Ionicons name="fitness" size={24} color="#51CF66" />
-              </View>
-              <Text style={styles.actionText}>{t('quickActions.activity')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
