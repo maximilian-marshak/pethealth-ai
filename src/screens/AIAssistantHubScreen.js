@@ -271,6 +271,9 @@ export default function AIAssistantHubScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
+        {/* ═══ SECTION: ASK AI ═══ */}
+        <Text style={styles.sectionTitle}>{t('hub.sections.ai')}</Text>
+
         {/* ═══ FREE CHAT CARD ═══ */}
         <TouchableOpacity
           style={styles.freeChatCard}
@@ -346,6 +349,23 @@ export default function AIAssistantHubScreen({ navigation }) {
             ))}
           </View>
         ))}
+
+        {/* ═══ SECTION: REFERENCE (статика, без AI) ═══ */}
+        <Text style={styles.sectionTitle}>{t('hub.sections.reference')}</Text>
+        <TouchableOpacity
+          style={styles.freeChatCard}
+          onPress={() => navigation.navigate('KnowledgeBase')}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.freeChatIcon, { backgroundColor: '#6B4EFF' }]}>
+            <Ionicons name="library" size={28} color="#FFFFFF" />
+          </View>
+          <View style={styles.freeChatContent}>
+            <Text style={styles.freeChatTitle}>{t('knowledge.title')}</Text>
+            <Text style={styles.freeChatSubtitle}>{t('hub.knowledgeSubtitle')}</Text>
+          </View>
+          <Ionicons name="arrow-forward-circle" size={32} color="#6B4EFF" />
+        </TouchableOpacity>
 
         <View style={styles.footerSpacing} />
       </ScrollView>

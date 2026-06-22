@@ -48,8 +48,143 @@
     }
   ]
 },
+    "knowledge": {
+  "title": "Knowledge base",
+  "disclaimer": "This is general guidance, not a diagnosis. For health concerns, emergencies or medication decisions, always consult a veterinarian.",
+  "categories": [
+    {
+      "id": "nutrition",
+      "category": "Nutrition",
+      "icon": "nutrition-outline",
+      "color": "#22C55E",
+      "items": [
+        {
+          "id": "nutrition_general",
+          "title": "Feeding basics",
+          "body": "Feed a complete, age-appropriate food and keep fresh water available at all times. Stick to a consistent schedule and measure portions to avoid overfeeding.\n\nIntroduce any diet change gradually over 5-7 days to avoid stomach upset. Avoid toxic human foods such as chocolate, grapes, raisins, onions, garlic and xylitol."
+        },
+        {
+          "id": "nutrition_cats",
+          "title": "Cats: nutrition",
+          "body": "Cats are obligate carnivores and need animal-protein-based food. Many cats prefer several small meals a day; wet food helps with hydration and supports urinary health.\n\nDon't feed dog food long-term - it lacks taurine, which is essential for cats. Watch weight closely, as indoor cats easily gain excess weight."
+        },
+        {
+          "id": "nutrition_dogs",
+          "title": "Dogs: nutrition",
+          "body": "Choose food matched to size and life stage (puppy, adult, senior). Large breeds and puppies have specific needs - ask your vet about the right formula.\n\nKeep treats to about 10% of daily calories. Chocolate, grapes/raisins, onions and xylitol are toxic to dogs - keep them out of reach."
+        }
+      ]
+    },
+    {
+      "id": "vaccination",
+      "category": "Vaccination",
+      "icon": "medkit-outline",
+      "color": "#F59E0B",
+      "items": [
+        {
+          "id": "vaccines",
+          "title": "Vaccination",
+          "body": "Vaccines protect against serious infectious diseases. Puppies and kittens get a starter series, followed by boosters on a schedule set by your vet.\n\nKeep a record of dates and the next due date. Rabies vaccination is legally required in many regions and is needed for travel."
+        }
+      ]
+    },
+    {
+      "id": "parasites",
+      "category": "Parasites",
+      "icon": "bug-outline",
+      "color": "#8BC34A",
+      "items": [
+        {
+          "id": "parasites_main",
+          "title": "Parasite prevention",
+          "body": "External parasites (fleas, ticks) and internal parasites (worms) are common and preventable. Use vet-recommended preventives year-round or seasonally as advised.\n\nCheck the coat and skin after walks, especially in tick season. Deworm on schedule - some worms can affect people too."
+        }
+      ]
+    },
+    {
+      "id": "illness",
+      "category": "Signs of illness",
+      "icon": "pulse-outline",
+      "color": "#2196F3",
+      "items": [
+        {
+          "id": "when_to_vet",
+          "title": "When to see a vet",
+          "body": "See a vet promptly for: repeated vomiting or diarrhea, refusing food for over a day, lethargy, difficulty breathing, blood in urine or stool, sudden weight loss, or limping that doesn't improve.\n\nWhen in doubt, call your clinic. Early checks are cheaper and safer than waiting."
+        }
+      ]
+    },
+    {
+      "id": "emergency",
+      "category": "Emergencies",
+      "icon": "alert-circle-outline",
+      "color": "#EF4444",
+      "items": [
+        {
+          "id": "emergency_main",
+          "title": "Emergencies - act fast",
+          "body": "Call a vet immediately for: poisoning, not breathing, choking, seizures, major bleeding, being hit by a car, a bloated hard belly, or collapse.\n\nKeep your clinic's number and the nearest emergency hospital handy. Do not give human medicines unless a vet tells you to."
+        }
+      ]
+    },
+    {
+      "id": "grooming",
+      "category": "Grooming",
+      "icon": "cut-outline",
+      "color": "#EC4899",
+      "items": [
+        {
+          "id": "coat",
+          "title": "Coat & skin care",
+          "body": "Brush regularly to reduce shedding, prevent mats and spot skin problems early. Frequency depends on coat type - long coats need more.\n\nBathe only as needed with a pet-safe shampoo; over-bathing dries the skin. Trim nails when they click on the floor."
+        }
+      ]
+    },
+    {
+      "id": "dental",
+      "category": "Teeth & hygiene",
+      "icon": "sparkles-outline",
+      "color": "#6B4EFF",
+      "items": [
+        {
+          "id": "teeth",
+          "title": "Dental care",
+          "body": "Dental disease is common and painful. Brush teeth with pet toothpaste several times a week - never use human toothpaste.\n\nOffer vet-approved dental chews and watch for bad breath, red gums or tartar. Ask your vet about a professional cleaning if needed."
+        }
+      ]
+    },
+    {
+      "id": "behavior",
+      "category": "Behavior",
+      "icon": "paw-outline",
+      "color": "#14B8A6",
+      "items": [
+        {
+          "id": "behavior_main",
+          "title": "Behavior basics",
+          "body": "Cats need scratching posts, hiding spots and play that mimics hunting. Sudden behavior changes can signal stress or illness.\n\nDogs thrive on routine, exercise and positive-reinforcement training. Avoid punishment - reward the behavior you want. For persistent issues, consult a vet or behaviorist."
+        }
+      ]
+    },
+    {
+      "id": "seasonal",
+      "category": "Seasonal care",
+      "icon": "partly-sunny-outline",
+      "color": "#F97316",
+      "items": [
+        {
+          "id": "seasonal_main",
+          "title": "Seasonal care",
+          "body": "Heat: never leave a pet in a parked car, walk during cooler hours, and provide shade and water. Watch for heatstroke - heavy panting, drooling, weakness.\n\nCold: short-haired pets may need a coat; wipe paws after salt and ice. In tick season check the coat daily and keep prevention up to date."
+        }
+      ]
+    }
+  ]
+},
     "hub": {
       "title": "AI Pet Assistant",
+      "sections": { "ai": "Ask AI", "reference": "Reference" },
+      "knowledgeSubtitle": "Care & health articles",
       "choosePet": "Choose a pet",
       "subtitleWithPet": "Ask me anything about {{name}}'s care",
       "subtitleNoPet": "Ask me anything about pet care",

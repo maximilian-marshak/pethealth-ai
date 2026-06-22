@@ -29,6 +29,8 @@ import FAQScreen from '../screens/FAQScreen';
 // ═══ ИМПОРТ AI ASSISTANT ЭКРАНОВ ═══
 import AIAssistantHubScreen from '../screens/AIAssistantHubScreen';
 import AIAssistantChatScreen from '../screens/AIAssistantChatScreen';
+import KnowledgeBaseScreen from '../screens/KnowledgeBaseScreen';
+import KnowledgeArticleScreen from '../screens/KnowledgeArticleScreen';
 
 // ═══ ИМПОРТ CHARITY КОМПОНЕНТОВ ═══
 import CharityStoreScreen from '../components/charity/CharityStoreScreen';
@@ -55,6 +57,16 @@ function AssistantNavigator() {
       <AssistantStack.Screen 
         name="AIAssistantChat" 
         component={AIAssistantChatScreen} 
+      />
+      <AssistantStack.Screen
+        name="KnowledgeBase"
+        component={KnowledgeBaseScreen}
+        options={{ headerShown: true, headerTintColor: '#6B4EFF', headerTitleStyle: { fontWeight: 'bold' } }}
+      />
+      <AssistantStack.Screen
+        name="KnowledgeArticle"
+        component={KnowledgeArticleScreen}
+        options={{ headerShown: true, headerTintColor: '#6B4EFF', headerTitleStyle: { fontWeight: 'bold' } }}
       />
     </AssistantStack.Navigator>
   );
