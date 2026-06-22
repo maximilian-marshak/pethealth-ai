@@ -23,6 +23,7 @@ import { usePetHealth } from '../hooks/usePetHealth';
 import { useCharity } from '../hooks/useCharity';
 import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
 import { useNotifications } from '../hooks/useNotifications';
+import { requestNotificationPermission, scheduleNotificationsFromEvents } from '../utils/notificationsSetup';
 import { useUnits } from '../hooks/useUnits';
 import { formatWeightValue, unitLabel } from '../utils/formatWeight';
 import { StatusCards } from '../components/dashboard/StatusCards';
@@ -53,7 +54,7 @@ export default function DashboardScreen({ navigation }) {
   const { lifetimeDonated } = useCharity();
   const { currentRank, loading: loadingRanks } = useCharityRanks(lifetimeDonated);
   const { unit } = useUnits();
-  const { unreadCount } = useNotifications();
+  const { unreadCount, upcoming } = useNotifications();
 
   // ─── Совет дня (статичный, детерминированная ротация по дню года) ───
   const _now = new Date();
@@ -86,6 +87,15 @@ export default function DashboardScreen({ navigation }) {
     });
     return unsubscribe;
   }, [navigation, refetchStatus]);
+
+  // Локальные пуши по due-событиям: мягкий запрос разрешения + полная
+  // пере-синхронизация при изменении списка предстоящих событий.
+  useEffect(() => {
+    (async () => {
+      const status = await requestNotificationPermission();
+      if (status === 'granted') await scheduleNotificationsFromEvents(upcoming);
+    })();
+  }, [upcoming]);
 
   // Загрузка данных питомца при смене выбранного
   useEffect(() => {

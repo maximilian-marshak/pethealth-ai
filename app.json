@@ -48,7 +48,8 @@
           "photosPermission": "PetHealth AI needs access to your photos to analyze pet images.",
           "cameraPermission": "PetHealth AI needs access to your camera to take pet photos for health analysis."
         }
-      ]
+      ],
+      "expo-notifications"
     ]
   }
 }
