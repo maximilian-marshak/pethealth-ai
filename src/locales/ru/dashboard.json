@@ -24,7 +24,27 @@
     "subtitle": "Помогайте животным в приютах",
     "progressLabel": "Прогресс для помощи приюту",
     "donateBtn": "Помочь приюту сейчас!",
-    "earnMore": "+ Заработать больше Paws"
+    "earnMore": "+ Заработать больше Paws",
+    "supportShelter": "Поддержать приют",
+    "monthProgressLabel": "Заработано в этом месяце",
+    "balanceLabel": "Всего Paws",
+    "howToEarn": {
+      "title": "Как заработать Paws",
+      "subtitle": "Зарабатывайте Paws, заботясь о здоровье питомца. Paws становятся голосами и направляют месячный благотворительный пул приютам.",
+      "dailyCap": "до {{count}} в день"
+    },
+    "events": {
+      "visit_verified": "Подтверждённый визит к врачу",
+      "vaccination_verified": "Подтверждённая вакцинация",
+      "reminder_completed": "Выполненное напоминание",
+      "course_completed": "Завершённый курс лекарств",
+      "ocr_document": "Скан документа",
+      "daily_checkin": "Ежедневный чек-ин",
+      "streak_7": "Серия ухода 7 дней",
+      "streak_30": "Серия ухода 30 дней",
+      "manual_first": "Первая ручная запись",
+      "medication_taken": "Отметка приёма лекарства"
+    }
   },
   "health": {
     "sectionTitle": "Здоровье",

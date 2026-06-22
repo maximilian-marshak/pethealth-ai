@@ -24,7 +24,27 @@
     "subtitle": "Help shelter animals",
     "progressLabel": "Progress to Help Shelter",
     "donateBtn": "Help a Shelter Now!",
-    "earnMore": "+ Earn More Paws"
+    "earnMore": "+ Earn More Paws",
+    "supportShelter": "Support a shelter",
+    "monthProgressLabel": "Earned this month",
+    "balanceLabel": "Total Paws",
+    "howToEarn": {
+      "title": "How to earn Paws",
+      "subtitle": "Earn Paws by taking care of your pet's health. Paws become votes that direct the monthly charity pool to shelters.",
+      "dailyCap": "up to {{count}} per day"
+    },
+    "events": {
+      "visit_verified": "Verified vet visit",
+      "vaccination_verified": "Verified vaccination",
+      "reminder_completed": "Completed reminder",
+      "course_completed": "Completed medication course",
+      "ocr_document": "Scanned a document",
+      "daily_checkin": "Daily check-in",
+      "streak_7": "7-day care streak",
+      "streak_30": "30-day care streak",
+      "manual_first": "First manual record",
+      "medication_taken": "Marked medication as taken"
+    }
   },
   "health": {
     "sectionTitle": "Health Overview",

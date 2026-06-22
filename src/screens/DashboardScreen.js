@@ -35,6 +35,7 @@ export default function DashboardScreen({ navigation }) {
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [monthData, setMonthData] = useState(null); // { month_points, monthly_cap, remaining } | null
 
   // ─── Хуки ───────────────────────────────────────
   const { points, loading: loadingPoints } = useLoyaltyPoints();
@@ -59,6 +60,7 @@ export default function DashboardScreen({ navigation }) {
   // Начальная загрузка
   useEffect(() => {
     loadDashboardData();
+    loadMonthPoints();
   }, []);
 
   // Обновление при возврате на экран
@@ -66,6 +68,7 @@ export default function DashboardScreen({ navigation }) {
     const unsubscribe = navigation.addListener('focus', () => {
       loadDashboardData();
       refetchStatus();
+      loadMonthPoints();
     });
     return unsubscribe;
   }, [navigation, refetchStatus]);
@@ -97,6 +100,19 @@ export default function DashboardScreen({ navigation }) {
       setRefreshing(false);
     }
   };
+
+  // Месячный прогресс баллов — RPC get_month_points (одна строка). Некритично.
+  const loadMonthPoints = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_month_points');
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      setMonthData(row || null);
+    } catch (e) {
+      console.warn('get_month_points failed (non-critical):', e?.message);
+      setMonthData(null);
+    }
+  }, []);
 
   const loadPets = async (userId) => {
     try {
@@ -460,11 +476,7 @@ export default function DashboardScreen({ navigation }) {
                 </View>
                 <TouchableOpacity
                   style={styles.pawsInfoBtn}
-                  onPress={() =>
-                    navigation.navigate('CharityStore', {
-                      screen: 'CharityStoreMain',
-                    })
-                  }
+                  onPress={() => navigation.navigate('CharityStore')}
                 >
                   <Ionicons
                     name="information-circle-outline"
@@ -478,39 +490,37 @@ export default function DashboardScreen({ navigation }) {
                 <Text style={styles.pawsBalance}>
                   {loadingPoints ? '...' : points}
                 </Text>
-                <Text style={styles.pawsBalanceLabel}>Paws</Text>
+                <Text style={styles.pawsBalanceLabel}>{t('paws.balanceLabel')}</Text>
               </View>
 
               <View style={styles.progressContainer}>
                 <View style={styles.progressHeader}>
                   <Text style={styles.progressLabel}>
-                    {t('paws.progressLabel')}
+                    {t('paws.monthProgressLabel')}
                   </Text>
-                  <Text style={styles.progressValue}>{points}/1000</Text>
+                  <Text style={styles.progressValue}>
+                    {monthData ? `${monthData.month_points}/${monthData.monthly_cap}` : '...'}
+                  </Text>
                 </View>
-                <ProgressBar current={points} goal={1000} height={12} />
+                <ProgressBar
+                  current={monthData?.month_points || 0}
+                  goal={monthData?.monthly_cap || 1}
+                  height={12}
+                />
               </View>
 
-              {points >= 1000 && (
-                <TouchableOpacity
-                  style={styles.donateButton}
-                  onPress={() =>
-                    navigation.navigate('CharityStore', {
-                      screen: 'CharityStoreMain',
-                    })
-                  }
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="heart" size={20} color="#fff" />
-                  <Text style={styles.donateButtonText}>
-                    {t('paws.donateBtn')}
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={styles.supportButton}
+                onPress={() => navigation.navigate('CharityStore')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="heart" size={20} color="#fff" />
+                <Text style={styles.supportButtonText}>{t('paws.supportShelter')}</Text>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.earnMoreButton}
-                onPress={() => navigation.navigate('Activity')}
+                onPress={() => navigation.navigate('HowToEarnPaws')}
                 activeOpacity={0.8}
               >
                 <Text style={styles.earnMoreText}>{t('paws.earnMore')}</Text>
@@ -910,6 +920,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   donateButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  supportButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#6B4EFF', paddingVertical: 14, borderRadius: 12, gap: 8, marginBottom: 8, shadowColor: '#6B4EFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  supportButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   earnMoreButton: { alignItems: 'center', paddingVertical: 10 },
   earnMoreText: { fontSize: 14, color: '#6C63FF', fontWeight: '600' },
 

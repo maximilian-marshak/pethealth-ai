@@ -22,6 +22,7 @@ import OCRReviewScreen from '../screens/OCRReviewScreen';
 import RecordDetailScreen from '../screens/RecordDetailScreen';
 import AppointmentsScreen from '../screens/AppointmentsScreen';
 import DocumentsScreen from '../screens/DocumentsScreen';
+import HowToEarnPawsScreen from '../screens/HowToEarnPawsScreen';
 
 // ═══ ИМПОРТ AI ASSISTANT ЭКРАНОВ ═══
 import AIAssistantHubScreen from '../screens/AIAssistantHubScreen';
@@ -222,6 +223,18 @@ export default function AppNavigator() {
           <Stack.Screen
             name="Documents"
             component={DocumentsScreen}
+            options={{
+              headerShown: true,
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
+              headerTintColor: '#6B4EFF',
+              animation: 'slide_from_right',
+            }}
+          />
+
+          {/* ═══ HOW TO EARN PAWS (вне PetProvider) ═══ */}
+          <Stack.Screen
+            name="HowToEarnPaws"
+            component={HowToEarnPawsScreen}
             options={{
               headerShown: true,
               headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
