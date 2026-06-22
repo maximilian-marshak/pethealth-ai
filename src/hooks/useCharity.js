@@ -13,6 +13,8 @@ export function useCharity() {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [poolAmountByn, setPoolAmountByn] = useState(null);
+  const [openPeriod, setOpenPeriod] = useState(null);
 
   // ═══ FETCH SHELTERS ═══
   const fetchShelters = useCallback(async () => {
@@ -64,6 +66,39 @@ export function useCharity() {
       setDonations([]);
     }
   }, [user?.id]);
+
+  // ═══ FETCH ACTIVE POOL (amount_byn) ═══
+  // Вариант B: пул периода делится между приютами по голосам. Чтение некритично.
+  const fetchPool = useCallback(async () => {
+    try {
+      const { data, error: poolError } = await supabase
+        .from('charity_pools')
+        .select('amount_byn')
+        .eq('active', true)
+        .maybeSingle();
+      if (poolError) throw poolError;
+      setPoolAmountByn(data?.amount_byn ?? null);
+    } catch (err) {
+      console.warn('useCharity: pool load failed (non-critical):', err?.message);
+      setPoolAmountByn(null);
+    }
+  }, []);
+
+  // ═══ FETCH OPEN PERIOD ═══
+  const fetchOpenPeriod = useCallback(async () => {
+    try {
+      const { data, error: periodError } = await supabase
+        .from('charity_pool_periods')
+        .select('id, period_start, period_end, status')
+        .eq('status', 'open')
+        .maybeSingle();
+      if (periodError) throw periodError;
+      setOpenPeriod(data ?? null);
+    } catch (err) {
+      console.warn('useCharity: open period load failed (non-critical):', err?.message);
+      setOpenPeriod(null);
+    }
+  }, []);
 
   // ═══ CALCULATE TOTAL DONATED ═══
   const totalDonated = useMemo(() => {
@@ -131,16 +166,20 @@ export function useCharity() {
     await Promise.all([
       fetchShelters(),
       fetchDonations(),
+      fetchPool(),
+      fetchOpenPeriod(),
     ]);
-  }, [fetchShelters, fetchDonations]);
+  }, [fetchShelters, fetchDonations, fetchPool, fetchOpenPeriod]);
 
   // ═══ INITIAL LOAD ═══
   useEffect(() => {
     fetchShelters();
+    fetchPool();
+    fetchOpenPeriod();
     if (user?.id) {
       fetchDonations();
     }
-  }, [fetchShelters, fetchDonations, user?.id]);
+  }, [fetchShelters, fetchDonations, fetchPool, fetchOpenPeriod, user?.id]);
 
   // ═══ RETURN HOOK DATA ═══
   return {
@@ -148,6 +187,8 @@ export function useCharity() {
     donations,
     totalDonated,     // ✅ Общая сумма всех пожертвований
     shelterCount,     // ✅ ДОБАВЛЕНО: Количество уникальных приютов
+    poolAmountByn,    // Вариант B: размер активного пула (BYN)
+    openPeriod,       // Вариант B: открытый период распределения (или null)
     loading,
     error,
     makeDonation,
