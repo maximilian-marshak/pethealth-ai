@@ -6,6 +6,7 @@
     "phone": "Phone",
     "language": "Language",
     "notifications": "Notifications",
+    "notifPermDenied": { "title": "Notifications disabled", "message": "Allow notifications in your device settings to turn them on." },
     "logout": "Log Out",
     "deleteAccount": "Delete Account",
     "deleteConfirm": {

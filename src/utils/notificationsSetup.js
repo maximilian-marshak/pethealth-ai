@@ -108,3 +108,13 @@ export async function scheduleNotificationsFromEvents(events) {
     return 0;
   }
 }
+
+// Отменить все запланированные уведомления (guard — no-op в Expo Go).
+export async function cancelAllScheduled() {
+  try {
+    ensureHandler();
+    await Notifications.cancelAllScheduledNotificationsAsync();
+  } catch (e) {
+    console.warn('notifications: cancel unavailable (non-fatal):', e?.message);
+  }
+}

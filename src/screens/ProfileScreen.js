@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -26,6 +27,8 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useUnits } from '../hooks/useUnits';
 import ProgressBar from '../components/ProgressBar';
 import { supabase } from '../utils/supabase';
+import { useNotificationPref } from '../hooks/useNotificationPref';
+import { requestNotificationPermission, cancelAllScheduled } from '../utils/notificationsSetup';
 
 // ─── Language Switcher Component ──────────────────────────────────────────────
 const LanguageSwitcher = () => {
@@ -188,6 +191,7 @@ const UnitsSwitcher = () => {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen({ navigation }) {
   const { user, signOut } = useAuth();
+  const { enabled: notificationsEnabled, setEnabled: setNotificationsEnabled } = useNotificationPref();
   const { t, i18n } = useTranslation(['profile', 'common', 'pets']);
 
   // ─── Хуки данных ────────────────────────────────────────
@@ -320,6 +324,23 @@ export default function ProfileScreen({ navigation }) {
         },
       ]
     );
+  };
+
+  // ─── Тумблер уведомлений ───
+  const onToggleNotifications = async (value) => {
+    if (value) {
+      const status = await requestNotificationPermission();
+      if (status === 'granted') {
+        setNotificationsEnabled(true);
+      } else {
+        // Нет разрешения ОС — оставляем выкл и подсказываем.
+        setNotificationsEnabled(false);
+        Alert.alert(t('profile:notifPermDenied.title'), t('profile:notifPermDenied.message'));
+      }
+    } else {
+      setNotificationsEnabled(false);
+      await cancelAllScheduled();
+    }
   };
 
   const navigateToSettings = (screen) => {
@@ -577,16 +598,18 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.settingValue} numberOfLines={1}>{profile?.phone || '—'}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.settingItem}
-          onPress={() => navigateToSettings('Notifications')}
-        >
+        <View style={styles.settingItem}>
           <View style={[styles.settingIcon, { backgroundColor: '#E8F4FD' }]}>
             <Ionicons name="notifications" size={20} color="#4ECDC4" />
           </View>
           <Text style={styles.settingText}>{t('profile:notifications')}</Text>
-          <Ionicons name="chevron-forward" size={20} color="#CCC" />
-        </TouchableOpacity>
+          <Switch
+            value={notificationsEnabled}
+            onValueChange={onToggleNotifications}
+            trackColor={{ true: '#6B4EFF', false: '#D1D5DB' }}
+            thumbColor="#fff"
+          />
+        </View>
 
         <TouchableOpacity
           style={styles.settingItem}

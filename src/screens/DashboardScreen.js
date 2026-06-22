@@ -23,7 +23,8 @@ import { usePetHealth } from '../hooks/usePetHealth';
 import { useCharity } from '../hooks/useCharity';
 import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
 import { useNotifications } from '../hooks/useNotifications';
-import { requestNotificationPermission, scheduleNotificationsFromEvents } from '../utils/notificationsSetup';
+import { requestNotificationPermission, scheduleNotificationsFromEvents, cancelAllScheduled } from '../utils/notificationsSetup';
+import { useNotificationPref } from '../hooks/useNotificationPref';
 import { useUnits } from '../hooks/useUnits';
 import { formatWeightValue, unitLabel } from '../utils/formatWeight';
 import { StatusCards } from '../components/dashboard/StatusCards';
@@ -55,6 +56,7 @@ export default function DashboardScreen({ navigation }) {
   const { currentRank, loading: loadingRanks } = useCharityRanks(lifetimeDonated);
   const { unit } = useUnits();
   const { unreadCount, upcoming } = useNotifications();
+  const { enabled: notifEnabled } = useNotificationPref();
 
   // ─── Совет дня (статичный, детерминированная ротация по дню года) ───
   const _now = new Date();
@@ -92,10 +94,11 @@ export default function DashboardScreen({ navigation }) {
   // пере-синхронизация при изменении списка предстоящих событий.
   useEffect(() => {
     (async () => {
+      if (!notifEnabled) { await cancelAllScheduled(); return; }
       const status = await requestNotificationPermission();
       if (status === 'granted') await scheduleNotificationsFromEvents(upcoming);
     })();
-  }, [upcoming]);
+  }, [upcoming, notifEnabled]);
 
   // Загрузка данных питомца при смене выбранного
   useEffect(() => {

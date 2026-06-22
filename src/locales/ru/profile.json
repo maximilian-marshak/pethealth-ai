@@ -6,6 +6,7 @@
     "phone": "Телефон",
     "language": "Язык",
     "notifications": "Уведомления",
+    "notifPermDenied": { "title": "Уведомления отключены", "message": "Разрешите уведомления в настройках устройства, чтобы включить их." },
     "logout": "Выйти",
     "deleteAccount": "Удалить аккаунт",
     "deleteConfirm": {
