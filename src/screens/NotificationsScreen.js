@@ -1,0 +1,127 @@
+// ══════════════════════════════════════════════════════════════
+// src/screens/NotificationsScreen.js
+// Центр уведомлений — кросс-pet лента due-событий (под-шаг 1).
+// Корневой Stack.Screen (petId не нужен). Read-state из useNotifications.
+// ══════════════════════════════════════════════════════════════
+
+import React, { useLayoutEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+import { useNotifications } from '../hooks/useNotifications';
+
+const ACCENT = '#6B4EFF';
+
+const TYPE_META = {
+  reminder:    { icon: 'notifications-outline', color: '#3B82F6' },
+  vaccine:     { icon: 'medkit-outline',        color: '#F59E0B' },
+  course_end:  { icon: 'medical-outline',       color: '#22C55E' },
+  appointment: { icon: 'today-outline',         color: '#EC4899' },
+};
+
+export default function NotificationsScreen() {
+  const navigation = useNavigation();
+  const { t, i18n } = useTranslation('notifications');
+  const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+
+  const { upcoming, past, unreadCount, loading, markRead, markAllRead, isRead } = useNotifications();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: t('title') });
+  }, [navigation, t]);
+
+  const fmtDate = (ymd) =>
+    ymd ? new Date(`${ymd}T00:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+  const onPressItem = (ev) => {
+    markRead(ev.id);
+    if (ev.type === 'appointment' && ev.petId) {
+      navigation.navigate('Appointments', { petId: ev.petId });
+    }
+  };
+
+  const renderItem = (ev) => {
+    const meta = TYPE_META[ev.type] || TYPE_META.reminder;
+    const read = isRead(ev.id);
+    return (
+      <TouchableOpacity
+        key={ev.id}
+        style={[s.card, !read && s.cardUnread]}
+        activeOpacity={0.7}
+        onPress={() => onPressItem(ev)}
+      >
+        <View style={[s.iconWrap, { backgroundColor: meta.color + '22' }]}>
+          <Ionicons name={meta.icon} size={20} color={meta.color} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.type}>{t(`types.${ev.type}`, { defaultValue: ev.type })}</Text>
+          <Text style={s.title} numberOfLines={1}>
+            {[ev.title, ev.petName].filter(Boolean).join(' · ')}
+          </Text>
+          <Text style={s.date}>{fmtDate(ev.date)}</Text>
+        </View>
+        {!read && <View style={[s.dot, { backgroundColor: ACCENT }]} />}
+      </TouchableOpacity>
+    );
+  };
+
+  const isEmpty = !loading && upcoming.length === 0 && past.length === 0;
+
+  return (
+    <SafeAreaView style={s.container} edges={['bottom']}>
+      {unreadCount > 0 && (
+        <View style={s.topBar}>
+          <TouchableOpacity onPress={markAllRead} activeOpacity={0.7}>
+            <Text style={s.markAll}>{t('markAllRead')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {loading ? (
+        <ActivityIndicator style={{ marginTop: 40 }} size="large" color={ACCENT} />
+      ) : isEmpty ? (
+        <View style={s.empty}>
+          <Ionicons name="notifications-off-outline" size={64} color="#D1D5DB" />
+          <Text style={s.emptyTitle}>{t('empty.title')}</Text>
+          <Text style={s.emptySub}>{t('empty.subtitle')}</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+          {upcoming.length > 0 && (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>{t('sections.upcoming')}</Text>
+              {upcoming.map(renderItem)}
+            </View>
+          )}
+          {past.length > 0 && (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>{t('sections.past')}</Text>
+              {past.map(renderItem)}
+            </View>
+          )}
+        </ScrollView>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  container:    { flex: 1, backgroundColor: '#F8F9FA' },
+  topBar:       { alignItems: 'flex-end', paddingHorizontal: 16, paddingTop: 12 },
+  markAll:      { fontSize: 14, fontWeight: '600', color: ACCENT },
+  content:      { padding: 16 },
+  section:      { marginBottom: 18 },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#6B7280', marginBottom: 8, textTransform: 'uppercase' },
+  card:         { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#EEF0F4' },
+  cardUnread:   { borderColor: ACCENT, backgroundColor: '#F5F3FF' },
+  iconWrap:     { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  type:         { fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase' },
+  title:        { fontSize: 15, fontWeight: '600', color: '#1F2937', marginTop: 1 },
+  date:         { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  dot:          { width: 8, height: 8, borderRadius: 4 },
+  empty:        { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
+  emptyTitle:   { fontSize: 17, fontWeight: '700', color: '#1F2937', marginTop: 16 },
+  emptySub:     { fontSize: 14, color: '#6B7280', textAlign: 'center', marginTop: 6, lineHeight: 20 },
+});

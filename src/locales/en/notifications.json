@@ -1,0 +1,15 @@
+{
+  "title": "Notifications",
+  "markAllRead": "Mark all read",
+  "empty": {
+    "title": "No notifications",
+    "subtitle": "Upcoming reminders, vaccines, course endings and appointments will appear here"
+  },
+  "sections": { "upcoming": "Upcoming", "past": "Past" },
+  "types": {
+    "reminder": "Reminder",
+    "vaccine": "Vaccine due",
+    "course_end": "Course ends",
+    "appointment": "Appointment"
+  }
+}

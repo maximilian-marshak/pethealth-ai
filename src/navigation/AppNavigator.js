@@ -23,6 +23,7 @@ import RecordDetailScreen from '../screens/RecordDetailScreen';
 import AppointmentsScreen from '../screens/AppointmentsScreen';
 import DocumentsScreen from '../screens/DocumentsScreen';
 import HowToEarnPawsScreen from '../screens/HowToEarnPawsScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 // ═══ ИМПОРТ AI ASSISTANT ЭКРАНОВ ═══
 import AIAssistantHubScreen from '../screens/AIAssistantHubScreen';
@@ -223,6 +224,18 @@ export default function AppNavigator() {
           <Stack.Screen
             name="Documents"
             component={DocumentsScreen}
+            options={{
+              headerShown: true,
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
+              headerTintColor: '#6B4EFF',
+              animation: 'slide_from_right',
+            }}
+          />
+
+          {/* ═══ NOTIFICATIONS (центр уведомлений, кросс-pet) ═══ */}
+          <Stack.Screen
+            name="Notifications"
+            component={NotificationsScreen}
             options={{
               headerShown: true,
               headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },

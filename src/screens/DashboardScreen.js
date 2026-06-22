@@ -22,6 +22,7 @@ import { useDashboardStatus } from '../hooks/useDashboardStatus';
 import { usePetHealth } from '../hooks/usePetHealth';
 import { useCharity } from '../hooks/useCharity';
 import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
+import { useNotifications } from '../hooks/useNotifications';
 import { useUnits } from '../hooks/useUnits';
 import { formatWeightValue, unitLabel } from '../utils/formatWeight';
 import { StatusCards } from '../components/dashboard/StatusCards';
@@ -52,6 +53,7 @@ export default function DashboardScreen({ navigation }) {
   const { lifetimeDonated } = useCharity();
   const { currentRank, loading: loadingRanks } = useCharityRanks(lifetimeDonated);
   const { unit } = useUnits();
+  const { unreadCount } = useNotifications();
 
   // ─── Совет дня (статичный, детерминированная ротация по дню года) ───
   const _now = new Date();
@@ -336,12 +338,26 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.greeting}>{getGreeting()} 👋</Text>
           <Text style={styles.userName}>{getUserName()}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.notificationBtn}
-          onPress={() => navigation.navigate('Profile')}
-        >
-          <Ionicons name="person-circle-outline" size={40} color="#6C63FF" />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.bellBtn}
+            onPress={() => navigation.navigate('Notifications')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="notifications-outline" size={26} color="#6C63FF" />
+            {unreadCount > 0 && (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.notificationBtn}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <Ionicons name="person-circle-outline" size={40} color="#6C63FF" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ── NO PETS ────────────────────────────── */}
@@ -770,6 +786,10 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 14, color: '#888' },
   userName: { fontSize: 22, fontWeight: 'bold', color: '#1A1A2E' },
   notificationBtn: { padding: 4 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  bellBtn: { padding: 4, position: 'relative' },
+  bellBadge: { position: 'absolute', top: 0, right: 0, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#EF4444', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+  bellBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
 
   // No Pets
   noPetsContainer: { alignItems: 'center', padding: 40, marginTop: 40 },

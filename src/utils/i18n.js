@@ -13,6 +13,7 @@ import enMedical   from '../locales/en/medical.json';
 import enActivity  from '../locales/en/activity.json';
 import enAi from '../locales/en/ai.json';
 import enCharity  from '../locales/en/charity.json';
+import enNotifications from '../locales/en/notifications.json';
 
 // ─── Переводы RU ───────────────────────────────────────────
 import ruCommon    from '../locales/ru/common.json';
@@ -24,6 +25,7 @@ import ruMedical   from '../locales/ru/medical.json';
 import ruActivity  from '../locales/ru/activity.json';
 import ruAi from '../locales/ru/ai.json';
 import ruCharity  from '../locales/ru/charity.json';
+import ruNotifications from '../locales/ru/notifications.json';
 
 // ─── Константа ─────────────────────────────────────────────
 const LANGUAGE_KEY = '@pethealth_language';
@@ -82,6 +84,7 @@ export const initI18n = async () => {
         activity:  enActivity,
         ai: enAi,
         charity:   enCharity,
+        notifications: enNotifications,
       },
       ru: {
         common:    ruCommon,
@@ -93,12 +96,13 @@ export const initI18n = async () => {
         activity:  ruActivity,
         ai: ruAi,
         charity:   ruCharity,
+        notifications: ruNotifications,
       },
     },
     lng:         language,
     fallbackLng: 'en',
     //                                              
-    ns:          ['common', 'dashboard', 'profile', 'pets', 'auth', 'medical', 'activity', 'ai', 'charity'],
+    ns:          ['common', 'dashboard', 'profile', 'pets', 'auth', 'medical', 'activity', 'ai', 'charity', 'notifications'],
     defaultNS:   'common',
     interpolation: {
       escapeValue: false,
