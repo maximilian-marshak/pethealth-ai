@@ -83,6 +83,7 @@ export function useMedicalCalendar(petId) {
           .from('appointments')
           .select('id, clinic_name, reason, requested_at')
           .eq('pet_id', petId)
+          .neq('status', 'cancelled')
           .not('requested_at', 'is', null),
       ]);
 
