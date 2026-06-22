@@ -28,6 +28,7 @@
   },
   "health": {
     "sectionTitle": "Health Overview",
+    "allergyBanner": { "title": "⚠️ Allergies" },
     "vaccination": {
       "title": "Vaccinations",
       "noData": "No data",
@@ -54,7 +55,23 @@
     "medical": "Medical",
     "aiChat": "AI Chat",
     "activity": "Activity",
-    "profile": "Profile"
+    "profile": "Profile",
+    "appointments": "Appointments"
+  },
+  "tips": {
+    "title": "Tip of the Day",
+    "items": [
+      "Keep fresh water available for your pet at all times.",
+      "Brush your pet's coat regularly to reduce shedding and catch skin issues early.",
+      "Stick to a consistent feeding schedule and avoid sudden diet changes.",
+      "Daily walks and play keep your pet physically and mentally healthy.",
+      "Check ears and teeth weekly — early signs of trouble are easy to miss.",
+      "Keep vaccinations and parasite prevention up to date.",
+      "Never feed chocolate, grapes, onions or other foods toxic to pets.",
+      "Maintain a healthy weight — ask your vet about ideal body condition.",
+      "Give your pet a calm, safe place to rest undisturbed.",
+      "Watch for changes in appetite, energy or bathroom habits and see a vet if they persist."
+    ]
   },
   "vaccinations": {
     "sectionTitle": "Upcoming Vaccinations",

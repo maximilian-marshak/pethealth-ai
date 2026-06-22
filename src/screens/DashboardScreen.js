@@ -19,6 +19,7 @@ import { supabase } from '../utils/supabase';
 import RecentActivityCard from '../components/RecentActivityCard';
 import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useDashboardStatus } from '../hooks/useDashboardStatus';
+import { usePetHealth } from '../hooks/usePetHealth';
 import { StatusCards } from '../components/dashboard/StatusCards';
 import ProgressBar from '../components/ProgressBar';
 
@@ -42,6 +43,16 @@ export default function DashboardScreen({ navigation }) {
     loading: statusLoading,
     refetch: refetchStatus,
   } = useDashboardStatus(selectedPet?.id);
+  const { allergies } = usePetHealth(selectedPet?.id);
+
+  // ─── Совет дня (статичный, детерминированная ротация по дню года) ───
+  const _now = new Date();
+  const _startOfYear = new Date(_now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((_now - _startOfYear) / 86400000);
+  // TODO: Block 2 — заменить на ai-proxy совет
+  const _tipsItems = t('tips.items', { returnObjects: true });
+  const _tipsList = Array.isArray(_tipsItems) ? _tipsItems : [];
+  const tipText = _tipsList.length ? _tipsList[dayOfYear % _tipsList.length] : '';
 
   // ─── Effects ────────────────────────────────────
 
@@ -406,6 +417,19 @@ export default function DashboardScreen({ navigation }) {
             </View>
           )}
 
+          {/* ── ALLERGY BANNER ─────────────────── */}
+          {selectedPet && allergies.length > 0 && (
+            <View style={styles.allergyBanner}>
+              <Ionicons name="alert-circle" size={20} color="#DC2626" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.allergyBannerTitle}>{t('health.allergyBanner.title')}</Text>
+                <Text style={styles.allergyBannerList}>
+                  {allergies.map((a) => (a.severity ? `${a.substance} (${a.severity})` : a.substance)).join(', ')}
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* ── STATUS CARDS (4 виджета) ────────── */}
           {selectedPet && (
             <>
@@ -509,7 +533,7 @@ export default function DashboardScreen({ navigation }) {
 
             <TouchableOpacity
               style={styles.actionBtn}
-              onPress={() => navigation.navigate('AIAssistant')}
+              onPress={() => navigation.navigate('Assistant')}
             >
               <View style={[styles.actionIcon, { backgroundColor: '#E8F4FD' }]}>
                 <Ionicons name="chatbubble-ellipses" size={24} color="#4ECDC4" />
@@ -536,6 +560,23 @@ export default function DashboardScreen({ navigation }) {
               </View>
               <Text style={styles.actionText}>{t('quickActions.profile')}</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => { if (selectedPet?.id) navigation.navigate('Appointments', { petId: selectedPet.id }); }}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#EEF2FF' }]}>
+                <Ionicons name="today-outline" size={24} color="#6B4EFF" />
+              </View>
+              <Text style={styles.actionText}>{t('quickActions.appointments')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── TIP OF THE DAY (статичный, слот под AI) ── */}
+          <Text style={styles.sectionTitle}>{t('tips.title')}</Text>
+          <View style={styles.tipCard}>
+            <Ionicons name="bulb-outline" size={22} color="#6B4EFF" />
+            <Text style={styles.tipText}>{tipText}</Text>
           </View>
 
           {/* ── UPCOMING VACCINATIONS ──────────── */}
@@ -908,6 +949,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   actionText: { fontSize: 12, color: '#555', fontWeight: '500' },
+  allergyBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FEF2F2', borderRadius: 14, padding: 14, marginHorizontal: 20, marginBottom: 8 },
+  allergyBannerTitle: { fontSize: 14, fontWeight: '700', color: '#DC2626' },
+  allergyBannerList: { fontSize: 13, color: '#DC2626', marginTop: 2 },
+  tipCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#fff', borderRadius: 16, padding: 16, marginHorizontal: 20, marginBottom: 16, borderWidth: 1, borderColor: '#EEF0F4' },
+  tipText: { flex: 1, fontSize: 14, color: '#374151', lineHeight: 20 },
 
   // Empty states
   emptyCard: {
