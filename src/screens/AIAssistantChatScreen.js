@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 
 import { usePetContext } from '../context/PetContext';
 import { usePetHealth } from '../hooks/usePetHealth';
+import { useUnits } from '../hooks/useUnits';
 import { useAuth } from '../context/AuthContext';
 import { useConversation } from '../hooks/useConversation';
 import { sendMessageToOpenAI } from '../services/openAIService';
@@ -41,6 +42,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   const { getOrCreateConversation, loadMessages, addMessage, clearConversation } = useConversation();
   const { t } = useTranslation('ai');
   const health = usePetHealth(selectedPet?.id);
+  const { unit } = useUnits();
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -254,7 +256,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     setIsLoading(true);
 
     try {
-      const response = await sendMessageToOpenAI(text.trim(), messages, { selectedPet, category, health });
+      const response = await sendMessageToOpenAI(text.trim(), messages, { selectedPet, category, health, unit });
 
       const assistantMessage = {
         id: (Date.now() + 1).toString(),

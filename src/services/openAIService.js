@@ -6,6 +6,7 @@
 
 import i18n from '../utils/i18n';
 import { callAIProxy } from './aiProxyClient';
+import { formatWeight } from '../utils/formatWeight';
 
 // Код языка i18n -> имя языка для инструкции модели
 const LANG_NAMES = { en: 'English', ru: 'Russian' };
@@ -65,13 +66,22 @@ export async function sendMessageToOpenAI(userMessage, conversationHistory = [],
       ? '🚨 You are an emergency veterinary assistant. Provide immediate, critical care instructions. Be concise and actionable. Start your response with "⚠️ EMERGENCY:"'
       : '🐾 You are a helpful veterinary assistant specializing in pet health. Provide accurate, practical advice in a friendly tone.';
 
-    // Добавляем контекст питомца (маппинг полей: name всегда; breed/age — если есть)
+    // Добавляем контекст питомца (маппинг полей: name всегда; breed/age/weight — если есть)
     if (context.selectedPet) {
-      const { name, breed, age } = context.selectedPet;
+      const { name, breed, age, weight, pet_context } = context.selectedPet;
       systemContent += ` You are helping with ${name}`;
       if (breed) systemContent += `, a ${breed}`;
       if (age != null) systemContent += ` (${age} years old)`;
+      // Вес форматируем в единицы пользователя (unit прокинут из чата, где доступен useUnits).
+      const weightStr = formatWeight(weight, context.unit || 'kg');
+      if (weightStr) systemContent += `, weighing ${weightStr}`;
       systemContent += '.';
+      // Бытовой/lifestyle-контекст из паспорта (служебный для модели), обрезаем до 500 симв.
+      if (pet_context && String(pet_context).trim()) {
+        const ctx = String(pet_context).trim().slice(0, 500);
+        systemContent += ` Household/lifestyle context: ${ctx}`;
+        if (!/[.!?]$/.test(ctx)) systemContent += '.';
+      }
     }
 
     // Здоровье питомца (справочный контекст + safety-инструкция); пустые списки пропускаем.
