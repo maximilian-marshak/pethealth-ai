@@ -24,6 +24,8 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { parseMedicalDocument } from '../services/ocrService';
 import AutocompleteInput from '../components/AutocompleteInput';
 import { VACCINES, DRUGS } from '../data/medicalPresets';
+import { Calendar } from 'react-native-calendars';
+import { useMedicalCalendar } from '../hooks/useMedicalCalendar';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -654,8 +656,10 @@ export default function MedicalScreen() {
 
   const { pets, selectedPet, selectPet, loading: petsLoading } = usePetContext();
   const { awardEvent } = useLoyaltyPoints();
+  const { markedDates } = useMedicalCalendar(selectedPet?.id);
 
   const [activeTab,   setActiveTab]   = useState('overview');
+  const [viewMode,    setViewMode]    = useState('list');
   const [scanning,    setScanning]    = useState(false);
   const [vaccines,    setVaccines]    = useState([]);
   const [medications, setMedications] = useState([]);
@@ -1436,7 +1440,24 @@ export default function MedicalScreen() {
         </ScrollView>
       )}
 
-      {/* Tabs */}
+      {/* View toggle: list ↔ calendar */}
+      <View style={styles.viewToggle}>
+        <TouchableOpacity
+          style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
+          onPress={() => setViewMode('list')}
+        >
+          <Ionicons name="list-outline" size={20} color={viewMode === 'list' ? '#fff' : '#6B4EFF'} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.viewToggleBtn, viewMode === 'calendar' && styles.viewToggleBtnActive]}
+          onPress={() => setViewMode('calendar')}
+        >
+          <Ionicons name="calendar-outline" size={20} color={viewMode === 'calendar' ? '#fff' : '#6B4EFF'} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Tabs (только в режиме списка) */}
+      {viewMode === 'list' && (
       <View style={styles.tabs}>
         {TABS.map(tab => (
           <TouchableOpacity
@@ -1453,9 +1474,22 @@ export default function MedicalScreen() {
           </TouchableOpacity>
         ))}
       </View>
+      )}
 
       {/* Content */}
-      {loading ? (
+      {viewMode === 'calendar' ? (
+        <Calendar
+          markingType="multi-dot"
+          markedDates={markedDates}
+          theme={{
+            todayTextColor: '#6B4EFF',
+            selectedDayBackgroundColor: '#6B4EFF',
+            arrowColor: '#6B4EFF',
+            dotColor: '#6B4EFF',
+          }}
+          style={styles.calendar}
+        />
+      ) : loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} size="large" color="#6366F1" />
       ) : (
         <>
@@ -1521,6 +1555,10 @@ const styles = StyleSheet.create({
   tabActive:            { borderBottomColor: '#6366F1' },
   tabText:              { fontSize: 12, fontWeight: '500', color: '#9CA3AF' },
   tabTextActive:        { color: '#6366F1', fontWeight: '700' },
+  viewToggle:           { flexDirection: 'row', alignSelf: 'center', backgroundColor: '#EEF0FF', borderRadius: 10, padding: 3, marginVertical: 10, gap: 3 },
+  viewToggleBtn:        { paddingVertical: 6, paddingHorizontal: 22, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  viewToggleBtnActive:  { backgroundColor: '#6B4EFF' },
+  calendar:             { marginHorizontal: 8, marginTop: 4, borderRadius: 12, overflow: 'hidden' },
   tabContent:           { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
   summaryRow:           { flexDirection: 'row', gap: 10, marginBottom: 16 },
   summaryCard:          { flex: 1, borderRadius: 12, padding: 14, alignItems: 'center' },
