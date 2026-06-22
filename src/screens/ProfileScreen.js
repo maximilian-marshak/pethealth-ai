@@ -20,11 +20,9 @@ import { useAuth } from '../context/AuthContext';
 import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useCharity } from '../hooks/useCharity';
 import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
-import { useBadges } from '../hooks/useBadges';
 import { usePets } from '../hooks/usePets';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useLanguage } from '../hooks/useLanguage';
-import BadgeCard from '../components/BadgeCard';
 import ProgressBar from '../components/ProgressBar';
 
 // ─── Language Switcher Component ──────────────────────────────────────────────
@@ -164,7 +162,6 @@ export default function ProfileScreen({ navigation }) {
   // ─── Хуки данных ────────────────────────────────────────
   const { points, loading: loadingPoints, refreshPoints } = useLoyaltyPoints();
   const { totalDonated, lifetimeDonated, shelterCount, loading: loadingCharity, refetch: refetchCharity } = useCharity();
-  const { badges, nextBadge, unlockedCount, totalBadges, progressToNext, loading: loadingBadges } = useBadges();
   const { ranks, currentRank, nextRank, progress: rankProgress, remaining: rankRemaining, loading: loadingRanks } = useCharityRanks(lifetimeDonated);
   const { pets, loading: loadingPets, refetch: refetchPets } = usePets();
   const { profile, loading: loadingProfile, updateAvatar, updatePhone, refetch: refetchProfile } = useUserProfile();
@@ -194,14 +191,6 @@ export default function ProfileScreen({ navigation }) {
   const rankName = (r) => (_lang.startsWith('ru') ? r?.name_ru : r?.name_en) || r?.name_en || r?.name_ru || '';
   const rankAccent = leagueColor(currentRank?.league);
   const rankPct = nextRank ? rankProgress : 100;
-  // unlockedCount / totalBadges / progressToNext берём из useBadges
-  // (контракт хука: badge.unlocked + badge.threshold) — не пересчитываем
-  // по несуществующим полям earned/required/current/progress.
-  // Очки до следующего бейджа выводим из threshold и процента прогресса.
-  const pointsToNextBadge = nextBadge
-    ? Math.max(0, Math.round(nextBadge.threshold * (1 - progressToNext / 100)))
-    : 0;
-
   // ─── Рефетч ─────────────────────────────────────────────
   const onRefresh = async () => {
     setRefreshing(true);
@@ -429,49 +418,6 @@ export default function ProfileScreen({ navigation }) {
           )}
         </View>
       )}
-
-      {/* ACHIEVEMENTS */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            🏆 {t('profile:badges')} ({unlockedCount}/{totalBadges})
-          </Text>
-          {badges.length > 6 && (
-            <TouchableOpacity onPress={() => navigateToSettings('Все достижения')}>
-              <Text style={styles.seeAll}>Все →</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {nextBadge && !nextBadge.unlocked && (
-          <View style={styles.nextBadgeCard}>
-            <Text style={styles.nextBadgeLabel}>
-              {t('dashboard:nextLevel', { points: pointsToNextBadge })}
-            </Text>
-            <Text style={styles.nextBadgeName}>
-              {nextBadge.icon} {nextBadge.title}
-            </Text>
-            <View style={styles.progressContainer}>
-              <View style={{ flex: 1, marginRight: 8 }}>
-                <ProgressBar current={progressToNext} goal={100} height={8} />
-              </View>
-              <Text style={styles.progressPercent}>{progressToNext}%</Text>
-            </View>
-          </View>
-        )}
-
-        {loadingBadges ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>{t('common:loading')}</Text>
-          </View>
-        ) : (
-          <View style={styles.badgesGrid}>
-            {badges.slice(0, 6).map(badge => (
-              <BadgeCard key={badge.id} badge={badge} />
-            ))}
-          </View>
-        )}
-      </View>
 
       {/* PETS */}
       <View style={styles.section}>
