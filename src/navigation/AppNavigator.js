@@ -24,6 +24,7 @@ import AppointmentsScreen from '../screens/AppointmentsScreen';
 import DocumentsScreen from '../screens/DocumentsScreen';
 import HowToEarnPawsScreen from '../screens/HowToEarnPawsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import FAQScreen from '../screens/FAQScreen';
 
 // ═══ ИМПОРТ AI ASSISTANT ЭКРАНОВ ═══
 import AIAssistantHubScreen from '../screens/AIAssistantHubScreen';
@@ -224,6 +225,18 @@ export default function AppNavigator() {
           <Stack.Screen
             name="Documents"
             component={DocumentsScreen}
+            options={{
+              headerShown: true,
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
+              headerTintColor: '#6B4EFF',
+              animation: 'slide_from_right',
+            }}
+          />
+
+          {/* ═══ FAQ (статический, вход из профиля) ═══ */}
+          <Stack.Screen
+            name="FAQ"
+            component={FAQScreen}
             options={{
               headerShown: true,
               headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },

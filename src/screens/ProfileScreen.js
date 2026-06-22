@@ -613,7 +613,7 @@ export default function ProfileScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.settingItem}
-          onPress={() => navigateToSettings('FAQ')}
+          onPress={() => navigation.navigate('FAQ')}
         >
           <View style={[styles.settingIcon, { backgroundColor: '#F3F0FF' }]}>
             <Ionicons name="help-circle" size={20} color="#6C63FF" />

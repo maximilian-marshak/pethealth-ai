@@ -1,4 +1,53 @@
 {
+    "faq": {
+  "title": "FAQ",
+  "items": [
+    {
+      "q": "How do I add a pet?",
+      "a": "Open the Profile tab and tap '+ Add pet' (or the '+' on the Pets list). Fill in the name, species and other details and save."
+    },
+    {
+      "q": "How do I keep a medical record?",
+      "a": "Go to the Medical tab: add visits, vaccines and medications manually, or scan a vet document to recognize it automatically. Tap any record to see its details."
+    },
+    {
+      "q": "What are Paws and how do I earn them?",
+      "a": "Paws are points you earn for verifiable pet-care actions — a manual medical record, scanning a document, marking a medication as taken, and more. Open 'How to earn Paws' from the Dashboard for the full list."
+    },
+    {
+      "q": "What are ranks?",
+      "a": "Ranks reflect your lifetime charity contribution. As your donated Paws grow, your rank and league go up. You can see your current rank and progress in the Profile."
+    },
+    {
+      "q": "How do I support a shelter?",
+      "a": "On the Dashboard tap 'Support a shelter' (or open the charity section) and donate your Paws. Donations act as votes that split the monthly charity pool between shelters."
+    },
+    {
+      "q": "How do I export a medical record to PDF?",
+      "a": "In the Medical tab, select a pet and tap the share icon in the header. The app builds a PDF (passport, allergies, vaccines, medications, records, weight) and opens the system share sheet."
+    },
+    {
+      "q": "How do I turn on notifications?",
+      "a": "In the Profile, switch 'Notifications' on and allow them in the system prompt. You'll get local reminders for upcoming vaccines, appointments and reminders. The bell on the Dashboard opens the notification center."
+    },
+    {
+      "q": "How do I change the language or weight units?",
+      "a": "In the Profile → Settings use the language switch (EN/RU) and the units switch (kg/lb). Your choice is saved and applied across the whole app."
+    },
+    {
+      "q": "How do I delete my account?",
+      "a": "In the Profile → Settings tap 'Delete Account' and confirm twice. This permanently deletes all your pets, medical records, documents and account data. It cannot be undone."
+    },
+    {
+      "q": "Is my data safe?",
+      "a": "Your data lives in your private account and is protected by row-level security — only you can access your pets and records. Vet documents are stored in a private bucket."
+    },
+    {
+      "q": "Does the AI assistant replace a vet?",
+      "a": "No. The AI assistant gives general guidance only and is not a diagnosis. For health concerns, emergencies or medication decisions, always consult a veterinarian."
+    }
+  ]
+},
     "hub": {
       "title": "AI Pet Assistant",
       "choosePet": "Choose a pet",
