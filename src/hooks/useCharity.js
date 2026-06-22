@@ -15,6 +15,7 @@ export function useCharity() {
   const [error, setError] = useState(null);
   const [poolAmountByn, setPoolAmountByn] = useState(null);
   const [openPeriod, setOpenPeriod] = useState(null);
+  const [lifetimeDonatedState, setLifetimeDonatedState] = useState(null); // RPC get_donation_total | null (фолбэк)
 
   // ═══ FETCH SHELTERS ═══
   const fetchShelters = useCallback(async () => {
@@ -100,6 +101,22 @@ export function useCharity() {
     }
   }, []);
 
+  // ═══ FETCH LIFETIME DONATED (точная сумма за всё время через RPC) ═══
+  // Для рангов/прогрессии используем именно это; totalDonated (limit(50)) не трогаем.
+  const fetchLifetimeDonated = useCallback(async () => {
+    if (!user?.id) { setLifetimeDonatedState(null); return; }
+    try {
+      const { data, error: rpcError } = await supabase.rpc('get_donation_total');
+      if (rpcError) throw rpcError;
+      const n = Number(Array.isArray(data) ? data[0] : data);
+      setLifetimeDonatedState(Number.isFinite(n) ? n : null);
+    } catch (err) {
+      // Фолбэк на totalDonated (в return), не падаем.
+      console.warn('useCharity: get_donation_total failed (fallback to totalDonated):', err?.message);
+      setLifetimeDonatedState(null);
+    }
+  }, [user?.id]);
+
   // ═══ CALCULATE TOTAL DONATED ═══
   const totalDonated = useMemo(() => {
     const total = donations.reduce((sum, donation) => {
@@ -152,13 +169,14 @@ export function useCharity() {
 
       // Refresh donations history
       await fetchDonations();
+      await fetchLifetimeDonated();
 
       return { success: true, data };
     } catch (err) {
       console.error('❌ Error making donation:', err);
       throw err;
     }
-  }, [user?.id, fetchDonations]);
+  }, [user?.id, fetchDonations, fetchLifetimeDonated]);
 
   // ═══ REFETCH ALL DATA ═══
   // ✅ ДОБАВЛЕНО: Единая функция для обновления всех данных (для RefreshControl)
@@ -168,8 +186,9 @@ export function useCharity() {
       fetchDonations(),
       fetchPool(),
       fetchOpenPeriod(),
+      fetchLifetimeDonated(),
     ]);
-  }, [fetchShelters, fetchDonations, fetchPool, fetchOpenPeriod]);
+  }, [fetchShelters, fetchDonations, fetchPool, fetchOpenPeriod, fetchLifetimeDonated]);
 
   // ═══ INITIAL LOAD ═══
   useEffect(() => {
@@ -178,14 +197,16 @@ export function useCharity() {
     fetchOpenPeriod();
     if (user?.id) {
       fetchDonations();
+      fetchLifetimeDonated();
     }
-  }, [fetchShelters, fetchDonations, fetchPool, fetchOpenPeriod, user?.id]);
+  }, [fetchShelters, fetchDonations, fetchPool, fetchOpenPeriod, fetchLifetimeDonated, user?.id]);
 
   // ═══ RETURN HOOK DATA ═══
   return {
     shelters,
     donations,
-    totalDonated,     // ✅ Общая сумма всех пожертвований
+    totalDonated,     // ✅ Общая сумма всех пожертвований (по limit(50)-выборке)
+    lifetimeDonated: lifetimeDonatedState != null ? lifetimeDonatedState : totalDonated, // точная сумма за всё время (RPC) с фолбэком
     shelterCount,     // ✅ ДОБАВЛЕНО: Количество уникальных приютов
     poolAmountByn,    // Вариант B: размер активного пула (BYN)
     openPeriod,       // Вариант B: открытый период распределения (или null)
