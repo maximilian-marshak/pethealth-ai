@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useCharity } from '../hooks/useCharity';
+import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
 import { useBadges } from '../hooks/useBadges';
 import { usePets } from '../hooks/usePets';
 import { useUserProfile } from '../hooks/useUserProfile';
@@ -158,12 +159,13 @@ const switcherStyles = StyleSheet.create({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen({ navigation }) {
   const { user, signOut } = useAuth();
-  const { t } = useTranslation(['profile', 'common', 'pets']);
+  const { t, i18n } = useTranslation(['profile', 'common', 'pets']);
 
   // ─── Хуки данных ────────────────────────────────────────
   const { points, loading: loadingPoints, refreshPoints } = useLoyaltyPoints();
-  const { totalDonated, shelterCount, loading: loadingCharity, refetch: refetchCharity } = useCharity();
+  const { totalDonated, lifetimeDonated, shelterCount, loading: loadingCharity, refetch: refetchCharity } = useCharity();
   const { badges, nextBadge, unlockedCount, totalBadges, progressToNext, loading: loadingBadges } = useBadges();
+  const { ranks, currentRank, nextRank, progress: rankProgress, remaining: rankRemaining, loading: loadingRanks } = useCharityRanks(lifetimeDonated);
   const { pets, loading: loadingPets, refetch: refetchPets } = usePets();
   const { profile, loading: loadingProfile, updateAvatar, updatePhone, refetch: refetchProfile } = useUserProfile();
 
@@ -172,6 +174,7 @@ export default function ProfileScreen({ navigation }) {
   const [phoneModalVisible, setPhoneModalVisible] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
   const [savingPhone, setSavingPhone] = useState(false);
+  const [ranksExpanded, setRanksExpanded] = useState(false);
 
   // ─── Фокус ──────────────────────────────────────────────
   useFocusEffect(
@@ -185,6 +188,12 @@ export default function ProfileScreen({ navigation }) {
 
   // ─── Вычисляемые значения ───────────────────────────────
   const currentBalance = points || 0;
+
+  // ─── Ранг: имя реактивно по языку (из raw name_ru/name_en, не из memo) ───
+  const _lang = i18n.language || 'en';
+  const rankName = (r) => (_lang.startsWith('ru') ? r?.name_ru : r?.name_en) || r?.name_en || r?.name_ru || '';
+  const rankAccent = leagueColor(currentRank?.league);
+  const rankPct = nextRank ? rankProgress : 100;
   // unlockedCount / totalBadges / progressToNext берём из useBadges
   // (контракт хука: badge.unlocked + badge.threshold) — не пересчитываем
   // по несуществующим полям earned/required/current/progress.
@@ -357,6 +366,69 @@ export default function ProfileScreen({ navigation }) {
           </Text>
         </View>
       </View>
+
+      {/* RANK */}
+      {(loadingRanks || ranks.length > 0) && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🎖️ {t('profile:rank.title')}</Text>
+          </View>
+
+          {loadingRanks ? (
+            <View style={styles.rankLoading}>
+              <ActivityIndicator size="small" color="#6B4EFF" />
+            </View>
+          ) : (
+            <>
+          <View style={[styles.rankCard, { borderColor: rankAccent, backgroundColor: rankAccent + '12' }]}>
+            <Text style={styles.rankBadgeIcon}>{currentRank?.icon || '🏅'}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rankName}>{rankName(currentRank) || '—'}</Text>
+              {currentRank?.league ? (
+                <Text style={[styles.rankLeague, { color: rankAccent }]}>
+                  {t(`profile:rank.league.${currentRank.league}`, { defaultValue: currentRank.league })}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.rankProgressRow}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <ProgressBar current={rankPct} goal={100} height={8} />
+            </View>
+            <Text style={styles.rankProgressPct}>{rankPct}%</Text>
+          </View>
+          <Text style={styles.rankToNext}>
+            {nextRank ? t('profile:rank.toNext', { remaining: rankRemaining }) : t('profile:rank.max')}
+          </Text>
+
+          <TouchableOpacity style={styles.rankToggle} onPress={() => setRanksExpanded((v) => !v)} activeOpacity={0.7}>
+            <Text style={styles.rankToggleText}>
+              {ranksExpanded ? t('profile:rank.hideAll') : t('profile:rank.showAll')}
+            </Text>
+            <Ionicons name={ranksExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#6B4EFF" />
+          </TouchableOpacity>
+
+          {ranksExpanded && ranks.map((r) => {
+            const accent = leagueColor(r.league);
+            const isCurrent = currentRank && r.rank_no === currentRank.rank_no;
+            return (
+              <View
+                key={r.rank_no ?? r.id}
+                style={[styles.rankRow, { borderColor: accent }, isCurrent && { backgroundColor: accent + '14' }]}
+              >
+                <Text style={styles.rankRowIcon}>{r.icon || '🏅'}</Text>
+                <Text style={[styles.rankRowName, isCurrent && styles.rankRowNameCurrent]} numberOfLines={1}>
+                  {rankName(r)}
+                </Text>
+                <Text style={styles.rankRowThreshold}>{t('profile:rank.threshold', { count: r.threshold })}</Text>
+              </View>
+            );
+          })}
+            </>
+          )}
+        </View>
+      )}
 
       {/* ACHIEVEMENTS */}
       <View style={styles.section}>
@@ -687,6 +759,21 @@ const styles = StyleSheet.create({
   nextBadgeName: { fontSize: 16, fontWeight: '600', color: '#1A1A2E', marginBottom: 12 },
   progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' },
   progressPercent: { fontSize: 12, fontWeight: '600', color: '#4CAF50', minWidth: 35, textAlign: 'right' },
+  rankCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, padding: 16, marginBottom: 12 },
+  rankLoading: { paddingVertical: 24, alignItems: 'center' },
+  rankBadgeIcon: { fontSize: 38 },
+  rankName: { fontSize: 18, fontWeight: '700', color: '#1A1A2E' },
+  rankLeague: { fontSize: 13, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
+  rankProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rankProgressPct: { fontSize: 12, fontWeight: '600', color: '#6B4EFF', minWidth: 38, textAlign: 'right' },
+  rankToNext: { fontSize: 13, color: '#6B7280', marginTop: 6 },
+  rankToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12, marginTop: 4 },
+  rankToggleText: { fontSize: 14, color: '#6B4EFF', fontWeight: '600' },
+  rankRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
+  rankRowIcon: { fontSize: 22 },
+  rankRowName: { flex: 1, fontSize: 14, color: '#1A1A2E' },
+  rankRowNameCurrent: { fontWeight: '700' },
+  rankRowThreshold: { fontSize: 12, color: '#9CA3AF', fontWeight: '600' },
   badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   petsScroll: { paddingRight: 20, gap: 12 },
   petCard: {

@@ -11,6 +11,15 @@
     "settings": "Настройки",
     "loyalty": "Программа лояльности",
     "totalDonated": "Всего пожертвовано",
-    "badges": "Мои достижения"
+    "badges": "Мои достижения",
+    "rank": {
+      "title": "Ранг",
+      "toNext": "До следующего ранга {{remaining}} Paws",
+      "max": "Максимальный ранг",
+      "showAll": "Показать все ранги",
+      "hideAll": "Скрыть ранги",
+      "threshold": "≥ {{count}} Paws",
+      "league": { "bronze": "Бронза", "silver": "Серебро", "gold": "Золото", "diamond": "Бриллиант" }
+    }
   }
   
