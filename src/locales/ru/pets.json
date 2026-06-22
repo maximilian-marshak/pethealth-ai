@@ -1,4 +1,13 @@
 {
+  "passport": {
+    "title": "Паспорт",
+    "editTitle": "Редактировать паспорт",
+    "bloodType": "Группа крови",
+    "bloodTypePlaceholder": "напр. DEA 1.1+",
+    "context": "Бытовой контекст",
+    "contextPlaceholder": "напр. живёт с 2 кошками, домашний, большой двор",
+    "empty": "Не указано"
+  },
   "title": "Мои питомцы",
   "addPet": "Добавить питомца",
   "addNewPet": "Добавить питомца",

@@ -25,6 +25,7 @@ import * as Haptics from 'expo-haptics';
 import { LineChart } from 'react-native-chart-kit';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { usePets } from '../hooks/usePets';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../utils/supabase';
 import { pickAndUpload } from '../services/imageUploadService';
 
@@ -81,6 +82,7 @@ const PassportDateField = ({ label, value, onChange }) => {
 export default function PetDetailScreen({ route, navigation }) {
   const petId = route?.params?.petId;
   const { pets, updatePetPhoto, deletePet } = usePets();
+  const { t } = useTranslation('pets');
 
   // ─── Core state ───────────────────────────────
   const [pet, setPet]               = useState(null);
@@ -124,6 +126,34 @@ export default function PetDetailScreen({ route, navigation }) {
   const [cActive, setCActive]             = useState(true);
   const [cNotes, setCNotes]               = useState('');
   const [savingCondition, setSavingCondition] = useState(false);
+
+  // ─── Passport (blood_type / pet_context) ───
+  const [passportModal, setPassportModal] = useState(false);
+  const [pBlood, setPBlood]               = useState('');
+  const [pContext, setPContext]           = useState('');
+  const [savingPassport, setSavingPassport] = useState(false);
+
+  const openPassportEdit = () => {
+    setPBlood(pet?.blood_type || '');
+    setPContext(pet?.pet_context || '');
+    setPassportModal(true);
+  };
+
+  const savePassport = async () => {
+    setSavingPassport(true);
+    try {
+      const blood_type = pBlood.trim() || null;
+      const pet_context = pContext.trim() || null;
+      const { error } = await supabase.from('pets').update({ blood_type, pet_context }).eq('id', petId);
+      if (error) throw error;
+      setPet((prev) => (prev ? { ...prev, blood_type, pet_context } : prev));
+      setPassportModal(false);
+    } catch (e) {
+      Alert.alert(t('passport.editTitle'), e.message);
+    } finally {
+      setSavingPassport(false);
+    }
+  };
 
   // ═══ GUARD: нет petId ════════════════════════
   useEffect(() => {
@@ -905,6 +935,28 @@ export default function PetDetailScreen({ route, navigation }) {
           )}
         </View>
 
+        {/* ─── 🪪 PASSPORT (blood type / context) ─── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🪪 {t('passport.title')}</Text>
+            <TouchableOpacity onPress={openPassportEdit} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="create-outline" size={20} color="#6B4EFF" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.passportRow}>
+            <Text style={styles.passportInfoLabel}>{t('passport.bloodType')}</Text>
+            <Text style={[styles.passportInfoValue, !pet?.blood_type && styles.passportInfoEmpty]}>
+              {pet?.blood_type || t('passport.empty')}
+            </Text>
+          </View>
+          <View style={styles.passportRow}>
+            <Text style={styles.passportInfoLabel}>{t('passport.context')}</Text>
+            <Text style={[styles.passportInfoValue, !pet?.pet_context && styles.passportInfoEmpty]}>
+              {pet?.pet_context || t('passport.empty')}
+            </Text>
+          </View>
+        </View>
+
         {/* ─── 🤧 ALLERGIES (паспорт) ─── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -1211,6 +1263,35 @@ export default function PetDetailScreen({ route, navigation }) {
       </Modal>
 
       {/* ══════ ALLERGY MODAL ══════ */}
+      <Modal visible={passportModal} animationType="slide" transparent onRequestClose={() => setPassportModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('passport.editTitle')}</Text>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setPassportModal(false)}>
+                <Ionicons name="close" size={22} color="#888" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalInputLabel}>{t('passport.bloodType')}</Text>
+              <View style={styles.modalInputRow}>
+                <TextInput style={styles.modalInput} placeholder={t('passport.bloodTypePlaceholder')} placeholderTextColor="#C0C0C0" value={pBlood} onChangeText={setPBlood} />
+              </View>
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalInputLabel}>{t('passport.context')}</Text>
+              <TextInput style={[styles.modalInput, styles.modalInputNote]} placeholder={t('passport.contextPlaceholder')} placeholderTextColor="#C0C0C0" value={pContext} onChangeText={setPContext} multiline />
+            </View>
+
+            <TouchableOpacity style={[styles.modalSaveBtn, savingPassport && styles.modalSaveBtnDisabled]} onPress={savePassport} disabled={savingPassport}>
+              {savingPassport ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSaveBtnText}>{t('common:save')}</Text>}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <Modal visible={allergyModal} animationType="slide" transparent onRequestClose={() => setAllergyModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -1552,6 +1633,9 @@ const styles = StyleSheet.create({
   passportHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   passportName: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', flexShrink: 1 },
   passportSub: { fontSize: 13, color: '#6B7280', marginTop: 4 },
+  passportInfoLabel: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
+  passportInfoValue: { fontSize: 15, color: '#1A1A2E', marginTop: 3 },
+  passportInfoEmpty: { color: '#C0C0C0', fontStyle: 'italic' },
   condBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
   condBadgeActive: { backgroundColor: '#FEE2E2' },
   condBadgeRemission: { backgroundColor: '#E5E7EB' },

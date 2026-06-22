@@ -1,4 +1,13 @@
 {
+  "passport": {
+    "title": "Passport",
+    "editTitle": "Edit passport",
+    "bloodType": "Blood type",
+    "bloodTypePlaceholder": "e.g. DEA 1.1+",
+    "context": "Household context",
+    "contextPlaceholder": "e.g. lives with 2 cats, indoor, large yard",
+    "empty": "Not specified"
+  },
   "title": "My Pets",
   "addPet": "Add Pet",
   "addNewPet": "Add New Pet",
