@@ -6,7 +6,8 @@
         "record": "Запись",
         "prescription": "Лекарство",
         "vaccine": "Вакцина",
-        "reminder": "Напоминание"
+        "reminder": "Напоминание",
+        "appointment": "Запись"
       }
     },
     "appointments": {

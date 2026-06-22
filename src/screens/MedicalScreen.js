@@ -651,6 +651,7 @@ const AGENDA_TYPE = {
   prescription: { icon: 'medical-outline',       color: '#22C55E' },
   vaccine:      { icon: 'medkit-outline',        color: '#F59E0B' },
   reminder:     { icon: 'notifications-outline', color: '#3B82F6' },
+  appointment:  { icon: 'today-outline',         color: '#EC4899' },
 };
 
 export default function MedicalScreen() {
@@ -1518,13 +1519,20 @@ export default function MedicalScreen() {
                 itemsByDate[selectedDate].map((ev, i) => {
                   const meta = AGENDA_TYPE[ev.type] || AGENDA_TYPE.record;
                   const isRecord = ev.type === 'record';
+                  const isAppointment = ev.type === 'appointment';
+                  const tappable = isRecord || isAppointment;
+                  const onPress = isRecord
+                    ? () => navigation.navigate('RecordDetail', { recordId: ev.recordId, petId: selectedPet.id })
+                    : isAppointment
+                    ? () => navigation.navigate('Appointments', { petId: selectedPet.id })
+                    : undefined;
                   return (
                     <TouchableOpacity
                       key={`${ev.type}-${ev.refId || ev.recordId || i}`}
                       style={styles.agendaCard}
-                      activeOpacity={isRecord ? 0.7 : 1}
-                      disabled={!isRecord}
-                      onPress={isRecord ? () => navigation.navigate('RecordDetail', { recordId: ev.recordId, petId: selectedPet.id }) : undefined}
+                      activeOpacity={tappable ? 0.7 : 1}
+                      disabled={!tappable}
+                      onPress={onPress}
                     >
                       <View style={[styles.agendaIcon, { backgroundColor: meta.color + '22' }]}>
                         <Ionicons name={meta.icon} size={18} color={meta.color} />
@@ -1533,7 +1541,7 @@ export default function MedicalScreen() {
                         <Text style={styles.agendaType}>{t(`calendar.types.${ev.type}`)}</Text>
                         {ev.title ? <Text style={styles.agendaItemTitle} numberOfLines={1}>{ev.title}</Text> : null}
                       </View>
-                      {isRecord && <Ionicons name="chevron-forward" size={18} color="#CCC" />}
+                      {tappable && <Ionicons name="chevron-forward" size={18} color="#CCC" />}
                     </TouchableOpacity>
                   );
                 })

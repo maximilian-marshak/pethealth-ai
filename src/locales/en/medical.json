@@ -6,7 +6,8 @@
         "record": "Record",
         "prescription": "Medication",
         "vaccine": "Vaccine",
-        "reminder": "Reminder"
+        "reminder": "Reminder",
+        "appointment": "Appointment"
       }
     },
     "appointments": {

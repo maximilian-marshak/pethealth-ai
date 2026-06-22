@@ -19,6 +19,7 @@ const DOT_COLORS = {
   prescription: '#22C55E',
   vaccine:      '#F59E0B',
   reminder:     '#3B82F6',
+  appointment:  '#EC4899',
 };
 
 // 'YYYY-MM-DD' из date/timestamp-строки БД.
@@ -55,7 +56,7 @@ export function useMedicalCalendar(petId) {
     if (!petId) { setData(EMPTY); return; }
     setLoading(true);
     try {
-      const [recRes, rxRes, vacRes, remRes] = await Promise.all([
+      const [recRes, rxRes, vacRes, remRes, apptRes] = await Promise.all([
         supabase
           .from('medical_records')
           .select('id, occurred_at, record_type, diagnosis, vet_name, clinic_name')
@@ -78,6 +79,11 @@ export function useMedicalCalendar(petId) {
           .eq('pet_id', petId)
           .eq('is_completed', false)
           .not('due_date', 'is', null),
+        supabase
+          .from('appointments')
+          .select('id, clinic_name, reason, requested_at')
+          .eq('pet_id', petId)
+          .not('requested_at', 'is', null),
       ]);
 
       const itemsByDate = {};
@@ -126,6 +132,13 @@ export function useMedicalCalendar(petId) {
         const date = ymd(r.due_date);
         pushItem(date, { date, type: 'reminder', title: r.title || '', refId: r.id });
         pushMark(date, 'reminder');
+      });
+
+      // 5) Записи к врачу — appointments.requested_at
+      (apptRes.data || []).forEach((a) => {
+        const date = ymd(a.requested_at);
+        pushItem(date, { date, type: 'appointment', title: a.clinic_name || a.reason || '', refId: a.id });
+        pushMark(date, 'appointment');
       });
 
       // markedDates для react-native-calendars (multi-dot).
