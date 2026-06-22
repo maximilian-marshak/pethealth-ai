@@ -26,6 +26,7 @@ import AutocompleteInput from '../components/AutocompleteInput';
 import { VACCINES, DRUGS } from '../data/medicalPresets';
 import { Calendar } from 'react-native-calendars';
 import { useMedicalCalendar } from '../hooks/useMedicalCalendar';
+import { useMedicationIntakes } from '../hooks/useMedicationIntakes';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -665,6 +666,10 @@ export default function MedicalScreen() {
   const { pets, selectedPet, selectPet, loading: petsLoading } = usePetContext();
   const { awardEvent } = useLoyaltyPoints();
   const { markedDates, itemsByDate } = useMedicalCalendar(selectedPet?.id);
+  const { isTaken, markTaken, unmark } = useMedicationIntakes(selectedPet?.id);
+  // ymd сегодняшнего ЛОКАЛЬНОГО дня — тоггл приёма доступен только для дней ≤ сегодня.
+  const _today = new Date();
+  const todayYmd = `${_today.getFullYear()}-${String(_today.getMonth() + 1).padStart(2, '0')}-${String(_today.getDate()).padStart(2, '0')}`;
 
   const [activeTab,   setActiveTab]   = useState('overview');
   const [viewMode,    setViewMode]    = useState('list');
@@ -1526,6 +1531,9 @@ export default function MedicalScreen() {
                     : isAppointment
                     ? () => navigation.navigate('Appointments', { petId: selectedPet.id })
                     : undefined;
+                  const isPrescription = ev.type === 'prescription';
+                  const canToggle = isPrescription && selectedDate <= todayYmd; // не отмечаем будущие дозы
+                  const taken = isPrescription && isTaken(ev.refId, selectedDate);
                   return (
                     <TouchableOpacity
                       key={`${ev.type}-${ev.refId || ev.recordId || i}`}
@@ -1542,6 +1550,27 @@ export default function MedicalScreen() {
                         {ev.title ? <Text style={styles.agendaItemTitle} numberOfLines={1}>{ev.title}</Text> : null}
                       </View>
                       {tappable && <Ionicons name="chevron-forward" size={18} color="#CCC" />}
+                      {canToggle && (
+                        <TouchableOpacity
+                          style={styles.intakeToggle}
+                          activeOpacity={0.7}
+                          onPress={() =>
+                            (taken
+                              ? unmark(ev.refId, selectedDate)
+                              : markTaken(ev.refId, selectedDate)
+                            ).catch(() => {})
+                          }
+                        >
+                          <Ionicons
+                            name={taken ? 'checkmark-circle' : 'ellipse-outline'}
+                            size={22}
+                            color={taken ? '#22C55E' : '#9CA3AF'}
+                          />
+                          <Text style={[styles.intakeLabel, taken && { color: '#22C55E' }]}>
+                            {taken ? t('calendar.intake.taken') : t('calendar.intake.give')}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </TouchableOpacity>
                   );
                 })
@@ -1626,6 +1655,8 @@ const styles = StyleSheet.create({
   agendaIcon:           { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   agendaType:           { fontSize: 11, fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase' },
   agendaItemTitle:      { fontSize: 14, color: '#1F2937', fontWeight: '500', marginTop: 1 },
+  intakeToggle:         { flexDirection: 'row', alignItems: 'center', gap: 5, paddingLeft: 6 },
+  intakeLabel:          { fontSize: 12, fontWeight: '600', color: '#9CA3AF' },
   tabContent:           { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
   summaryRow:           { flexDirection: 'row', gap: 10, marginBottom: 16 },
   summaryCard:          { flex: 1, borderRadius: 12, padding: 14, alignItems: 'center' },

@@ -8,7 +8,8 @@
         "vaccine": "Вакцина",
         "reminder": "Напоминание",
         "appointment": "Запись"
-      }
+      },
+      "intake": { "give": "Дал сегодня?", "taken": "Принято" }
     },
     "appointments": {
       "title": "Мои записи",

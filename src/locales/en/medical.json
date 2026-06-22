@@ -8,7 +8,8 @@
         "vaccine": "Vaccine",
         "reminder": "Reminder",
         "appointment": "Appointment"
-      }
+      },
+      "intake": { "give": "Give today?", "taken": "Taken" }
     },
     "appointments": {
       "title": "My Appointments",
