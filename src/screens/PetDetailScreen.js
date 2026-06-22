@@ -569,13 +569,22 @@ export default function PetDetailScreen({ route, navigation }) {
   const getChartData = () => {
     // Берём последние 8, переворачиваем в хронологический порядок
     const sorted = [...weightHistory].reverse().slice(-8);
-    if (sorted.length < 2) return null;
+    // Оставляем только записи с числовым весом (numeric из БД может прийти строкой,
+    // встречаются null) — иначе LineChart получит NaN. Метки берём из того же
+    // отфильтрованного массива, чтобы длины совпадали.
+    const valid = sorted.filter((w) => Number.isFinite(Number(w.weight)));
+    if (valid.length < 2) return null;
 
-    const labels = sorted.map(w => {
+    const points = valid.map((w) => Number(w.weight));
+    // Вырожденный случай: все значения равны (max === min) → диапазон 0 → деление
+    // на ноль в chart-kit. Не рисуем график (карточка веса остаётся без графика).
+    if (Math.min(...points) === Math.max(...points)) return null;
+
+    const labels = valid.map((w) => {
       const d = new Date(w.measured_at);
       return `${d.getDate()}/${d.getMonth() + 1}`;
     });
-    const datasets = [{ data: sorted.map(w => w.weight) }];
+    const datasets = [{ data: points }];
 
     return { labels, datasets };
   };
