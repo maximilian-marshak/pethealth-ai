@@ -12,6 +12,7 @@
     "loyalty": "Loyalty Program",
     "totalDonated": "Total Donated",
     "badges": "My Badges",
+    "units": { "title": "Weight units", "kg": "kg", "lb": "lb" },
     "rank": {
       "title": "Rank",
       "toNext": "{{remaining}} Paws to the next rank",

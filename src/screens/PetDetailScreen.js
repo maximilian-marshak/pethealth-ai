@@ -25,6 +25,8 @@ import * as Haptics from 'expo-haptics';
 import { LineChart } from 'react-native-chart-kit';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { usePets } from '../hooks/usePets';
+import { useUnits } from '../hooks/useUnits';
+import { formatWeight, formatWeightValue, unitLabel, convertWeight } from '../utils/formatWeight';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../utils/supabase';
 import { pickAndUpload } from '../services/imageUploadService';
@@ -82,6 +84,7 @@ const PassportDateField = ({ label, value, onChange }) => {
 export default function PetDetailScreen({ route, navigation }) {
   const petId = route?.params?.petId;
   const { pets, updatePetPhoto, deletePet } = usePets();
+  const { unit } = useUnits();
   const { t } = useTranslation('pets');
 
   // ─── Core state ───────────────────────────────
@@ -575,7 +578,7 @@ export default function PetDetailScreen({ route, navigation }) {
     const valid = sorted.filter((w) => Number.isFinite(Number(w.weight)));
     if (valid.length < 2) return null;
 
-    const points = valid.map((w) => Number(w.weight));
+    const points = valid.map((w) => convertWeight(Number(w.weight), unit));
     // Вырожденный случай: все значения равны (max === min) → диапазон 0 → деление
     // на ноль в chart-kit. Не рисуем график (карточка веса остаётся без графика).
     if (Math.min(...points) === Math.max(...points)) return null;
@@ -787,7 +790,7 @@ export default function PetDetailScreen({ route, navigation }) {
           <Text style={styles.petBreed}>{pet.breed || pet.species}</Text>
           <Text style={styles.petMeta}>
             {calculateAge(pet.birth_date)}
-            {pet.weight ? ` • ${pet.weight} ${pet.weight_unit || 'кг'}` : ''}
+            {pet.weight ? ` • ${formatWeight(pet.weight, unit)}` : ''}
           </Text>
         </View>
 
@@ -864,9 +867,9 @@ export default function PetDetailScreen({ route, navigation }) {
                 <View>
                   <Text style={styles.weightCurrentLabel}>Текущий вес</Text>
                   <Text style={styles.weightCurrentValue}>
-                    {weightHistory[0].weight}{' '}
+                    {formatWeightValue(weightHistory[0].weight, unit)}{' '}
                     <Text style={styles.weightUnit}>
-                      {weightHistory[0].weight_unit || 'кг'}
+                      {unitLabel(unit)}
                     </Text>
                   </Text>
                 </View>
@@ -925,7 +928,7 @@ export default function PetDetailScreen({ route, navigation }) {
                       <View style={styles.weightHistoryDot} />
                       <View>
                         <Text style={styles.weightHistoryValue}>
-                          {item.weight} {item.weight_unit || 'кг'}
+                          {formatWeight(item.weight, unit)}
                         </Text>
                         {item.notes ? (
                           <Text style={styles.weightHistoryNote} numberOfLines={1}>

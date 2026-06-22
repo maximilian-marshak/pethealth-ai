@@ -23,6 +23,7 @@ import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
 import { usePets } from '../hooks/usePets';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useLanguage } from '../hooks/useLanguage';
+import { useUnits } from '../hooks/useUnits';
 import ProgressBar from '../components/ProgressBar';
 
 // ─── Language Switcher Component ──────────────────────────────────────────────
@@ -153,6 +154,35 @@ const switcherStyles = StyleSheet.create({
     marginLeft: 8,
   },
 });
+
+// ─── Units Switcher Component (кг / фунты) ────────────────────────────────────
+const UnitsSwitcher = () => {
+  const { unit, setUnit } = useUnits();
+  const { t } = useTranslation('profile');
+
+  return (
+    <View style={switcherStyles.container}>
+      <View style={switcherStyles.labelRow}>
+        <Ionicons name="barbell-outline" size={20} color="#6C63FF" />
+        <Text style={switcherStyles.label}>{t('units.title')}</Text>
+      </View>
+
+      <View style={switcherStyles.toggle}>
+        {['kg', 'lb'].map((u) => (
+          <TouchableOpacity
+            key={u}
+            style={[switcherStyles.langBtn, unit === u && switcherStyles.langBtnActive]}
+            onPress={() => setUnit(u)}
+          >
+            <Text style={[switcherStyles.langText, unit === u && switcherStyles.langTextActive]}>
+              {t(`units.${u}`)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+};
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen({ navigation }) {
@@ -498,6 +528,9 @@ export default function ProfileScreen({ navigation }) {
 
         {/* ─── Language Switcher ─── */}
         <LanguageSwitcher />
+
+        {/* ─── Units Switcher ─── */}
+        <UnitsSwitcher />
 
         <TouchableOpacity
           style={styles.settingItem}

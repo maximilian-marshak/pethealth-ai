@@ -22,6 +22,8 @@ import { useDashboardStatus } from '../hooks/useDashboardStatus';
 import { usePetHealth } from '../hooks/usePetHealth';
 import { useCharity } from '../hooks/useCharity';
 import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
+import { useUnits } from '../hooks/useUnits';
+import { formatWeightValue, unitLabel } from '../utils/formatWeight';
 import { StatusCards } from '../components/dashboard/StatusCards';
 import ProgressBar from '../components/ProgressBar';
 
@@ -49,6 +51,7 @@ export default function DashboardScreen({ navigation }) {
   const { allergies } = usePetHealth(selectedPet?.id);
   const { lifetimeDonated } = useCharity();
   const { currentRank, loading: loadingRanks } = useCharityRanks(lifetimeDonated);
+  const { unit } = useUnits();
 
   // ─── Совет дня (статичный, детерминированная ротация по дню года) ───
   const _now = new Date();
@@ -436,10 +439,10 @@ export default function DashboardScreen({ navigation }) {
               <View style={styles.petStats}>
                 <View style={styles.petStat}>
                   <Text style={styles.petStatValue}>
-                    {selectedPet.weight ?? '--'}
+                    {formatWeightValue(selectedPet.weight, unit) || '--'}
                   </Text>
                   <Text style={styles.petStatLabel}>
-                    {selectedPet.weight_unit || 'kg'}
+                    {unitLabel(unit)}
                   </Text>
                 </View>
               </View>
