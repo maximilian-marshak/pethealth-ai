@@ -34,6 +34,26 @@
       "title": "Documents",
       "empty": { "title": "No documents yet", "subtitle": "Scanned vet documents will appear here" }
     },
+    "export": {
+      "button": "Export PDF",
+      "error": "Couldn't export the medical record",
+      "sections": {
+        "passport": "Passport",
+        "allergies": "Allergies",
+        "conditions": "Chronic conditions",
+        "vaccines": "Vaccines",
+        "medications": "Active medications",
+        "records": "Medical records",
+        "weight": "Weight history"
+      },
+      "fields": {
+        "gender": "Gender", "birthDate": "Date of birth", "weight": "Weight",
+        "bloodType": "Blood type", "microchip": "Microchip", "context": "Household context",
+        "since": "Since", "nextDue": "Next due", "dose": "Dose", "frequency": "Frequency",
+        "vet": "Vet", "diagnosis": "Diagnosis", "recommendations": "Recommendations",
+        "none": "—", "generated": "Generated"
+      }
+    },
     "header": {
       "title": "Medical Records",
       "back": "Back"

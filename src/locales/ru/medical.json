@@ -34,6 +34,26 @@
       "title": "Документы",
       "empty": { "title": "Документов пока нет", "subtitle": "Отсканированные ветеринарные документы появятся здесь" }
     },
+    "export": {
+      "button": "Экспорт PDF",
+      "error": "Не удалось экспортировать медкарту",
+      "sections": {
+        "passport": "Паспорт",
+        "allergies": "Аллергии",
+        "conditions": "Хронические заболевания",
+        "vaccines": "Вакцины",
+        "medications": "Активные лекарства",
+        "records": "Медзаписи",
+        "weight": "История веса"
+      },
+      "fields": {
+        "gender": "Пол", "birthDate": "Дата рождения", "weight": "Вес",
+        "bloodType": "Группа крови", "microchip": "Чип", "context": "Бытовой контекст",
+        "since": "С", "nextDue": "Следующая", "dose": "Доза", "frequency": "Частота",
+        "vet": "Врач", "diagnosis": "Диагноз", "recommendations": "Рекомендации",
+        "none": "—", "generated": "Сформировано"
+      }
+    },
     "header": {
       "title": "Медкарта",
       "back": "Назад"

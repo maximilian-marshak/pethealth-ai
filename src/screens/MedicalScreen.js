@@ -27,6 +27,11 @@ import { VACCINES, DRUGS } from '../data/medicalPresets';
 import { Calendar } from 'react-native-calendars';
 import { useMedicalCalendar } from '../hooks/useMedicalCalendar';
 import { useMedicationIntakes } from '../hooks/useMedicationIntakes';
+import { useUnits } from '../hooks/useUnits';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { collectMedicalExport } from '../utils/collectMedicalExport';
+import { buildMedicalExportHtml } from '../utils/medicalExportHtml';
 import { usePetHealth } from '../hooks/usePetHealth';
 import { useAppointments } from '../hooks/useAppointments';
 
@@ -781,6 +786,7 @@ export default function MedicalScreen() {
   const { awardEvent } = useLoyaltyPoints();
   const { markedDates, itemsByDate } = useMedicalCalendar(selectedPet?.id);
   const { isTaken, markTaken, unmark } = useMedicationIntakes(selectedPet?.id);
+  const { unit } = useUnits();
   const { allergies } = usePetHealth(selectedPet?.id);
   const { future } = useAppointments(selectedPet?.id);
   // ymd сегодняшнего ЛОКАЛЬНОГО дня — тоггл приёма доступен только для дней ≤ сегодня.
@@ -791,6 +797,7 @@ export default function MedicalScreen() {
   const [viewMode,    setViewMode]    = useState('list');
   const [selectedDate, setSelectedDate] = useState(null);
   const [scanning,    setScanning]    = useState(false);
+  const [exporting,   setExporting]   = useState(false);
   const [vaccines,    setVaccines]    = useState([]);
   const [medications, setMedications] = useState([]);
   const [records,     setRecords]     = useState([]);
@@ -1152,6 +1159,30 @@ export default function MedicalScreen() {
       Alert.alert(t('scan.errorTitle'), err.message || t('scan.error'));
     } finally {
       setScanning(false);
+    }
+  };
+
+  // ─── Экспорт медкарты в PDF (собрать → HTML → печать → share) ───
+  const handleExport = async () => {
+    if (!selectedPet?.id || exporting) return;
+    setExporting(true);
+    try {
+      const data = await collectMedicalExport(selectedPet.id);
+      const html = buildMedicalExportHtml(data, { unit, lang: i18n.language, t });
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: t('export.button'),
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert(t('export.error'), '');
+      }
+    } catch (e) {
+      Alert.alert(t('export.error'), e?.message || '');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -1631,6 +1662,17 @@ export default function MedicalScreen() {
               onPress={() => navigation.navigate('Documents', { petId: selectedPet.id })}
             >
               <Ionicons name="documents-outline" size={20} color="#6366F1" />
+            </TouchableOpacity>
+          )}
+          {selectedPet?.id && (
+            <TouchableOpacity
+              style={styles.scanBtn}
+              onPress={handleExport}
+              disabled={exporting}
+            >
+              {exporting
+                ? <ActivityIndicator size="small" color="#6366F1" />
+                : <Ionicons name="share-outline" size={20} color="#6366F1" />}
             </TouchableOpacity>
           )}
           <TouchableOpacity
