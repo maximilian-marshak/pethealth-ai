@@ -30,6 +30,10 @@
         "datePlaceholder": "Select date & time"
       }
     },
+    "documents": {
+      "title": "Documents",
+      "empty": { "title": "No documents yet", "subtitle": "Scanned vet documents will appear here" }
+    },
     "header": {
       "title": "Medical Records",
       "back": "Back"

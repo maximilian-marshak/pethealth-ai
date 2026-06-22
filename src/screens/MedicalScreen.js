@@ -1493,6 +1493,14 @@ export default function MedicalScreen() {
           >
             <Ionicons name="today-outline" size={20} color="#6366F1" />
           </TouchableOpacity>
+          {selectedPet?.id && (
+            <TouchableOpacity
+              style={styles.scanBtn}
+              onPress={() => navigation.navigate('Documents', { petId: selectedPet.id })}
+            >
+              <Ionicons name="documents-outline" size={20} color="#6366F1" />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.scanBtn}
             onPress={handleScan}
