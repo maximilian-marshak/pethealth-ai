@@ -8,6 +8,15 @@
     "notifications": "Notifications",
     "logout": "Log Out",
     "deleteAccount": "Delete Account",
+    "deleteConfirm": {
+      "title": "Delete account?",
+      "message": "This will permanently delete all your pets, medical records, documents and data. This cannot be undone.",
+      "continue": "Continue",
+      "finalTitle": "Are you sure?",
+      "finalMessage": "This action is irreversible. Delete your account?",
+      "confirmFinal": "Delete forever",
+      "error": "Couldn't delete account"
+    },
     "settings": "Settings",
     "loyalty": "Loyalty Program",
     "totalDonated": "Total Donated",

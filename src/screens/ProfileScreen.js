@@ -25,6 +25,7 @@ import { useUserProfile } from '../hooks/useUserProfile';
 import { useLanguage } from '../hooks/useLanguage';
 import { useUnits } from '../hooks/useUnits';
 import ProgressBar from '../components/ProgressBar';
+import { supabase } from '../utils/supabase';
 
 // ─── Language Switcher Component ──────────────────────────────────────────────
 const LanguageSwitcher = () => {
@@ -202,6 +203,7 @@ export default function ProfileScreen({ navigation }) {
   const [phoneInput, setPhoneInput] = useState('');
   const [savingPhone, setSavingPhone] = useState(false);
   const [ranksExpanded, setRanksExpanded] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // ─── Фокус ──────────────────────────────────────────────
   useFocusEffect(
@@ -273,6 +275,48 @@ export default function ProfileScreen({ navigation }) {
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             await signOut();
           },
+        },
+      ]
+    );
+  };
+
+  // ─── Удаление аккаунта (двойное подтверждение → Edge Function) ───
+  const performDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account');
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'deletion failed');
+      // Успех: signOut → onAuthStateChange уведёт на Login (компонент размонтируется).
+      await signOut();
+    } catch (e) {
+      setDeleting(false);
+      Alert.alert(t('profile:deleteConfirm.error'), e?.message || '');
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      t('profile:deleteConfirm.title'),
+      t('profile:deleteConfirm.message'),
+      [
+        { text: t('common:cancel'), style: 'cancel' },
+        {
+          text: t('profile:deleteConfirm.continue'),
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert(
+              t('profile:deleteConfirm.finalTitle'),
+              t('profile:deleteConfirm.finalMessage'),
+              [
+                { text: t('common:cancel'), style: 'cancel' },
+                {
+                  text: t('profile:deleteConfirm.confirmFinal'),
+                  style: 'destructive',
+                  onPress: performDeleteAccount,
+                },
+              ]
+            ),
         },
       ]
     );
@@ -586,6 +630,20 @@ export default function ProfileScreen({ navigation }) {
           <Text style={[styles.settingText, styles.logoutText]}>{t('profile:logout')}</Text>
           <Ionicons name="chevron-forward" size={20} color="#CCC" />
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.settingItem, styles.deleteAccountItem]}
+          onPress={handleDeleteAccount}
+          disabled={deleting}
+        >
+          <View style={[styles.settingIcon, { backgroundColor: '#FEE2E2' }]}>
+            {deleting
+              ? <ActivityIndicator size="small" color="#DC2626" />
+              : <Ionicons name="trash-outline" size={20} color="#DC2626" />}
+          </View>
+          <Text style={[styles.settingText, styles.deleteAccountText]}>{t('profile:deleteAccount')}</Text>
+          {!deleting && <Ionicons name="chevron-forward" size={20} color="#CCC" />}
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.versionText}>PetHealth AI v1.0.0</Text>
@@ -824,6 +882,8 @@ const styles = StyleSheet.create({
   phoneBtnSaveText: { color: '#fff', fontWeight: '600', fontSize: 15 },
   logoutItem: { borderWidth: 1, borderColor: '#FFE8E8' },
   logoutText: { color: '#FF6B6B' },
+  deleteAccountItem: { borderWidth: 1, borderColor: '#FECACA' },
+  deleteAccountText: { color: '#DC2626', fontWeight: '600' },
   emptyCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
