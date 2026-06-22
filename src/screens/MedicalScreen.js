@@ -646,6 +646,13 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+const AGENDA_TYPE = {
+  record:       { icon: 'document-text-outline', color: '#6B4EFF' },
+  prescription: { icon: 'medical-outline',       color: '#22C55E' },
+  vaccine:      { icon: 'medkit-outline',        color: '#F59E0B' },
+  reminder:     { icon: 'notifications-outline', color: '#3B82F6' },
+};
+
 export default function MedicalScreen() {
   const navigation = useNavigation();
   const { t, i18n } = useTranslation('medical');
@@ -656,10 +663,11 @@ export default function MedicalScreen() {
 
   const { pets, selectedPet, selectPet, loading: petsLoading } = usePetContext();
   const { awardEvent } = useLoyaltyPoints();
-  const { markedDates } = useMedicalCalendar(selectedPet?.id);
+  const { markedDates, itemsByDate } = useMedicalCalendar(selectedPet?.id);
 
   const [activeTab,   setActiveTab]   = useState('overview');
   const [viewMode,    setViewMode]    = useState('list');
+  const [selectedDate, setSelectedDate] = useState(null);
   const [scanning,    setScanning]    = useState(false);
   const [vaccines,    setVaccines]    = useState([]);
   const [medications, setMedications] = useState([]);
@@ -1391,6 +1399,7 @@ export default function MedicalScreen() {
           >
             <Ionicons name="scan-outline" size={20} color="#6366F1" />
           </TouchableOpacity>
+          {viewMode === 'list' && (
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => {
@@ -1407,6 +1416,7 @@ export default function MedicalScreen() {
               {activeTab === 'overview' ? '···' : '+'}
             </Text>
           </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -1478,17 +1488,53 @@ export default function MedicalScreen() {
 
       {/* Content */}
       {viewMode === 'calendar' ? (
-        <Calendar
-          markingType="multi-dot"
-          markedDates={markedDates}
-          theme={{
-            todayTextColor: '#6B4EFF',
-            selectedDayBackgroundColor: '#6B4EFF',
-            arrowColor: '#6B4EFF',
-            dotColor: '#6B4EFF',
-          }}
-          style={styles.calendar}
-        />
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          <Calendar
+            markingType="multi-dot"
+            onDayPress={(d) => setSelectedDate(d.dateString)}
+            markedDates={selectedDate
+              ? { ...markedDates, [selectedDate]: { ...(markedDates[selectedDate] || {}), selected: true, selectedColor: '#6B4EFF' } }
+              : markedDates}
+            theme={{
+              todayTextColor: '#6B4EFF',
+              selectedDayBackgroundColor: '#6B4EFF',
+              arrowColor: '#6B4EFF',
+              dotColor: '#6B4EFF',
+            }}
+            style={styles.calendar}
+          />
+          {selectedDate ? (
+            <View style={styles.agenda}>
+              <Text style={styles.agendaTitle}>{t('calendar.agendaTitle')}</Text>
+              {(itemsByDate[selectedDate] || []).length === 0 ? (
+                <Text style={styles.agendaEmpty}>{t('calendar.empty')}</Text>
+              ) : (
+                itemsByDate[selectedDate].map((ev, i) => {
+                  const meta = AGENDA_TYPE[ev.type] || AGENDA_TYPE.record;
+                  const isRecord = ev.type === 'record';
+                  return (
+                    <TouchableOpacity
+                      key={`${ev.type}-${ev.refId || ev.recordId || i}`}
+                      style={styles.agendaCard}
+                      activeOpacity={isRecord ? 0.7 : 1}
+                      disabled={!isRecord}
+                      onPress={isRecord ? () => navigation.navigate('RecordDetail', { recordId: ev.recordId, petId: selectedPet.id }) : undefined}
+                    >
+                      <View style={[styles.agendaIcon, { backgroundColor: meta.color + '22' }]}>
+                        <Ionicons name={meta.icon} size={18} color={meta.color} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.agendaType}>{t(`calendar.types.${ev.type}`)}</Text>
+                        {ev.title ? <Text style={styles.agendaItemTitle} numberOfLines={1}>{ev.title}</Text> : null}
+                      </View>
+                      {isRecord && <Ionicons name="chevron-forward" size={18} color="#CCC" />}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </View>
+          ) : null}
+        </ScrollView>
       ) : loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} size="large" color="#6366F1" />
       ) : (
@@ -1559,6 +1605,13 @@ const styles = StyleSheet.create({
   viewToggleBtn:        { paddingVertical: 6, paddingHorizontal: 22, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   viewToggleBtnActive:  { backgroundColor: '#6B4EFF' },
   calendar:             { marginHorizontal: 8, marginTop: 4, borderRadius: 12, overflow: 'hidden' },
+  agenda:               { marginTop: 8, paddingHorizontal: 12, paddingBottom: 24 },
+  agendaTitle:          { fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 8, marginTop: 4 },
+  agendaEmpty:          { fontSize: 13, color: '#9CA3AF', paddingVertical: 8 },
+  agendaCard:           { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#EEF0F4' },
+  agendaIcon:           { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  agendaType:           { fontSize: 11, fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase' },
+  agendaItemTitle:      { fontSize: 14, color: '#1F2937', fontWeight: '500', marginTop: 1 },
   tabContent:           { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
   summaryRow:           { flexDirection: 'row', gap: 10, marginBottom: 16 },
   summaryCard:          { flex: 1, borderRadius: 12, padding: 14, alignItems: 'center' },

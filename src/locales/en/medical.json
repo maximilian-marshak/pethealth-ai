@@ -1,4 +1,14 @@
 {
+    "calendar": {
+      "agendaTitle": "Events on this day",
+      "empty": "No events",
+      "types": {
+        "record": "Record",
+        "prescription": "Medication",
+        "vaccine": "Vaccine",
+        "reminder": "Reminder"
+      }
+    },
     "header": {
       "title": "Medical Records",
       "back": "Back"

@@ -1,4 +1,14 @@
 {
+    "calendar": {
+      "agendaTitle": "События дня",
+      "empty": "Нет событий",
+      "types": {
+        "record": "Запись",
+        "prescription": "Лекарство",
+        "vaccine": "Вакцина",
+        "reminder": "Напоминание"
+      }
+    },
     "header": {
       "title": "Медкарта",
       "back": "Назад"
