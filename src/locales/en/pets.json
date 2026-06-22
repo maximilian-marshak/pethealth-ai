@@ -1,7 +1,13 @@
 {
   "alerts": {
-    "deleteAllergy": { "title": "Delete allergy?", "message": "{{name}}" },
-    "deleteCondition": { "title": "Delete condition?", "message": "{{name}}" }
+    "deleteAllergy": {
+      "title": "Delete allergy?",
+      "message": "{{name}}"
+    },
+    "deleteCondition": {
+      "title": "Delete condition?",
+      "message": "{{name}}"
+    }
   },
   "passport": {
     "title": "Passport",
@@ -74,5 +80,62 @@
   "auth": {
     "logOut": "Log Out",
     "ok": "OK"
+  },
+  "detail": {
+    "severity": {
+      "none": "Not specified",
+      "mild": "Mild",
+      "moderate": "Moderate",
+      "severe": "Severe"
+    },
+    "pickDate": "Select date",
+    "notFound": "Pet not found",
+    "stats": {
+      "allergies": "Allergies",
+      "vaccinations": "Vaccinations",
+      "records": "Records",
+      "daysAgo": "Days ago"
+    },
+    "alerts": {
+      "deletePet": {
+        "title": "Delete pet?",
+        "message": "Are you sure you want to delete {{name}}? The pet will be hidden.",
+        "error": "Failed to delete pet"
+      },
+      "photoSuccess": "Pet photo updated!",
+      "photoError": "Failed to update photo"
+    },
+    "weight": {
+      "section": "⚖️ Weight dynamics",
+      "empty": "No weight data",
+      "addFirst": "+ Add first weight",
+      "current": "Current weight",
+      "historyTitle": "Measurement history",
+      "invalid": "Enter a valid weight (0–200)",
+      "saveError": "Failed to save weight",
+      "trend": {
+        "stable": "Stable",
+        "delta": "{{value}} {{unit}}"
+      },
+      "modal": {
+        "title": "Add weight",
+        "weightLabel": "Weight",
+        "noteLabel": "Note (optional)",
+        "notePlaceholder": "E.g.: after grooming"
+      }
+    },
+    "age": {
+      "unknown": "Unknown",
+      "months": "{{count}} mo.",
+      "years_one": "{{count}} year",
+      "years_other": "{{count}} years"
+    },
+    "relative": {
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "inDays": "In {{count}} d.",
+      "inWeeks": "In {{count}} w.",
+      "inMonths": "In {{count}} mo."
+    }
   }
 }

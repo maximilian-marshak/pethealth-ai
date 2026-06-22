@@ -34,15 +34,17 @@ import { pickAndUpload } from '../services/imageUploadService';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 // Тяжесть аллергии: хранится mild/moderate/severe или null (CHECK в БД).
+// Подпись локализуется в месте отрисовки через t('detail.severity.<key>').
 const SEVERITY_OPTIONS = [
-  { value: null,       label: 'Не указано' },
-  { value: 'mild',     label: 'Лёгкая' },
-  { value: 'moderate', label: 'Средняя' },
-  { value: 'severe',   label: 'Тяжёлая' },
+  { value: null,       key: 'none' },
+  { value: 'mild',     key: 'mild' },
+  { value: 'moderate', key: 'moderate' },
+  { value: 'severe',   key: 'severe' },
 ];
 
 // Поле даты для модалок паспорта: хранит YYYY-MM-DD, показывает DD.MM.YYYY.
 const PassportDateField = ({ label, value, onChange }) => {
+  const { t } = useTranslation('pets');
   const [show, setShow] = useState(false);
   const dateVal = value ? new Date(value + 'T00:00:00') : new Date();
   const handle = (event, selected) => {
@@ -56,7 +58,7 @@ const PassportDateField = ({ label, value, onChange }) => {
     }
     if (Platform.OS === 'ios') setShow(false);
   };
-  const display = value ? `${value.slice(8, 10)}.${value.slice(5, 7)}.${value.slice(0, 4)}` : 'Выберите дату';
+  const display = value ? `${value.slice(8, 10)}.${value.slice(5, 7)}.${value.slice(0, 4)}` : t('detail.pickDate');
   return (
     <View style={styles.modalInputGroup}>
       <Text style={styles.modalInputLabel}>{label}</Text>
@@ -85,7 +87,7 @@ export default function PetDetailScreen({ route, navigation }) {
   const petId = route?.params?.petId;
   const { pets, updatePetPhoto, deletePet } = usePets();
   const { unit } = useUnits();
-  const { t } = useTranslation('pets');
+  const { t, i18n } = useTranslation('pets');
 
   // ─── Core state ───────────────────────────────
   const [pet, setPet]               = useState(null);
@@ -423,7 +425,7 @@ export default function PetDetailScreen({ route, navigation }) {
   const handleSaveWeight = async () => {
     const parsed = parseFloat(newWeight.replace(',', '.'));
     if (!parsed || parsed <= 0 || parsed > 200) {
-      Alert.alert('Ошибка', 'Введите корректный вес (0–200)');
+      Alert.alert(t('common:error'), t('detail.weight.invalid'));
       return;
     }
 
@@ -462,7 +464,7 @@ export default function PetDetailScreen({ route, navigation }) {
       await loadWeightHistory();
     } catch (error) {
       console.error('Error saving weight:', error);
-      Alert.alert('Ошибка', 'Не удалось сохранить вес');
+      Alert.alert(t('common:error'), t('detail.weight.saveError'));
     } finally {
       setSavingWeight(false);
     }
@@ -599,9 +601,9 @@ export default function PetDetailScreen({ route, navigation }) {
     const prev   = weightHistory[1].weight;
     const diff   = latest - prev;
 
-    if (Math.abs(diff) < 0.05) return { type: 'stable', diff: 0, label: 'Стабильно' };
-    if (diff > 0)               return { type: 'up',     diff,   label: `+${diff.toFixed(1)} кг` };
-    return                              { type: 'down',   diff,   label: `${diff.toFixed(1)} кг` };
+    if (Math.abs(diff) < 0.05) return { type: 'stable', diff: 0 };
+    if (diff > 0)               return { type: 'up',     diff };
+    return                              { type: 'down',   diff };
   };
 
   // ═══ PHOTO UPLOAD ════════════════════════════
@@ -618,11 +620,11 @@ export default function PetDetailScreen({ route, navigation }) {
         await updatePetPhoto(petId, newUrl);
         setPet({ ...pet, avatar_url: newUrl });
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Успех', 'Фото питомца обновлено!');
+        Alert.alert(t('common:success'), t('detail.alerts.photoSuccess'));
       }
     } catch (error) {
       console.error('❌ Error updating photo:', error);
-      Alert.alert('Ошибка', error.message || 'Не удалось обновить фото');
+      Alert.alert(t('common:error'), error.message || t('detail.alerts.photoError'));
     } finally {
       setUploading(false);
     }
@@ -631,12 +633,12 @@ export default function PetDetailScreen({ route, navigation }) {
   // ═══ DELETE PET ══════════════════════════════
   const handleDelete = () => {
     Alert.alert(
-      'Удалить питомца?',
-      `Вы уверены, что хотите удалить ${pet?.name}? Питомец будет скрыт.`,
+      t('detail.alerts.deletePet.title'),
+      t('detail.alerts.deletePet.message', { name: pet?.name }),
       [
-        { text: 'Отмена', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Удалить',
+          text: t('common:delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -644,7 +646,7 @@ export default function PetDetailScreen({ route, navigation }) {
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               navigation.goBack();
             } catch {
-              Alert.alert('Ошибка', 'Не удалось удалить питомца');
+              Alert.alert(t('common:error'), t('detail.alerts.deletePet.error'));
             }
           },
         },
@@ -654,30 +656,30 @@ export default function PetDetailScreen({ route, navigation }) {
 
   // ═══ HELPERS ══════════════════════════════════
   const calculateAge = (birthDate) => {
-    if (!birthDate) return 'Неизвестно';
+    if (!birthDate) return t('detail.age.unknown');
     const today = new Date();
     const birth = new Date(birthDate);
     const years  = today.getFullYear() - birth.getFullYear();
     const months = today.getMonth()    - birth.getMonth();
 
-    if (years === 0)  return `${Math.max(months, 1)} мес.`;
-    if (months < 0)   return `${years - 1} ${pluralYears(years - 1)}`;
-    return `${years} ${pluralYears(years)}`;
+    if (years === 0)  return t('detail.age.months', { count: Math.max(months, 1) });
+    if (months < 0)   return t('detail.age.years', { count: years - 1 });
+    return t('detail.age.years', { count: years });
   };
 
-  const pluralYears = (n) =>
-    n === 1 ? 'год' : n < 5 ? 'года' : 'лет';
+  // Локаль для toLocaleDateString — по языку приложения (а не хардкод ru-RU).
+  const dateLocale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
 
   const formatDate = (dateString) => {
     if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString('ru-RU', {
+    return new Date(dateString).toLocaleDateString(dateLocale, {
       day: 'numeric', month: 'long', year: 'numeric',
     });
   };
 
   const formatShortDate = (dateString) => {
     if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString('ru-RU', {
+    return new Date(dateString).toLocaleDateString(dateLocale, {
       day: 'numeric', month: 'short',
     });
   };
@@ -686,11 +688,11 @@ export default function PetDetailScreen({ route, navigation }) {
     const diffDays = Math.ceil(
       (new Date(dateString).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
     );
-    if (diffDays <= 0) return 'Сегодня';
-    if (diffDays === 1) return 'Завтра';
-    if (diffDays < 7)  return `Через ${diffDays} дн.`;
-    if (diffDays < 30) return `Через ${Math.floor(diffDays / 7)} нед.`;
-    return `Через ${Math.floor(diffDays / 30)} мес.`;
+    if (diffDays <= 0) return t('detail.relative.today');
+    if (diffDays === 1) return t('detail.relative.tomorrow');
+    if (diffDays < 7)  return t('detail.relative.inDays', { count: diffDays });
+    if (diffDays < 30) return t('detail.relative.inWeeks', { count: Math.floor(diffDays / 7) });
+    return t('detail.relative.inMonths', { count: Math.floor(diffDays / 30) });
   };
 
   // ═══ LOADING GUARDS ══════════════════════════
@@ -705,9 +707,9 @@ export default function PetDetailScreen({ route, navigation }) {
   if (!pet) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.notFoundText}>Питомец не найден</Text>
+        <Text style={styles.notFoundText}>{t('detail.notFound')}</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← Назад</Text>
+          <Text style={styles.backBtnText}>← {t('common:back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -721,6 +723,17 @@ export default function PetDetailScreen({ route, navigation }) {
   const trendIcon =
     trend?.type === 'up' ? 'trending-up' :
     trend?.type === 'down' ? 'trending-down' : 'remove';
+  // Подпись тренда: «Стабильно» либо «±X <ед.>» в единицах пользователя.
+  let trendText = '';
+  if (trend) {
+    if (trend.type === 'stable') {
+      trendText = t('detail.weight.trend.stable');
+    } else {
+      const conv = convertWeight(trend.diff, unit) || 0;
+      const value = (conv > 0 ? '+' : '') + (Math.round(conv * 10) / 10);
+      trendText = t('detail.weight.trend.delta', { value, unit: unitLabel(unit) });
+    }
+  }
 
   // ══════════════════════════════════════════════
   // RENDER
@@ -799,7 +812,7 @@ export default function PetDetailScreen({ route, navigation }) {
           <View style={styles.allergyBanner}>
             <Ionicons name="warning" size={22} color="#EF4444" />
             <View style={styles.allergyBannerText}>
-              <Text style={styles.allergyBannerTitle}>Аллергии</Text>
+              <Text style={styles.allergyBannerTitle}>{t('detail.stats.allergies')}</Text>
               <Text style={styles.allergyBannerList}>
                 {allergies.map((a) => a.substance).filter(Boolean).join(', ')}
               </Text>
@@ -812,26 +825,26 @@ export default function PetDetailScreen({ route, navigation }) {
           <View style={styles.statCard}>
             <Ionicons name="medkit-outline" size={28} color="#FF6B6B" />
             <Text style={styles.statValue}>{stats.vaccinations}</Text>
-            <Text style={styles.statLabel}>Прививки</Text>
+            <Text style={styles.statLabel}>{t('detail.stats.vaccinations')}</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="document-text-outline" size={28} color="#4ECDC4" />
             <Text style={styles.statValue}>{stats.medicalRecords}</Text>
-            <Text style={styles.statLabel}>Записи</Text>
+            <Text style={styles.statLabel}>{t('detail.stats.records')}</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="calendar-outline" size={28} color="#6C63FF" />
             <Text style={styles.statValue}>
               {stats.daysSinceLastVisit !== null ? stats.daysSinceLastVisit : '—'}
             </Text>
-            <Text style={styles.statLabel}>Дней назад</Text>
+            <Text style={styles.statLabel}>{t('detail.stats.daysAgo')}</Text>
           </View>
         </View>
 
         {/* ─── WEIGHT DYNAMICS ──────────────── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>⚖️ Динамика веса</Text>
+            <Text style={styles.sectionTitle}>{t('detail.weight.section')}</Text>
             <TouchableOpacity
               style={styles.addWeightBtn}
               onPress={() => {
@@ -840,7 +853,7 @@ export default function PetDetailScreen({ route, navigation }) {
               }}
             >
               <Ionicons name="add" size={18} color="#6C63FF" />
-              <Text style={styles.addWeightBtnText}>Добавить</Text>
+              <Text style={styles.addWeightBtnText}>{t('common:add')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -852,12 +865,12 @@ export default function PetDetailScreen({ route, navigation }) {
             /* ── Empty weight ─────────────── */
             <View style={styles.emptyCard}>
               <Ionicons name="scale-outline" size={32} color="#E0E0E0" />
-              <Text style={styles.emptyText}>Нет данных о весе</Text>
+              <Text style={styles.emptyText}>{t('detail.weight.empty')}</Text>
               <TouchableOpacity
                 style={styles.emptyAddBtn}
                 onPress={() => setWeightModalVisible(true)}
               >
-                <Text style={styles.emptyAddBtnText}>+ Добавить первый вес</Text>
+                <Text style={styles.emptyAddBtnText}>{t('detail.weight.addFirst')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -865,7 +878,7 @@ export default function PetDetailScreen({ route, navigation }) {
               {/* Current weight + trend */}
               <View style={styles.weightTopRow}>
                 <View>
-                  <Text style={styles.weightCurrentLabel}>Текущий вес</Text>
+                  <Text style={styles.weightCurrentLabel}>{t('detail.weight.current')}</Text>
                   <Text style={styles.weightCurrentValue}>
                     {formatWeightValue(weightHistory[0].weight, unit)}{' '}
                     <Text style={styles.weightUnit}>
@@ -878,7 +891,7 @@ export default function PetDetailScreen({ route, navigation }) {
                   <View style={[styles.trendBadge, { backgroundColor: trendColor + '18' }]}>
                     <Ionicons name={trendIcon} size={16} color={trendColor} />
                     <Text style={[styles.trendText, { color: trendColor }]}>
-                      {trend.label}
+                      {trendText}
                     </Text>
                   </View>
                 )}
@@ -915,7 +928,7 @@ export default function PetDetailScreen({ route, navigation }) {
 
               {/* History list (последние 5) */}
               <View style={styles.weightHistoryList}>
-                <Text style={styles.weightHistoryTitle}>История измерений</Text>
+                <Text style={styles.weightHistoryTitle}>{t('detail.weight.historyTitle')}</Text>
                 {weightHistory.slice(0, 5).map((item, index) => (
                   <View
                     key={item.id}
@@ -1207,7 +1220,7 @@ export default function PetDetailScreen({ route, navigation }) {
           <View style={styles.modalContainer}>
             {/* Modal header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Добавить вес</Text>
+              <Text style={styles.modalTitle}>{t('detail.weight.modal.title')}</Text>
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={() => {
@@ -1225,7 +1238,7 @@ export default function PetDetailScreen({ route, navigation }) {
 
             {/* Weight input */}
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Вес</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.weight.modal.weightLabel')}</Text>
               <View style={styles.modalInputRow}>
                 <TextInput
                   style={styles.modalInput}
@@ -1238,7 +1251,7 @@ export default function PetDetailScreen({ route, navigation }) {
                 />
                 <View style={styles.modalUnitBadge}>
                   <Text style={styles.modalUnitText}>
-                    {pet.weight_unit || 'кг'}
+                    {unitLabel(unit)}
                   </Text>
                 </View>
               </View>
@@ -1246,10 +1259,10 @@ export default function PetDetailScreen({ route, navigation }) {
 
             {/* Note input */}
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Заметка (необязательно)</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.weight.modal.noteLabel')}</Text>
               <TextInput
                 style={[styles.modalInput, styles.modalInputNote]}
-                placeholder="Например: после стрижки"
+                placeholder={t('detail.weight.modal.notePlaceholder')}
                 placeholderTextColor="#C0C0C0"
                 value={weightNote}
                 onChangeText={setWeightNote}
@@ -1267,7 +1280,7 @@ export default function PetDetailScreen({ route, navigation }) {
               {savingWeight ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.modalSaveBtnText}>Сохранить</Text>
+                <Text style={styles.modalSaveBtnText}>{t('common:save')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -1335,7 +1348,7 @@ export default function PetDetailScreen({ route, navigation }) {
                   const active = aSeverity === opt.value;
                   return (
                     <TouchableOpacity key={String(opt.value)} style={[styles.sevChip, active && styles.sevChipActive]} onPress={() => setASeverity(opt.value)}>
-                      <Text style={[styles.sevChipText, active && styles.sevChipTextActive]}>{opt.label}</Text>
+                      <Text style={[styles.sevChipText, active && styles.sevChipTextActive]}>{t('detail.severity.' + opt.key)}</Text>
                     </TouchableOpacity>
                   );
                 })}

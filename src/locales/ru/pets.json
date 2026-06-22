@@ -1,7 +1,13 @@
 {
   "alerts": {
-    "deleteAllergy": { "title": "Удалить аллергию?", "message": "{{name}}" },
-    "deleteCondition": { "title": "Удалить заболевание?", "message": "{{name}}" }
+    "deleteAllergy": {
+      "title": "Удалить аллергию?",
+      "message": "{{name}}"
+    },
+    "deleteCondition": {
+      "title": "Удалить заболевание?",
+      "message": "{{name}}"
+    }
   },
   "passport": {
     "title": "Паспорт",
@@ -74,5 +80,64 @@
   "auth": {
     "logOut": "Выйти",
     "ok": "ОК"
+  },
+  "detail": {
+    "severity": {
+      "none": "Не указано",
+      "mild": "Лёгкая",
+      "moderate": "Средняя",
+      "severe": "Тяжёлая"
+    },
+    "pickDate": "Выберите дату",
+    "notFound": "Питомец не найден",
+    "stats": {
+      "allergies": "Аллергии",
+      "vaccinations": "Прививки",
+      "records": "Записи",
+      "daysAgo": "Дней назад"
+    },
+    "alerts": {
+      "deletePet": {
+        "title": "Удалить питомца?",
+        "message": "Вы уверены, что хотите удалить {{name}}? Питомец будет скрыт.",
+        "error": "Не удалось удалить питомца"
+      },
+      "photoSuccess": "Фото питомца обновлено!",
+      "photoError": "Не удалось обновить фото"
+    },
+    "weight": {
+      "section": "⚖️ Динамика веса",
+      "empty": "Нет данных о весе",
+      "addFirst": "+ Добавить первый вес",
+      "current": "Текущий вес",
+      "historyTitle": "История измерений",
+      "invalid": "Введите корректный вес (0–200)",
+      "saveError": "Не удалось сохранить вес",
+      "trend": {
+        "stable": "Стабильно",
+        "delta": "{{value}} {{unit}}"
+      },
+      "modal": {
+        "title": "Добавить вес",
+        "weightLabel": "Вес",
+        "noteLabel": "Заметка (необязательно)",
+        "notePlaceholder": "Например: после стрижки"
+      }
+    },
+    "age": {
+      "unknown": "Неизвестно",
+      "months": "{{count}} мес.",
+      "years_one": "{{count}} год",
+      "years_few": "{{count}} года",
+      "years_many": "{{count}} лет",
+      "years_other": "{{count}} лет"
+    },
+    "relative": {
+      "today": "Сегодня",
+      "tomorrow": "Завтра",
+      "inDays": "Через {{count}} дн.",
+      "inWeeks": "Через {{count}} нед.",
+      "inMonths": "Через {{count}} мес."
+    }
   }
 }
