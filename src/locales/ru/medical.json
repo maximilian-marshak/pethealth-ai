@@ -48,7 +48,10 @@
       },
       "upcomingVaccines": "⚠️ Ближайшие вакцины",
       "activeMedications": "Активные лекарства",
-      "lastVisit": "Последний визит к ветеринару"
+      "lastVisit": "Последний визит к ветеринару",
+      "allergyBanner": { "title": "⚠️ Аллергии" },
+      "nextAppointment": { "title": "Ближайший приём", "none": "Нет запланированных" },
+      "upcomingReminders": { "title": "Ближайшие напоминания" }
     },
     "empty": {
       "overview": {

@@ -27,6 +27,8 @@ import { VACCINES, DRUGS } from '../data/medicalPresets';
 import { Calendar } from 'react-native-calendars';
 import { useMedicalCalendar } from '../hooks/useMedicalCalendar';
 import { useMedicationIntakes } from '../hooks/useMedicationIntakes';
+import { usePetHealth } from '../hooks/usePetHealth';
+import { useAppointments } from '../hooks/useAppointments';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -655,6 +657,13 @@ const AGENDA_TYPE = {
   appointment:  { icon: 'today-outline',         color: '#EC4899' },
 };
 
+const APPT_STATUS_COLORS = {
+  requested: '#F59E0B',
+  confirmed: '#22C55E',
+  cancelled: '#EF4444',
+  completed: '#6B7280',
+};
+
 export default function MedicalScreen() {
   const navigation = useNavigation();
   const { t, i18n } = useTranslation('medical');
@@ -667,6 +676,8 @@ export default function MedicalScreen() {
   const { awardEvent } = useLoyaltyPoints();
   const { markedDates, itemsByDate } = useMedicalCalendar(selectedPet?.id);
   const { isTaken, markTaken, unmark } = useMedicationIntakes(selectedPet?.id);
+  const { allergies } = usePetHealth(selectedPet?.id);
+  const { future } = useAppointments(selectedPet?.id);
   // ymd сегодняшнего ЛОКАЛЬНОГО дня — тоггл приёма доступен только для дней ≤ сегодня.
   const _today = new Date();
   const todayYmd = `${_today.getFullYear()}-${String(_today.getMonth() + 1).padStart(2, '0')}-${String(_today.getDate()).padStart(2, '0')}`;
@@ -1030,10 +1041,28 @@ export default function MedicalScreen() {
     const activeMeds   = medications.filter(m => m.active);
     const visits       = records.filter(r => r.record_type === 'visit');
     const recentRecord = visits[0];
+    const petAllergies = allergies || [];
+    const futureAppts  = (future || []).filter(a => a.status !== 'cancelled');
+    const fmtDT = (ts) =>
+      ts
+        ? new Date(ts).toLocaleString(locale, {
+            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+          })
+        : '';
+    // Ближайшие напоминания: type 'reminder' c датой [сегодня .. +30 дней], по возрастанию.
+    const _end = new Date();
+    _end.setDate(_end.getDate() + 30);
+    const in30Ymd = `${_end.getFullYear()}-${String(_end.getMonth() + 1).padStart(2, '0')}-${String(_end.getDate()).padStart(2, '0')}`;
+    const upcomingReminders = Object.entries(itemsByDate || {})
+      .filter(([d]) => d >= todayYmd && d <= in30Ymd)
+      .flatMap(([, evs]) => evs.filter((e) => e.type === 'reminder'))
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     const isEmpty =
       vaccines.length === 0 &&
       medications.length === 0 &&
-      records.length === 0;
+      records.length === 0 &&
+      petAllergies.length === 0 &&
+      futureAppts.length === 0;
 
     if (isEmpty) {
       return (
@@ -1049,6 +1078,19 @@ export default function MedicalScreen() {
 
     return (
       <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+        {/* Allergy banner */}
+        {petAllergies.length > 0 && (
+          <View style={styles.ovAllergyBanner}>
+            <Ionicons name="alert-circle" size={20} color="#DC2626" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.ovAllergyTitle}>{t('overview.allergyBanner.title')}</Text>
+              <Text style={styles.ovAllergyList}>
+                {petAllergies.map((a) => (a.severity ? `${a.substance} (${a.severity})` : a.substance)).join(', ')}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
           <View style={[styles.summaryCard, { backgroundColor: '#EEF2FF' }]}>
@@ -1064,6 +1106,40 @@ export default function MedicalScreen() {
             <Text style={styles.summaryLabel}>{t('overview.summary.vetVisits')}</Text>
           </View>
         </View>
+
+        {/* Next Appointment */}
+        <TouchableOpacity
+          style={styles.section}
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate('Appointments', { petId: selectedPet.id })}
+        >
+          <Text style={styles.sectionTitle}>{t('overview.nextAppointment.title')}</Text>
+          {futureAppts[0] ? (
+            <View style={styles.ovApptCard}>
+              <View style={styles.ovApptHead}>
+                <Text style={styles.overviewCardName} numberOfLines={1}>
+                  {futureAppts[0].clinic_name || t('appointments.untitled')}
+                </Text>
+                <View style={[styles.ovStatusBadge, { backgroundColor: (APPT_STATUS_COLORS[futureAppts[0].status] || '#6B7280') + '22' }]}>
+                  <Text style={[styles.ovStatusText, { color: APPT_STATUS_COLORS[futureAppts[0].status] || '#6B7280' }]}>
+                    {t(`appointments.status.${futureAppts[0].status}`, { defaultValue: futureAppts[0].status })}
+                  </Text>
+                </View>
+              </View>
+              {futureAppts[0].reason ? (
+                <Text style={styles.overviewCardSub}>{futureAppts[0].reason}</Text>
+              ) : null}
+              <View style={styles.ovApptDate}>
+                <Ionicons name="time-outline" size={14} color="#6B4EFF" />
+                <Text style={styles.ovApptDateText}>{fmtDT(futureAppts[0].requested_at)}</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.ovApptCard}>
+              <Text style={styles.ovApptNone}>{t('overview.nextAppointment.none')}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* Upcoming Vaccines */}
         {vaccines.length > 0 && (
@@ -1089,6 +1165,19 @@ export default function MedicalScreen() {
                 </View>
               );
             })}
+          </View>
+        )}
+
+        {/* Upcoming Reminders */}
+        {upcomingReminders.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('overview.upcomingReminders.title')}</Text>
+            {upcomingReminders.map((r, i) => (
+              <View key={`${r.refId || i}-${r.date}`} style={styles.ovReminderRow}>
+                <Text style={styles.ovReminderDate}>{fmt(r.date)}</Text>
+                <Text style={styles.ovReminderTitle} numberOfLines={1}>{r.title}</Text>
+              </View>
+            ))}
           </View>
         )}
 
@@ -1695,6 +1784,19 @@ const styles = StyleSheet.create({
   badgeRed:             { backgroundColor: '#FEE2E2' },
   badgeYellow:          { backgroundColor: '#FEF3C7' },
   badgeGreen:           { backgroundColor: '#D1FAE5' },
+  ovAllergyBanner:      { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FEF2F2', borderRadius: 12, padding: 14, marginBottom: 16 },
+  ovAllergyTitle:       { fontSize: 14, fontWeight: '700', color: '#DC2626' },
+  ovAllergyList:        { fontSize: 13, color: '#DC2626', marginTop: 2 },
+  ovApptCard:           { backgroundColor: '#fff', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E5E7EB' },
+  ovApptHead:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  ovStatusBadge:        { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
+  ovStatusText:         { fontSize: 11, fontWeight: '700' },
+  ovApptDate:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  ovApptDateText:       { fontSize: 13, color: '#6B7280' },
+  ovApptNone:           { fontSize: 13, color: '#6B7280' },
+  ovReminderRow:        { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
+  ovReminderDate:       { fontSize: 12, fontWeight: '700', color: '#6B4EFF', minWidth: 84 },
+  ovReminderTitle:      { fontSize: 14, color: '#1F2937', flex: 1 },
   badgeGray:            { backgroundColor: '#F3F4F6' },
   badgePurple:          { backgroundColor: '#EEF2FF' },
   emptyState:           { alignItems: 'center', paddingVertical: 60 },

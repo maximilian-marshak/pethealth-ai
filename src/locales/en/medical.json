@@ -48,7 +48,10 @@
       },
       "upcomingVaccines": "⚠️ Upcoming Vaccines",
       "activeMedications": "Active Medications",
-      "lastVisit": "Last Vet Visit"
+      "lastVisit": "Last Vet Visit",
+      "allergyBanner": { "title": "⚠️ Allergies" },
+      "nextAppointment": { "title": "Next appointment", "none": "No upcoming appointments" },
+      "upcomingReminders": { "title": "Upcoming reminders" }
     },
     "empty": {
       "overview": {
