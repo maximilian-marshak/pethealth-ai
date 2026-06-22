@@ -386,19 +386,9 @@ export default function ProfileScreen({ navigation }) {
               : <Ionicons name="camera" size={16} color="#fff" />
             }
           </TouchableOpacity>
-          {profile?.is_premium && (
-            <View style={styles.premiumBadge}>
-              <Text style={styles.premiumIcon}>👑</Text>
-            </View>
-          )}
         </View>
         <Text style={styles.userName}>{getUserName()}</Text>
         <Text style={styles.userEmail}>{user?.email}</Text>
-        {profile?.is_premium && (
-          <View style={styles.subscriptionBadge}>
-            <Text style={styles.subscriptionText}>👑 Premium Member</Text>
-          </View>
-        )}
       </View>
 
       {/* STATS ROW */}
@@ -595,17 +585,6 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="notifications" size={20} color="#4ECDC4" />
           </View>
           <Text style={styles.settingText}>{t('profile:notifications')}</Text>
-          <Ionicons name="chevron-forward" size={20} color="#CCC" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingItem}
-          onPress={() => navigateToSettings('Premium')}
-        >
-          <View style={[styles.settingIcon, { backgroundColor: '#FFF4E6' }]}>
-            <Ionicons name="diamond" size={20} color="#FFA500" />
-          </View>
-          <Text style={styles.settingText}>Premium</Text>
           <Ionicons name="chevron-forward" size={20} color="#CCC" />
         </TouchableOpacity>
 
