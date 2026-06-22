@@ -1554,12 +1554,18 @@ export default function MedicalScreen() {
                         <TouchableOpacity
                           style={styles.intakeToggle}
                           activeOpacity={0.7}
-                          onPress={() =>
-                            (taken
-                              ? unmark(ev.refId, selectedDate)
-                              : markTaken(ev.refId, selectedDate)
-                            ).catch(() => {})
-                          }
+                          onPress={() => {
+                            if (taken) {
+                              unmark(ev.refId, selectedDate).catch(() => {});
+                            } else {
+                              // Начисление только при отметке (не при снятии); dedup по рецепт|день.
+                              markTaken(ev.refId, selectedDate)
+                                .then(() =>
+                                  awardEvent('medication_taken', `${ev.refId}|med_taken|${selectedDate}`, { sourceType: 'app' })
+                                )
+                                .catch(() => {});
+                            }
+                          }}
                         >
                           <Ionicons
                             name={taken ? 'checkmark-circle' : 'ellipse-outline'}
