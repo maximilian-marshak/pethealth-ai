@@ -95,7 +95,11 @@ export async function scheduleNotificationsFromEvents(events) {
     for (const { ev, when } of future) {
       await Notifications.scheduleNotificationAsync({
         content: contentFor(ev),
-        trigger: { date: when },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: when,
+          channelId: ANDROID_CHANNEL, // совпадает с создаваемым каналом (Android)
+        },
       });
     }
     return future.length;
