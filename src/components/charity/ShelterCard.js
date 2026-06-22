@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 const DONATION_OPTIONS = [100, 500, 1000];
 
 export default function ShelterCard({ shelter, onDonate, userPoints }) {
+  const { t } = useTranslation('charity');
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -40,7 +42,7 @@ export default function ShelterCard({ shelter, onDonate, userPoints }) {
         <View style={styles.statsRow}>
           <MaterialCommunityIcons name="heart" size={16} color="#EF4444" />
           <Text style={styles.statsText}>
-            Собрано: {shelter.total_donations} Paws
+            {t('votesLabel', { count: shelter.total_donations })}
           </Text>
         </View>
       )}

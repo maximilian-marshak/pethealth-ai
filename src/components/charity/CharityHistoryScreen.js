@@ -11,6 +11,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCharity } from '../../hooks/useCharity';
+import { useTranslation } from 'react-i18next';
 
 // ====================================
 // КОМПОНЕНТ: Карточка статистики
@@ -29,6 +30,7 @@ function StatCard({ icon, label, value, color }) {
 // КОМПОНЕНТ: Карточка доната
 // ====================================
 function DonationCard({ donation }) {
+  const { t } = useTranslation('charity');
   // Форматируем дату
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -57,7 +59,7 @@ function DonationCard({ donation }) {
         </View>
         <View style={styles.donationAmountContainer}>
           <Text style={styles.donationAmount}>{donation.points_spent}</Text>
-          <Text style={styles.donationPaws}>Paws</Text>
+          <Text style={styles.donationPaws}>{t('votesUnit')}</Text>
         </View>
       </View>
     </View>
@@ -142,6 +144,7 @@ function MotivationalCard({ totalDonated }) {
 // ====================================
 export default function CharityHistoryScreen() {
   const { donations, totalDonated, loading, refreshDonations } = useCharity();
+  const { t } = useTranslation('charity');
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(async () => {
@@ -236,8 +239,7 @@ export default function CharityHistoryScreen() {
             color="#8B5CF6" 
           />
           <Text style={styles.infoText}>
-            Ваши Paws помогают приютам в Минске, Гродно, Бресте, Витебске, 
-            Гомеле и Могилёве обеспечивать животных кормом, лекарствами и уходом.
+            {t('poolInfo')}
           </Text>
         </View>
       </ScrollView>

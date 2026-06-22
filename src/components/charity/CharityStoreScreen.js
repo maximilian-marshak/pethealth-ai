@@ -10,12 +10,14 @@ import {
   Modal,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useCharity } from '../../hooks/useCharity'; // ✅ ИСПРАВЛЕНО
 import { useLoyaltyPoints } from '../../hooks/useLoyaltyPoints'; // ✅ ДОБАВЛЕНО
 import ShelterCard from './ShelterCard'; // ✅ ДОБАВЛЕНО
 
 export default function CharityStoreScreen({ navigation }) {
   const { points, refreshPoints } = useLoyaltyPoints();
+  const { t } = useTranslation('charity');
   const { shelters, loading, makeDonation, refetch } = useCharity();
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -23,8 +25,8 @@ export default function CharityStoreScreen({ navigation }) {
   const handleDonatePress = (shelter, amount) => {
     if (points < amount) {
       Alert.alert(
-        'Недостаточно Paws',
-        `У вас ${points} Paws, а нужно ${amount} Paws`
+        t('insufficientTitle'),
+        t('insufficientMessage', { have: points, need: amount })
       );
       return;
     }
@@ -52,12 +54,12 @@ export default function CharityStoreScreen({ navigation }) {
       await Promise.all([refreshPoints(), refetch()]);
 
       Alert.alert(
-        '🎉 Спасибо!',
-        `Вы пожертвовали ${amount} Paws приюту "${shelter.name}". Ваш новый баланс: ${newBalance} Paws`,
+        t('voteThanksTitle'),
+        t('voteThanksMessage', { amount, shelter: shelter.name, balance: newBalance }),
         [{ text: 'OK' }]
       );
     } catch (error) {
-      Alert.alert('Ошибка', error.message);
+      Alert.alert(t('errorTitle'), error.message);
     } finally {
       setProcessing(false);
     }
@@ -96,7 +98,7 @@ export default function CharityStoreScreen({ navigation }) {
       >
         <Text style={styles.title}>Выберите приют для помощи</Text>
         <Text style={styles.subtitle}>
-          Ваши Paws помогут бездомным животным в Беларуси
+          {t('subtitle')}
         </Text>
 
         {shelters.map((shelter) => (
@@ -127,7 +129,7 @@ export default function CharityStoreScreen({ navigation }) {
           <View style={styles.modalContent}>
             <MaterialCommunityIcons name="heart" size={48} color="#EF4444" />
             
-            <Text style={styles.modalTitle}>Подтвердите пожертвование</Text>
+            <Text style={styles.modalTitle}>{t('confirmVoteTitle')}</Text>
             
             {selectedDonation && (
               <>
@@ -140,14 +142,14 @@ export default function CharityStoreScreen({ navigation }) {
                 
                 <View style={styles.modalAmountBox}>
                   <Text style={styles.modalAmount}>
-                    {selectedDonation.amount} Paws
+                    {t('voteAmount', { amount: selectedDonation.amount })}
                   </Text>
                 </View>
 
                 <View style={styles.modalBalanceInfo}>
-                  <Text style={styles.modalBalanceLabel}>Ваш баланс:</Text>
+                  <Text style={styles.modalBalanceLabel}>{t('balanceLabel')}</Text>
                   <Text style={styles.modalBalanceValue}>
-                    {points} → {points - selectedDonation.amount} Paws
+                    {t('balanceChange', { from: points, to: points - selectedDonation.amount })}
                   </Text>
                 </View>
               </>
@@ -159,7 +161,7 @@ export default function CharityStoreScreen({ navigation }) {
                 onPress={() => setSelectedDonation(null)}
                 disabled={processing}
               >
-                <Text style={styles.modalButtonTextCancel}>Отмена</Text>
+                <Text style={styles.modalButtonTextCancel}>{t('cancel')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -170,7 +172,7 @@ export default function CharityStoreScreen({ navigation }) {
                 {processing ? (
                   <ActivityIndicator color="white" />
                 ) : (
-                  <Text style={styles.modalButtonTextConfirm}>Подтвердить</Text>
+                  <Text style={styles.modalButtonTextConfirm}>{t('confirm')}</Text>
                 )}
               </TouchableOpacity>
             </View>

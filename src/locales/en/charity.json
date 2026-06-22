@@ -1,0 +1,17 @@
+{
+  "subtitle": "Your Paws are votes. At the end of the period the charity pool is split between shelters in proportion to the votes.",
+  "insufficientTitle": "Not enough Paws",
+  "insufficientMessage": "You have {{have}} Paws, but {{need}} are needed",
+  "errorTitle": "Error",
+  "confirmVoteTitle": "Confirm your vote",
+  "voteAmount": "{{amount}} Paws as a vote",
+  "balanceLabel": "Your balance:",
+  "balanceChange": "{{from}} → {{to}} Paws",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "voteThanksTitle": "🎉 Thank you!",
+  "voteThanksMessage": "Your vote is counted: {{amount}} Paws for \"{{shelter}}\". At the end of the period the pool is split between shelters in proportion to votes. Balance: {{balance}} Paws",
+  "votesLabel": "Votes: {{count}}",
+  "votesUnit": "votes",
+  "poolInfo": "Your Paws are votes: they set each shelter's share of the period's charity pool — they don't buy a fixed amount. The larger a shelter's share of votes, the larger its share of the pool."
+}
