@@ -474,6 +474,7 @@ export default function DashboardScreen({ navigation }) {
               <StatusCards
                 status={dashStatus}
                 petId={selectedPet?.id}
+                unit={unit}
                 onNavigate={(screen, params) => navigation.navigate(screen, params)}
               />
             </>

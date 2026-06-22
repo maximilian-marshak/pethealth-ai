@@ -5,6 +5,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { formatWeightValue, unitLabel } from '../../utils/formatWeight';
 
 // ─── Хелпер форматирования даты ─────────────────
 const formatCardDate = (date) => {
@@ -42,7 +43,7 @@ const StatusCard = ({ icon, statusColor, title, value, subtitle, onPress }) => (
 );
 
 // ─── Главный компонент ───────────────────────────
-export const StatusCards = ({ status, onNavigate, petId }) => {
+export const StatusCards = ({ status, onNavigate, petId, unit = 'kg' }) => {
   const { vaccination, doctorVisit, parasites, biometry } = status;
 
   // ── Vaccination ────────────────────────────────
@@ -86,7 +87,7 @@ export const StatusCards = ({ status, onNavigate, petId }) => {
     : '#4CAF50';
 
   const biometryValue = biometry
-    ? `${biometry.weight} ${biometry.unit}`
+    ? `${formatWeightValue(biometry.weight, unit)} ${unitLabel(unit)}`
     : 'Нет данных';
 
   const biometrySubtitle = (() => {
@@ -94,9 +95,9 @@ export const StatusCards = ({ status, onNavigate, petId }) => {
     if (biometry.isFirst) return 'Первое взвешивание';
 
     const sign    = biometry.diff > 0 ? '+' : '';
-    const diffStr = `${sign}${biometry.diff} ${biometry.unit}`;
+    const diffStr = `${sign}${formatWeightValue(biometry.diff, unit)} ${unitLabel(unit)}`;
     const prevStr = biometry.previousWeight !== null
-      ? `было ${biometry.previousWeight} ${biometry.unit}`
+      ? `было ${formatWeightValue(biometry.previousWeight, unit)} ${unitLabel(unit)}`
       : '';
 
     if (biometry.diff === 0) {
