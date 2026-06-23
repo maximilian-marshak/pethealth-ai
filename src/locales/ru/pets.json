@@ -138,6 +138,77 @@
       "inDays": "Через {{count}} дн.",
       "inWeeks": "Через {{count}} нед.",
       "inMonths": "Через {{count}} мес."
+    },
+    "allergy": {
+      "section": "🤧 Аллергии",
+      "empty": "Нет данных об аллергиях",
+      "substanceRequired": "Укажите вещество (аллерген)",
+      "modal": {
+        "addTitle": "Добавить аллергию",
+        "editTitle": "Изменить аллергию",
+        "substanceLabel": "Вещество (аллерген) *",
+        "substancePlaceholder": "Напр.: курица, амоксициллин",
+        "reactionLabel": "Реакция",
+        "reactionPlaceholder": "Напр.: зуд, отёк",
+        "severityLabel": "Тяжесть",
+        "notedOnLabel": "Дата выявления"
+      }
+    },
+    "condition": {
+      "section": "🩺 Хронические заболевания",
+      "empty": "Нет хронических заболеваний",
+      "nameRequired": "Укажите название заболевания",
+      "since": "С {{date}}",
+      "active": "Активно",
+      "remission": "В ремиссии",
+      "modal": {
+        "addTitle": "Добавить заболевание",
+        "editTitle": "Изменить заболевание",
+        "nameLabel": "Заболевание *",
+        "namePlaceholder": "Напр.: атопический дерматит",
+        "codeLabel": "Код (МКБ/прочее)",
+        "codePlaceholder": "Напр.: L20",
+        "sinceLabel": "С какого времени",
+        "notesLabel": "Заметки",
+        "notesPlaceholder": "Доп. информация"
+      }
+    },
+    "events": {
+      "section": "📅 Ближайшие события",
+      "vaccinationFallback": "Вакцинация"
+    },
+    "records": {
+      "section": "🏥 Медицинские записи",
+      "seeAll": "Все →",
+      "empty": "Нет медицинских записей"
+    },
+    "quickActions": {
+      "section": "⚡ Быстрые действия",
+      "aiAnalysis": "AI Анализ",
+      "records": "Записи",
+      "vaccines": "Прививки",
+      "activity": "Активность"
+    },
+    "info": {
+      "section": "ℹ️ Информация",
+      "birthDate": "Дата рождения",
+      "gender": "Пол",
+      "microchip": "Микрочип",
+      "neutered": "Кастрирован",
+      "genderValue": {
+        "dog": {
+          "male": "Кобель",
+          "female": "Сука"
+        },
+        "cat": {
+          "male": "Кот",
+          "female": "Кошка"
+        },
+        "generic": {
+          "male": "Самец",
+          "female": "Самка"
+        }
+      }
     }
   }
 }

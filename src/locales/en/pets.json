@@ -136,6 +136,77 @@
       "inDays": "In {{count}} d.",
       "inWeeks": "In {{count}} w.",
       "inMonths": "In {{count}} mo."
+    },
+    "allergy": {
+      "section": "🤧 Allergies",
+      "empty": "No allergy data",
+      "substanceRequired": "Specify the substance (allergen)",
+      "modal": {
+        "addTitle": "Add allergy",
+        "editTitle": "Edit allergy",
+        "substanceLabel": "Substance (allergen) *",
+        "substancePlaceholder": "E.g.: chicken, amoxicillin",
+        "reactionLabel": "Reaction",
+        "reactionPlaceholder": "E.g.: itching, swelling",
+        "severityLabel": "Severity",
+        "notedOnLabel": "Date noted"
+      }
+    },
+    "condition": {
+      "section": "🩺 Chronic conditions",
+      "empty": "No chronic conditions",
+      "nameRequired": "Specify the condition name",
+      "since": "Since {{date}}",
+      "active": "Active",
+      "remission": "In remission",
+      "modal": {
+        "addTitle": "Add condition",
+        "editTitle": "Edit condition",
+        "nameLabel": "Condition *",
+        "namePlaceholder": "E.g.: atopic dermatitis",
+        "codeLabel": "Code (ICD/other)",
+        "codePlaceholder": "E.g.: L20",
+        "sinceLabel": "Since when",
+        "notesLabel": "Notes",
+        "notesPlaceholder": "Additional information"
+      }
+    },
+    "events": {
+      "section": "📅 Upcoming events",
+      "vaccinationFallback": "Vaccination"
+    },
+    "records": {
+      "section": "🏥 Medical records",
+      "seeAll": "All →",
+      "empty": "No medical records"
+    },
+    "quickActions": {
+      "section": "⚡ Quick actions",
+      "aiAnalysis": "AI Analysis",
+      "records": "Records",
+      "vaccines": "Vaccines",
+      "activity": "Activity"
+    },
+    "info": {
+      "section": "ℹ️ Information",
+      "birthDate": "Date of birth",
+      "gender": "Gender",
+      "microchip": "Microchip",
+      "neutered": "Neutered",
+      "genderValue": {
+        "dog": {
+          "male": "Male",
+          "female": "Female"
+        },
+        "cat": {
+          "male": "Male",
+          "female": "Female"
+        },
+        "generic": {
+          "male": "Male",
+          "female": "Female"
+        }
+      }
     }
   }
 }

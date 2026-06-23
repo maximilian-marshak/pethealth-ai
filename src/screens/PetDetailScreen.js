@@ -355,7 +355,7 @@ export default function PetDetailScreen({ route, navigation }) {
             type:        'vaccination',
             title:       v.vaccine_name,
             date:        v.date_given,
-            description: v.notes || 'Вакцинация',
+            description: v.notes || t('detail.events.vaccinationFallback'),
             icon:        'medkit-outline',
             color:       '#FF6B6B',
           });
@@ -485,7 +485,7 @@ export default function PetDetailScreen({ route, navigation }) {
     setAllergyModal(true);
   };
   const saveAllergy = async () => {
-    if (!aSubstance.trim()) { Alert.alert('Ошибка', 'Укажите вещество (аллерген)'); return; }
+    if (!aSubstance.trim()) { Alert.alert(t('common:error'), t('detail.allergy.substanceRequired')); return; }
     setSavingAllergy(true);
     try {
       const payload = {
@@ -501,7 +501,7 @@ export default function PetDetailScreen({ route, navigation }) {
       setAllergyModal(false); setEditAllergy(null);
       await loadAllergies();
     } catch (e) {
-      Alert.alert('Ошибка', e.message);
+      Alert.alert(t('common:error'), e.message);
     } finally {
       setSavingAllergy(false);
     }
@@ -514,7 +514,7 @@ export default function PetDetailScreen({ route, navigation }) {
           const { error } = await supabase.from('pet_allergies').delete().eq('id', row.id);
           if (error) throw error;
           await loadAllergies();
-        } catch (e) { Alert.alert('Ошибка', e.message); }
+        } catch (e) { Alert.alert(t('common:error'), e.message); }
       } },
     ]);
   };
@@ -535,7 +535,7 @@ export default function PetDetailScreen({ route, navigation }) {
     setCondModal(true);
   };
   const saveCondition = async () => {
-    if (!cCondition.trim()) { Alert.alert('Ошибка', 'Укажите название заболевания'); return; }
+    if (!cCondition.trim()) { Alert.alert(t('common:error'), t('detail.condition.nameRequired')); return; }
     setSavingCondition(true);
     try {
       const payload = {
@@ -552,7 +552,7 @@ export default function PetDetailScreen({ route, navigation }) {
       setCondModal(false); setEditCondition(null);
       await loadConditions();
     } catch (e) {
-      Alert.alert('Ошибка', e.message);
+      Alert.alert(t('common:error'), e.message);
     } finally {
       setSavingCondition(false);
     }
@@ -565,7 +565,7 @@ export default function PetDetailScreen({ route, navigation }) {
           const { error } = await supabase.from('pet_conditions').delete().eq('id', row.id);
           if (error) throw error;
           await loadConditions();
-        } catch (e) { Alert.alert('Ошибка', e.message); }
+        } catch (e) { Alert.alert(t('common:error'), e.message); }
       } },
     ]);
   };
@@ -665,6 +665,14 @@ export default function PetDetailScreen({ route, navigation }) {
     if (years === 0)  return t('detail.age.months', { count: Math.max(months, 1) });
     if (months < 0)   return t('detail.age.years', { count: years - 1 });
     return t('detail.age.years', { count: years });
+  };
+
+  // Пол с учётом вида: для собак кобель/сука, для кошек кот/кошка, иначе самец/самка.
+  // В EN все формы сводятся к Male/Female (видовой нюанс только в RU).
+  const genderLabel = () => {
+    if (pet?.gender !== 'male' && pet?.gender !== 'female') return '—';
+    const sp = pet?.species === 'dog' ? 'dog' : pet?.species === 'cat' ? 'cat' : 'generic';
+    return t(`detail.info.genderValue.${sp}.${pet.gender}`);
   };
 
   // Локаль для toLocaleDateString — по языку приложения (а не хардкод ru-RU).
@@ -985,19 +993,19 @@ export default function PetDetailScreen({ route, navigation }) {
         {/* ─── 🤧 ALLERGIES (паспорт) ─── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🤧 Аллергии</Text>
+            <Text style={styles.sectionTitle}>{t('detail.allergy.section')}</Text>
             <TouchableOpacity style={styles.addWeightBtn} onPress={openAddAllergy}>
               <Ionicons name="add" size={18} color="#fff" />
-              <Text style={styles.addWeightBtnText}>Добавить</Text>
+              <Text style={styles.addWeightBtnText}>{t('common:add')}</Text>
             </TouchableOpacity>
           </View>
           {allergies.length === 0 ? (
-            <Text style={styles.emptyText}>Нет данных об аллергиях</Text>
+            <Text style={styles.emptyText}>{t('detail.allergy.empty')}</Text>
           ) : (
             allergies.map((a) => {
               const parts = [];
               if (a.reaction) parts.push(a.reaction);
-              if (a.severity) parts.push(a.severity);
+              if (a.severity) parts.push(t('detail.severity.' + a.severity));
               if (a.noted_on) parts.push(formatDate(a.noted_on));
               return (
                 <View key={a.id} style={styles.passportRow}>
@@ -1024,18 +1032,18 @@ export default function PetDetailScreen({ route, navigation }) {
         {/* ─── 🩺 CHRONIC CONDITIONS ─── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🩺 Хронические заболевания</Text>
+            <Text style={styles.sectionTitle}>{t('detail.condition.section')}</Text>
             <TouchableOpacity style={styles.addWeightBtn} onPress={openAddCondition}>
               <Ionicons name="add" size={18} color="#fff" />
-              <Text style={styles.addWeightBtnText}>Добавить</Text>
+              <Text style={styles.addWeightBtnText}>{t('common:add')}</Text>
             </TouchableOpacity>
           </View>
           {conditions.length === 0 ? (
-            <Text style={styles.emptyText}>Нет хронических заболеваний</Text>
+            <Text style={styles.emptyText}>{t('detail.condition.empty')}</Text>
           ) : (
             conditions.map((c) => {
               const sub = [];
-              if (c.since_date) sub.push(`С ${formatDate(c.since_date)}`);
+              if (c.since_date) sub.push(t('detail.condition.since', { date: formatDate(c.since_date) }));
               if (c.notes) sub.push(c.notes);
               return (
                 <View key={c.id} style={styles.passportRow}>
@@ -1046,7 +1054,7 @@ export default function PetDetailScreen({ route, navigation }) {
                     <View style={styles.passportHeadRight}>
                       <View style={[styles.condBadge, c.active ? styles.condBadgeActive : styles.condBadgeRemission]}>
                         <Text style={[styles.condBadgeText, c.active ? styles.condBadgeTextActive : styles.condBadgeTextRemission]}>
-                          {c.active ? 'Активно' : 'В ремиссии'}
+                          {c.active ? t('detail.condition.active') : t('detail.condition.remission')}
                         </Text>
                       </View>
                       <TouchableOpacity onPress={() => openEditCondition(c)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -1069,7 +1077,7 @@ export default function PetDetailScreen({ route, navigation }) {
         {/* ─── UPCOMING EVENTS ──────────────── */}
         {upcomingEvents.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📅 Ближайшие события</Text>
+            <Text style={styles.sectionTitle}>{t('detail.events.section')}</Text>
             {upcomingEvents.map((event, index) => (
               <View key={index} style={styles.eventCard}>
                 <View style={[styles.eventIconWrap, { backgroundColor: event.color + '20' }]}>
@@ -1088,21 +1096,21 @@ export default function PetDetailScreen({ route, navigation }) {
         {/* ─── RECENT MEDICAL RECORDS ───────── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🏥 Медицинские записи</Text>
+            <Text style={styles.sectionTitle}>{t('detail.records.section')}</Text>
             <TouchableOpacity
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 navigation.navigate('Medical');
               }}
             >
-              <Text style={styles.seeAll}>Все →</Text>
+              <Text style={styles.seeAll}>{t('detail.records.seeAll')}</Text>
             </TouchableOpacity>
           </View>
 
           {recentRecords.length === 0 ? (
             <View style={styles.emptyCard}>
               <Ionicons name="document-outline" size={32} color="#E0E0E0" />
-              <Text style={styles.emptyText}>Нет медицинских записей</Text>
+              <Text style={styles.emptyText}>{t('detail.records.empty')}</Text>
             </View>
           ) : (
             recentRecords.map((record, index) => (
@@ -1126,7 +1134,7 @@ export default function PetDetailScreen({ route, navigation }) {
 
         {/* ─── QUICK ACTIONS ────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚡ Быстрые действия</Text>
+          <Text style={styles.sectionTitle}>{t('detail.quickActions.section')}</Text>
           <View style={styles.actionsGrid}>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: '#F3F0FF' }]}
@@ -1139,7 +1147,7 @@ export default function PetDetailScreen({ route, navigation }) {
               }}
             >
               <Ionicons name="scan-outline" size={28} color="#6C63FF" />
-              <Text style={styles.actionText}>AI Анализ</Text>
+              <Text style={styles.actionText}>{t('detail.quickActions.aiAnalysis')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1147,7 +1155,7 @@ export default function PetDetailScreen({ route, navigation }) {
               onPress={() => navigation.navigate('Medical')}
             >
               <Ionicons name="document-text-outline" size={28} color="#4ECDC4" />
-              <Text style={styles.actionText}>Записи</Text>
+              <Text style={styles.actionText}>{t('detail.quickActions.records')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1155,7 +1163,7 @@ export default function PetDetailScreen({ route, navigation }) {
               onPress={() => navigation.navigate('Medical')}
             >
               <Ionicons name="medkit-outline" size={28} color="#FF6B6B" />
-              <Text style={styles.actionText}>Прививки</Text>
+              <Text style={styles.actionText}>{t('detail.quickActions.vaccines')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1163,39 +1171,36 @@ export default function PetDetailScreen({ route, navigation }) {
               onPress={() => navigation.navigate('Activity')}
             >
               <Ionicons name="fitness-outline" size={28} color="#51CF66" />
-              <Text style={styles.actionText}>Активность</Text>
+              <Text style={styles.actionText}>{t('detail.quickActions.activity')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* ─── INFO SECTION ─────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ℹ️ Информация</Text>
+          <Text style={styles.sectionTitle}>{t('detail.info.section')}</Text>
           <View style={styles.infoCard}>
             <InfoRow
               icon="calendar-outline"
-              label="Дата рождения"
+              label={t('detail.info.birthDate')}
               value={pet.birth_date ? formatDate(pet.birth_date) : '—'}
             />
             <InfoRow
               icon={pet.gender === 'male' ? 'male-outline' : 'female-outline'}
-              label="Пол"
-              value={
-                pet.gender === 'male'   ? 'Кобель / Кот' :
-                pet.gender === 'female' ? 'Сука / Кошка'  : '—'
-              }
+              label={t('detail.info.gender')}
+              value={genderLabel()}
             />
             {pet.microchip_id && (
               <InfoRow
                 icon="barcode-outline"
-                label="Микрочип"
+                label={t('detail.info.microchip')}
                 value={pet.microchip_id}
               />
             )}
             <InfoRow
               icon="medkit-outline"
-              label="Кастрирован"
-              value={pet.is_neutered ? 'Да' : 'Нет'}
+              label={t('detail.info.neutered')}
+              value={pet.is_neutered ? t('common:yes') : t('common:no')}
               isLast
             />
           </View>
@@ -1321,28 +1326,28 @@ export default function PetDetailScreen({ route, navigation }) {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editAllergy ? 'Изменить аллергию' : 'Добавить аллергию'}</Text>
+              <Text style={styles.modalTitle}>{editAllergy ? t('detail.allergy.modal.editTitle') : t('detail.allergy.modal.addTitle')}</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setAllergyModal(false)}>
                 <Ionicons name="close" size={22} color="#888" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Вещество (аллерген) *</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.allergy.modal.substanceLabel')}</Text>
               <View style={styles.modalInputRow}>
-                <TextInput style={styles.modalInput} placeholder="Напр.: курица, амоксициллин" placeholderTextColor="#C0C0C0" value={aSubstance} onChangeText={setASubstance} />
+                <TextInput style={styles.modalInput} placeholder={t('detail.allergy.modal.substancePlaceholder')} placeholderTextColor="#C0C0C0" value={aSubstance} onChangeText={setASubstance} />
               </View>
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Реакция</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.allergy.modal.reactionLabel')}</Text>
               <View style={styles.modalInputRow}>
-                <TextInput style={styles.modalInput} placeholder="Напр.: зуд, отёк" placeholderTextColor="#C0C0C0" value={aReaction} onChangeText={setAReaction} />
+                <TextInput style={styles.modalInput} placeholder={t('detail.allergy.modal.reactionPlaceholder')} placeholderTextColor="#C0C0C0" value={aReaction} onChangeText={setAReaction} />
               </View>
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Тяжесть</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.allergy.modal.severityLabel')}</Text>
               <View style={styles.sevRow}>
                 {SEVERITY_OPTIONS.map((opt) => {
                   const active = aSeverity === opt.value;
@@ -1355,10 +1360,10 @@ export default function PetDetailScreen({ route, navigation }) {
               </View>
             </View>
 
-            <PassportDateField label="Дата выявления" value={aNotedOn} onChange={setANotedOn} />
+            <PassportDateField label={t('detail.allergy.modal.notedOnLabel')} value={aNotedOn} onChange={setANotedOn} />
 
             <TouchableOpacity style={[styles.modalSaveBtn, savingAllergy && styles.modalSaveBtnDisabled]} onPress={saveAllergy} disabled={savingAllergy}>
-              {savingAllergy ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSaveBtnText}>Сохранить</Text>}
+              {savingAllergy ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSaveBtnText}>{t('common:save')}</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -1369,42 +1374,42 @@ export default function PetDetailScreen({ route, navigation }) {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editCondition ? 'Изменить заболевание' : 'Добавить заболевание'}</Text>
+              <Text style={styles.modalTitle}>{editCondition ? t('detail.condition.modal.editTitle') : t('detail.condition.modal.addTitle')}</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setCondModal(false)}>
                 <Ionicons name="close" size={22} color="#888" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Заболевание *</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.condition.modal.nameLabel')}</Text>
               <View style={styles.modalInputRow}>
-                <TextInput style={styles.modalInput} placeholder="Напр.: атопический дерматит" placeholderTextColor="#C0C0C0" value={cCondition} onChangeText={setCCondition} />
+                <TextInput style={styles.modalInput} placeholder={t('detail.condition.modal.namePlaceholder')} placeholderTextColor="#C0C0C0" value={cCondition} onChangeText={setCCondition} />
               </View>
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Код (МКБ/прочее)</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.condition.modal.codeLabel')}</Text>
               <View style={styles.modalInputRow}>
-                <TextInput style={styles.modalInput} placeholder="Напр.: L20" placeholderTextColor="#C0C0C0" value={cCode} onChangeText={setCCode} />
+                <TextInput style={styles.modalInput} placeholder={t('detail.condition.modal.codePlaceholder')} placeholderTextColor="#C0C0C0" value={cCode} onChangeText={setCCode} />
               </View>
             </View>
 
-            <PassportDateField label="С какого времени" value={cSince} onChange={setCSince} />
+            <PassportDateField label={t('detail.condition.modal.sinceLabel')} value={cSince} onChange={setCSince} />
 
             <View style={styles.toggleRow}>
-              <Text style={styles.modalInputLabel}>Активно</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.condition.active')}</Text>
               <Switch value={cActive} onValueChange={setCActive} trackColor={{ true: '#6B4EFF', false: '#D1D5DB' }} thumbColor="#fff" />
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Заметки</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.condition.modal.notesLabel')}</Text>
               <View style={styles.modalInputRow}>
-                <TextInput style={[styles.modalInput, styles.modalInputNote]} placeholder="Доп. информация" placeholderTextColor="#C0C0C0" value={cNotes} onChangeText={setCNotes} multiline maxLength={300} />
+                <TextInput style={[styles.modalInput, styles.modalInputNote]} placeholder={t('detail.condition.modal.notesPlaceholder')} placeholderTextColor="#C0C0C0" value={cNotes} onChangeText={setCNotes} multiline maxLength={300} />
               </View>
             </View>
 
             <TouchableOpacity style={[styles.modalSaveBtn, savingCondition && styles.modalSaveBtnDisabled]} onPress={saveCondition} disabled={savingCondition}>
-              {savingCondition ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSaveBtnText}>Сохранить</Text>}
+              {savingCondition ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSaveBtnText}>{t('common:save')}</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
