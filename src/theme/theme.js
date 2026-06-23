@@ -15,6 +15,17 @@
 // ─── Радиусы (spec) ───────────────────────────────────────────────────────────
 export const radii = { sm12: 12, md16: 16, lg24: 24, xl28: 28, pill999: 999 };
 
+// ─── Шрифт (Nunito, Фаза 1b) ──────────────────────────────────────────────────
+// Значения = семейства, зарегистрированные в useFonts (App.js). Веса по
+// visual_foundation: 400 тело / 500 акценты / 700 заголовки-метрики (+600 SemiBold).
+// Едины для обеих тем. Использовать как fontFamily в компонентах (примитивы Фазы 3).
+export const font = {
+  regular:  'Nunito-Regular',   // 400
+  medium:   'Nunito-Medium',    // 500
+  semibold: 'Nunito-SemiBold',  // 600
+  bold:     'Nunito-Bold',      // 700
+};
+
 // ─── Семантика здоровья (spec) — отдельно от акцента, общая для обеих тем ──────
 const semantic = { ok: '#2EA567', warn: '#E8A93C', danger: '#E2574C' };
 
@@ -84,6 +95,7 @@ export function buildTheme(scheme = 'light', accentName = 'mint') {
     ...base,
     ...ac,              // accent, accentPress, accentTint
     radii,
+    font,               // Nunito-семейства (одинаковы для light/dark)
     // свечение акцента — канон `0 0 30px rgba(accent,0.32)` (offset 0)
     glowAccent: {
       shadowColor: ac.accent,
