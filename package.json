@@ -21,6 +21,7 @@
     "axios": "^1.7.0",
     "base64-arraybuffer": "^1.0.2",
     "expo": "~54.0.0",
+    "expo-blur": "~15.0.8",
     "expo-file-system": "~18.1.11",
     "expo-font": "~13.3.2",
     "expo-haptics": "~14.1.4",
