@@ -12,14 +12,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../theme/ThemeProvider';
 import ProgressBar from '../components/ProgressBar';
 
-const ACCENT = '#6B4EFF';
 const STORE_KEY = '@pethealth_relocation_checklist';
 
 export default function RelocationScreen() {
   const navigation = useNavigation();
   const { t } = useTranslation('ai');
+  const { theme } = useTheme();
+  const s = useMemo(() => makeStyles(theme), [theme]);
   const [checked, setChecked] = useState({}); // { 'sectionId:index': true }
 
   useLayoutEffect(() => {
@@ -69,7 +71,7 @@ export default function RelocationScreen() {
         </View>
 
         <View style={s.disclaimer}>
-          <Ionicons name="information-circle-outline" size={18} color="#6B7280" />
+          <Ionicons name="information-circle-outline" size={18} color={theme.t3} />
           <Text style={s.disclaimerText}>{t('relocation.disclaimer')}</Text>
         </View>
 
@@ -77,7 +79,7 @@ export default function RelocationScreen() {
           <View key={sec.id} style={s.section}>
             <View style={s.secHeader}>
               <View style={s.secIcon}>
-                <Ionicons name={sec.icon || 'list-outline'} size={18} color={ACCENT} />
+                <Ionicons name={sec.icon || 'list-outline'} size={18} color={theme.accent} />
               </View>
               <Text style={s.secTitle}>{sec.title}</Text>
             </View>
@@ -86,7 +88,7 @@ export default function RelocationScreen() {
               const on = !!checked[id];
               return (
                 <TouchableOpacity key={id} style={s.itemRow} activeOpacity={0.7} onPress={() => toggle(id)}>
-                  <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? ACCENT : '#9CA3AF'} />
+                  <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? theme.accent : theme.t4} />
                   <Text style={[s.itemText, on && s.itemTextDone]}>{item}</Text>
                 </TouchableOpacity>
               );
@@ -98,18 +100,18 @@ export default function RelocationScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  container:      { flex: 1, backgroundColor: '#F8F9FA' },
+const makeStyles = (theme) => StyleSheet.create({
+  container:      { flex: 1, backgroundColor: theme.bg },
   content:        { padding: 16 },
-  progressCard:   { backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#EEF0F4' },
-  progressText:   { fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
-  disclaimer:     { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#EEF2FF', borderRadius: 12, padding: 12, marginBottom: 14 },
-  disclaimerText: { flex: 1, fontSize: 12, color: '#6B7280', lineHeight: 17 },
-  section:        { backgroundColor: '#fff', borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: '#EEF0F4', overflow: 'hidden' },
-  secHeader:      { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderBottomWidth: 1, borderBottomColor: '#F1F1F4' },
-  secIcon:        { width: 32, height: 32, borderRadius: 9, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center' },
-  secTitle:       { flex: 1, fontSize: 15, fontWeight: '700', color: '#1F2937' },
+  progressCard:   { backgroundColor: theme.surface, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: theme.hairline },
+  progressText:   { fontSize: 14, fontWeight: '700', color: theme.t1, marginBottom: 8 },
+  disclaimer:     { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: theme.accentTint, borderRadius: 12, padding: 12, marginBottom: 14 },
+  disclaimerText: { flex: 1, fontSize: 12, color: theme.t3, lineHeight: 17 },
+  section:        { backgroundColor: theme.surface, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: theme.hairline, overflow: 'hidden' },
+  secHeader:      { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderBottomWidth: 1, borderBottomColor: theme.hairline },
+  secIcon:        { width: 32, height: 32, borderRadius: 9, backgroundColor: theme.accentTint, alignItems: 'center', justifyContent: 'center' },
+  secTitle:       { flex: 1, fontSize: 15, fontWeight: '700', color: theme.t1 },
   itemRow:        { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 11, paddingHorizontal: 14 },
-  itemText:       { flex: 1, fontSize: 14, color: '#374151', lineHeight: 20 },
-  itemTextDone:   { color: '#9CA3AF', textDecorationLine: 'line-through' },
+  itemText:       { flex: 1, fontSize: 14, color: theme.t2, lineHeight: 20 },
+  itemTextDone:   { color: theme.t4, textDecorationLine: 'line-through' },
 });
