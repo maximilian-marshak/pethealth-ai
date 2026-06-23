@@ -560,7 +560,7 @@ export default function ProfileScreen({ navigation }) {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             navigation.navigate('CharityHistory');
           }}>
-            <Text style={styles.seeAll}>История →</Text>
+            <Text style={styles.seeAll}>{t('profile:history')} →</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.charityCard}>
