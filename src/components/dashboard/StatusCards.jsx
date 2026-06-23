@@ -2,9 +2,10 @@
 // src/components/dashboard/StatusCards.jsx
 // ══════════════════════════════════════════════════
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../theme/ThemeProvider';
 import { formatWeightValue, unitLabel } from '../../utils/formatWeight';
 
 // ─── Хелпер форматирования даты ─────────────────
@@ -17,7 +18,10 @@ const formatCardDate = (date) => {
 };
 
 // ─── Одна карточка ───────────────────────────────
-const StatusCard = ({ icon, statusColor, title, value, subtitle, onPress }) => (
+const StatusCard = ({ icon, statusColor, title, value, subtitle, onPress }) => {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  return (
   <TouchableOpacity
     style={[styles.card, { borderLeftColor: statusColor }]}
     onPress={onPress}
@@ -40,18 +44,22 @@ const StatusCard = ({ icon, statusColor, title, value, subtitle, onPress }) => (
       </Text>
     ) : null}
   </TouchableOpacity>
-);
+  );
+};
 
 // ─── Главный компонент ───────────────────────────
 export const StatusCards = ({ status, onNavigate, petId, unit = 'kg' }) => {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { vaccination, doctorVisit, parasites, biometry } = status;
 
   // ── Vaccination ────────────────────────────────
+  // Семантика здоровья: overdue→danger, soon→warn, up-to-date→ok, нет данных→t3.
   const vaccColor =
-    !vaccination                       ? '#9E9E9E'
-    : vaccination.status === 'overdue' ? '#F44336'
-    : vaccination.status === 'soon'    ? '#FF9800'
-    : '#4CAF50';
+    !vaccination                       ? theme.t3
+    : vaccination.status === 'overdue' ? theme.danger
+    : vaccination.status === 'soon'    ? theme.warn
+    : theme.ok;
 
   const vaccValue    = vaccination
     ? formatCardDate(vaccination.dueDate)
@@ -62,7 +70,8 @@ export const StatusCards = ({ status, onNavigate, petId, unit = 'kg' }) => {
     : 'Добавить вакцинацию';
 
   // ── Doctor Visit ───────────────────────────────
-  const doctorColor    = doctorVisit ? '#2196F3' : '#9E9E9E';
+  // Есть запись → ok (закрыто/запланировано), нет → t3 (нейтрально).
+  const doctorColor    = doctorVisit ? theme.ok : theme.t3;
   const doctorValue    = doctorVisit
     ? formatCardDate(doctorVisit.dueDate)
     : 'Нет записи';
@@ -71,7 +80,8 @@ export const StatusCards = ({ status, onNavigate, petId, unit = 'kg' }) => {
     : 'Записаться к врачу';
 
   // ── Parasites ──────────────────────────────────
-  const parasitesColor    = parasites ? '#8BC34A' : '#9E9E9E';
+  // Есть свежая обработка → ok, нет → t3.
+  const parasitesColor    = parasites ? theme.ok : theme.t3;
   const parasitesValue    = parasites
     ? formatCardDate(parasites.date)
     : 'Нет данных';
@@ -80,11 +90,11 @@ export const StatusCards = ({ status, onNavigate, petId, unit = 'kg' }) => {
     : 'Добавить запись';
 
   // ── Biometry ───────────────────────────────────
-  const biometryColor =
-    !biometry                    ? '#9E9E9E'
-    : biometry.trend === 'up'   ? '#FF9800'
-    : biometry.trend === 'down' ? '#2196F3'
-    : '#4CAF50';
+  // Вес — информационная метрика, НЕ статус здоровья: приложение не знает целевого
+  // веса питомца, поэтому тренд (набор/потеря) может быть и нормой, и проблемой.
+  // Красить в warn/ok = ложный сигнал → всегда нейтральный t3. Направление и
+  // величину несёт subtitle (+/- diff). Семантику оставляем для реальных алертов.
+  const biometryColor = theme.t3;
 
   const biometryValue = biometry
     ? `${formatWeightValue(biometry.weight, unit)} ${unitLabel(unit)}`
@@ -157,7 +167,7 @@ export const StatusCards = ({ status, onNavigate, petId, unit = 'kg' }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     gap: 10,
     paddingHorizontal: 20,
@@ -169,11 +179,11 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 14,
     padding: 13,
     borderLeftWidth: 4,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
@@ -195,7 +205,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#9E9E9E',
+    color: theme.t3,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     flex: 1,
@@ -203,12 +213,12 @@ const styles = StyleSheet.create({
   cardValue: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1A1A2E',
+    color: theme.t1,
     marginBottom: 3,
   },
   cardSubtitle: {
     fontSize: 11,
-    color: '#9E9E9E',
+    color: theme.t3,
     lineHeight: 15,
   },
 });
