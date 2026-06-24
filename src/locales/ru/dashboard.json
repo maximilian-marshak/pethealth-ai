@@ -55,6 +55,12 @@
     "empty": "Пока нет данных о весе",
     "addFirst": "+ Добавить вес"
   },
+  "recommendations": {
+    "title": "Рекомендации врача",
+    "sinceVisit": "С последнего визита: {{clinic}}, {{date}}",
+    "sinceVisitDate": "С последнего визита: {{date}}",
+    "seeAll": "Все рекомендации"
+  },
   "health": {
     "sectionTitle": "Здоровье",
     "allergyBanner": { "title": "⚠️ Аллергии" },

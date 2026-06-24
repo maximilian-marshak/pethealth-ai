@@ -35,6 +35,7 @@ import { requestNotificationPermission, scheduleNotificationsFromEvents, cancelA
 import { useNotificationPref } from '../hooks/useNotificationPref';
 import { useUnits } from '../hooks/useUnits';
 import { useWeightHistory } from '../hooks/useWeightHistory';
+import { useLatestRecommendations } from '../hooks/useLatestRecommendations';
 import { formatWeight, convertWeight } from '../utils/formatWeight';
 import { StatusCards } from '../components/dashboard/StatusCards';
 import ProgressBar from '../components/ProgressBar';
@@ -64,6 +65,7 @@ export default function DashboardScreen({ navigation }) {
   const { unreadCount, upcoming } = useNotifications();
   const { enabled: notifEnabled } = useNotificationPref();
   const { history: weightHistory, loading: weightLoading } = useWeightHistory(selectedPet?.id);
+  const { recommendation } = useLatestRecommendations(selectedPet?.id);
 
   // ─── AI Insight (4.5): статичный совет дня, ротация по дню года ───
   // TODO: Block 2 — заменить на ai-proxy совет (динамический инсайт).
@@ -89,6 +91,20 @@ export default function DashboardScreen({ navigation }) {
     .reverse() // хронологический порядок для линии
     .map((w) => convertWeight(Number(w.weight), unit))
     .filter((v) => v != null);
+
+  // ─── Рекомендации (4.4): локализ. дата визита + 1–3 пункта из текста ───
+  const recLocale = (i18n.language || 'en').startsWith('ru') ? 'ru-RU' : 'en-US';
+  const recDateStr = recommendation?.date
+    ? new Date(recommendation.date).toLocaleDateString(recLocale, { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+  const _recPoints = recommendation
+    ? recommendation.text
+        .split('\n')
+        .map((s) => s.replace(/^[\s•\-*\d.)]+/, '').trim()) // снять маркеры/нумерацию
+        .filter(Boolean)
+        .slice(0, 3)
+    : [];
+  const recItems = _recPoints.length ? _recPoints : (recommendation ? [recommendation.text.trim()] : []);
 
   // ─── Effects ────────────────────────────────────
 
@@ -352,7 +368,37 @@ export default function DashboardScreen({ navigation }) {
               </>
             )}
 
-            {/* ── [4.4 Рекомендации врача — B2] ───── */}
+            {/* ── 4.4 VET RECOMMENDATIONS (solid data; пусто → скрыт) ── */}
+            {recommendation && (
+              <GlassCard variant="data" style={styles.recCard}>
+                <View style={styles.recHeader}>
+                  <Ionicons name="clipboard-outline" size={18} color={theme.accent} />
+                  <Text style={styles.recTitle}>{t('recommendations.title')}</Text>
+                </View>
+                <Text style={styles.recSub}>
+                  {recommendation.clinic
+                    ? t('recommendations.sinceVisit', { clinic: recommendation.clinic, date: recDateStr })
+                    : t('recommendations.sinceVisitDate', { date: recDateStr })}
+                </Text>
+                <View style={styles.recList}>
+                  {recItems.map((item, i) =>
+                    recItems.length > 1 ? (
+                      <View key={i} style={styles.recItemRow}>
+                        <View style={styles.recBullet} />
+                        <Text style={styles.recItemText}>{item}</Text>
+                      </View>
+                    ) : (
+                      <Text key={i} style={styles.recParagraph}>{item}</Text>
+                    )
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('RecordDetail', { recordId: recommendation.recordId, petId: selectedPet.id })}
+                >
+                  <Text style={styles.recSeeAll}>{t('recommendations.seeAll')}</Text>
+                </TouchableOpacity>
+              </GlassCard>
+            )}
 
             {/* ── 4.5 AI INSIGHT (glass decor) ────── */}
             <GlassCard variant="decor" style={styles.insightCard}>
@@ -515,6 +561,18 @@ const makeStyles = (theme) => StyleSheet.create({
   weightEmpty: { alignItems: 'center', paddingVertical: 12, gap: 6 },
   weightEmptyText: { fontSize: 14, color: theme.t2 },
   weightAddText: { fontSize: 14, color: theme.accentPress, fontWeight: '600', marginTop: 2 },
+
+  // 4.4 Vet recommendations (glass data)
+  recCard: { marginHorizontal: 16, marginBottom: 16 },
+  recHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  recTitle: { fontSize: 16, fontWeight: '700', color: theme.t1 },
+  recSub: { fontSize: 12, color: theme.t2, marginBottom: 10 },
+  recList: { gap: 6 },
+  recItemRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  recBullet: { width: 5, height: 5, borderRadius: 3, backgroundColor: theme.accent, marginTop: 7 },
+  recItemText: { flex: 1, fontSize: 14, color: theme.t1, lineHeight: 20 },
+  recParagraph: { fontSize: 14, color: theme.t1, lineHeight: 20 },
+  recSeeAll: { fontSize: 14, color: theme.accentPress, fontWeight: '600', marginTop: 12 },
 
   // Sections
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 8, marginBottom: 12 },

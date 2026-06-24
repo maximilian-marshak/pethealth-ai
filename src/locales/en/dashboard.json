@@ -55,6 +55,12 @@
     "empty": "No weight data yet",
     "addFirst": "+ Add weight"
   },
+  "recommendations": {
+    "title": "Vet recommendations",
+    "sinceVisit": "Since last visit: {{clinic}}, {{date}}",
+    "sinceVisitDate": "Since last visit: {{date}}",
+    "seeAll": "All recommendations"
+  },
   "health": {
     "sectionTitle": "Health Overview",
     "allergyBanner": { "title": "⚠️ Allergies" },
