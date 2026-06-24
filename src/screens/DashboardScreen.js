@@ -387,17 +387,17 @@ export default function DashboardScreen({ navigation }) {
             <Text style={styles.sectionTitle}>{t('quickActions.sectionTitle')}</Text>
             <View style={styles.quickActions}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Medical')}>
-                <IconChip name="medical" size={24} />
+                <IconChip name="medical" size={24} bg={theme.surface} />
                 <Text style={styles.actionText}>{t('quickActions.medical')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Assistant')}>
-                <IconChip name="chatbubble-ellipses" size={24} />
+                <IconChip name="chatbubble-ellipses" size={24} bg={theme.surface} />
                 <Text style={styles.actionText}>{t('quickActions.aiChat')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Profile')}>
-                <IconChip name="person" size={24} />
+                <IconChip name="person" size={24} bg={theme.surface} />
                 <Text style={styles.actionText}>{t('quickActions.profile')}</Text>
               </TouchableOpacity>
 
@@ -405,7 +405,7 @@ export default function DashboardScreen({ navigation }) {
                 style={styles.actionBtn}
                 onPress={() => { if (selectedPet?.id) navigation.navigate('Appointments', { petId: selectedPet.id }); }}
               >
-                <IconChip name="today-outline" size={24} />
+                <IconChip name="today-outline" size={24} bg={theme.surface} />
                 <Text style={styles.actionText}>{t('quickActions.appointments')}</Text>
               </TouchableOpacity>
             </View>
@@ -423,14 +423,14 @@ const makeStyles = (theme) => StyleSheet.create({
   scrollContent: { paddingTop: 8, paddingBottom: 100 },
 
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
-  loadingText: { marginTop: 12, fontSize: 16, color: theme.accent },
+  loadingText: { marginTop: 12, fontSize: 16, color: theme.t2 },
 
   // No Pets
   noPetsContainer: { alignItems: 'center', padding: 40, marginTop: 40 },
   noPetsEmoji: { fontSize: 60, marginBottom: 16 },
   noPetsTitle: { fontSize: 22, fontWeight: 'bold', color: theme.t1, marginBottom: 8 },
-  noPetsSubtitle: { fontSize: 14, color: theme.t3, marginBottom: 24 },
-  addPetBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.accent, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 25, gap: 8 },
+  noPetsSubtitle: { fontSize: 14, color: theme.t2, marginBottom: 24 },
+  addPetBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.accentPress, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 25, gap: 8 },
   addPetBtnText: { color: theme.onAccent, fontWeight: 'bold', fontSize: 16 },
 
   // 4.1 Pet Switcher (glass decor)
@@ -449,13 +449,13 @@ const makeStyles = (theme) => StyleSheet.create({
 
   petList: { marginTop: 14 },
   petListContent: { gap: 10, paddingRight: 4 },
-  petSelectorItem: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: theme.accentTint, flexDirection: 'row', gap: 6 },
-  petSelectorItemActive: { backgroundColor: theme.accent },
+  petSelectorItem: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline, flexDirection: 'row', gap: 6 },
+  petSelectorItemActive: { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
   petSelectorEmoji: { fontSize: 16 },
-  petSelectorName: { fontSize: 14, color: theme.accent, fontWeight: '600', maxWidth: 110 },
+  petSelectorName: { fontSize: 14, color: theme.t2, fontWeight: '600', maxWidth: 110 },
   petSelectorNameActive: { color: theme.onAccent },
   petSelectorAddBtn: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, flexDirection: 'row', gap: 6, borderWidth: 1.5, borderColor: theme.accent, borderStyle: 'dashed' },
-  petSelectorAddText: { fontSize: 14, color: theme.accent, fontWeight: '600' },
+  petSelectorAddText: { fontSize: 14, color: theme.accentPress, fontWeight: '600' },
 
   // Sections
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 8, marginBottom: 12 },
@@ -467,7 +467,7 @@ const makeStyles = (theme) => StyleSheet.create({
   insightTitle: { fontSize: 16, fontWeight: '700', color: theme.t1 },
   insightText: { fontSize: 14, color: theme.t2, lineHeight: 20 },
   insightBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14, paddingVertical: 11, borderRadius: theme.radii.pill999, backgroundColor: theme.accentTint },
-  insightBtnText: { fontSize: 14, fontWeight: '700', color: theme.accent },
+  insightBtnText: { fontSize: 14, fontWeight: '700', color: theme.accentPress },
 
   // 4.6 Paws (glass decor — outer card → primitive; margins only)
   pawsCard: { marginHorizontal: 16, marginBottom: 16 },
@@ -476,25 +476,26 @@ const makeStyles = (theme) => StyleSheet.create({
   pawsEmoji: { fontSize: 24 },
   pawsInfo: { flex: 1 },
   pawsTitle: { fontSize: 18, fontWeight: 'bold', color: theme.t1 },
-  pawsSubtitle: { fontSize: 13, color: theme.t3, marginTop: 2 },
+  pawsSubtitle: { fontSize: 13, color: theme.t2, marginTop: 2 },
   pawsInfoBtn: { padding: 4 },
-  pawsBalanceContainer: { alignItems: 'center', paddingVertical: 16, backgroundColor: theme.accentTint, borderRadius: 16, marginBottom: 16 },
-  pawsBalance: { fontSize: 48, fontWeight: 'bold', color: theme.accent },
-  pawsBalanceLabel: { fontSize: 14, color: theme.accent, fontWeight: '600', marginTop: 4 },
+  // Прозрачный (внутри стеклянной Paws-карты — без плашки-в-плашке); число — t1.
+  pawsBalanceContainer: { alignItems: 'center', paddingVertical: 16, backgroundColor: 'transparent', borderRadius: 16, marginBottom: 16 },
+  pawsBalance: { fontSize: 48, fontWeight: 'bold', color: theme.t1 },
+  pawsBalanceLabel: { fontSize: 14, color: theme.t2, fontWeight: '600', marginTop: 4 },
   progressContainer: { marginBottom: 16 },
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   progressLabel: { fontSize: 13, color: theme.t2, fontWeight: '500' },
-  progressValue: { fontSize: 13, color: theme.accent, fontWeight: 'bold' },
-  supportButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accent, paddingVertical: 14, borderRadius: 12, gap: 8, marginBottom: 8 },
+  progressValue: { fontSize: 13, color: theme.t1, fontWeight: 'bold' },
+  supportButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentPress, paddingVertical: 14, borderRadius: 12, gap: 8, marginBottom: 8 },
   supportButtonText: { color: theme.onAccent, fontSize: 16, fontWeight: 'bold' },
   earnMoreButton: { alignItems: 'center', paddingVertical: 10 },
-  earnMoreText: { fontSize: 14, color: theme.accent, fontWeight: '600' },
+  earnMoreText: { fontSize: 14, color: theme.accentPress, fontWeight: '600' },
 
   // Rank (glass decor — outer → primitive; margins only)
   rankCard: { marginHorizontal: 16, marginBottom: 16 },
   rankRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   rankCardIcon: { fontSize: 34 },
-  rankCardLabel: { fontSize: 12, color: theme.t3, fontWeight: '600', textTransform: 'uppercase' },
+  rankCardLabel: { fontSize: 12, color: theme.t2, fontWeight: '600', textTransform: 'uppercase' },
   rankCardName: { fontSize: 17, fontWeight: '700', color: theme.t1, marginTop: 1 },
   rankCardLeague: { fontSize: 12, fontWeight: '700', marginTop: 1, textTransform: 'uppercase' },
 
