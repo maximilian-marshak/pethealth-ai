@@ -13,6 +13,9 @@ export function useCharity() {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [poolAmountByn, setPoolAmountByn] = useState(null);
+  const [openPeriod, setOpenPeriod] = useState(null);
+  const [lifetimeDonatedState, setLifetimeDonatedState] = useState(null); // RPC get_donation_total | null (фолбэк)
 
   // ═══ FETCH SHELTERS ═══
   const fetchShelters = useCallback(async () => {
@@ -62,6 +65,55 @@ export function useCharity() {
       console.error('❌ Error fetching donations:', err);
       setError(err.message);
       setDonations([]);
+    }
+  }, [user?.id]);
+
+  // ═══ FETCH ACTIVE POOL (amount_byn) ═══
+  // Вариант B: пул периода делится между приютами по голосам. Чтение некритично.
+  const fetchPool = useCallback(async () => {
+    try {
+      const { data, error: poolError } = await supabase
+        .from('charity_pools')
+        .select('amount_byn')
+        .eq('active', true)
+        .maybeSingle();
+      if (poolError) throw poolError;
+      setPoolAmountByn(data?.amount_byn ?? null);
+    } catch (err) {
+      console.warn('useCharity: pool load failed (non-critical):', err?.message);
+      setPoolAmountByn(null);
+    }
+  }, []);
+
+  // ═══ FETCH OPEN PERIOD ═══
+  const fetchOpenPeriod = useCallback(async () => {
+    try {
+      const { data, error: periodError } = await supabase
+        .from('charity_pool_periods')
+        .select('id, period_start, period_end, status')
+        .eq('status', 'open')
+        .maybeSingle();
+      if (periodError) throw periodError;
+      setOpenPeriod(data ?? null);
+    } catch (err) {
+      console.warn('useCharity: open period load failed (non-critical):', err?.message);
+      setOpenPeriod(null);
+    }
+  }, []);
+
+  // ═══ FETCH LIFETIME DONATED (точная сумма за всё время через RPC) ═══
+  // Для рангов/прогрессии используем именно это; totalDonated (limit(50)) не трогаем.
+  const fetchLifetimeDonated = useCallback(async () => {
+    if (!user?.id) { setLifetimeDonatedState(null); return; }
+    try {
+      const { data, error: rpcError } = await supabase.rpc('get_donation_total');
+      if (rpcError) throw rpcError;
+      const n = Number(Array.isArray(data) ? data[0] : data);
+      setLifetimeDonatedState(Number.isFinite(n) ? n : null);
+    } catch (err) {
+      // Фолбэк на totalDonated (в return), не падаем.
+      console.warn('useCharity: get_donation_total failed (fallback to totalDonated):', err?.message);
+      setLifetimeDonatedState(null);
     }
   }, [user?.id]);
 
@@ -117,13 +169,14 @@ export function useCharity() {
 
       // Refresh donations history
       await fetchDonations();
+      await fetchLifetimeDonated();
 
       return { success: true, data };
     } catch (err) {
       console.error('❌ Error making donation:', err);
       throw err;
     }
-  }, [user?.id, fetchDonations]);
+  }, [user?.id, fetchDonations, fetchLifetimeDonated]);
 
   // ═══ REFETCH ALL DATA ═══
   // ✅ ДОБАВЛЕНО: Единая функция для обновления всех данных (для RefreshControl)
@@ -131,23 +184,32 @@ export function useCharity() {
     await Promise.all([
       fetchShelters(),
       fetchDonations(),
+      fetchPool(),
+      fetchOpenPeriod(),
+      fetchLifetimeDonated(),
     ]);
-  }, [fetchShelters, fetchDonations]);
+  }, [fetchShelters, fetchDonations, fetchPool, fetchOpenPeriod, fetchLifetimeDonated]);
 
   // ═══ INITIAL LOAD ═══
   useEffect(() => {
     fetchShelters();
+    fetchPool();
+    fetchOpenPeriod();
     if (user?.id) {
       fetchDonations();
+      fetchLifetimeDonated();
     }
-  }, [fetchShelters, fetchDonations, user?.id]);
+  }, [fetchShelters, fetchDonations, fetchPool, fetchOpenPeriod, fetchLifetimeDonated, user?.id]);
 
   // ═══ RETURN HOOK DATA ═══
   return {
     shelters,
     donations,
-    totalDonated,     // ✅ Общая сумма всех пожертвований
+    totalDonated,     // ✅ Общая сумма всех пожертвований (по limit(50)-выборке)
+    lifetimeDonated: lifetimeDonatedState != null ? lifetimeDonatedState : totalDonated, // точная сумма за всё время (RPC) с фолбэком
     shelterCount,     // ✅ ДОБАВЛЕНО: Количество уникальных приютов
+    poolAmountByn,    // Вариант B: размер активного пула (BYN)
+    openPeriod,       // Вариант B: открытый период распределения (или null)
     loading,
     error,
     makeDonation,

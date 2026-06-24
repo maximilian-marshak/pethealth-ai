@@ -1,0 +1,21 @@
+{
+  "title": "Уведомления",
+  "markAllRead": "Прочитать всё",
+  "empty": {
+    "title": "Нет уведомлений",
+    "subtitle": "Здесь появятся напоминания, вакцины, окончания курсов и записи к врачу"
+  },
+  "sections": { "upcoming": "Предстоящие", "past": "Прошедшие" },
+  "types": {
+    "reminder": "Напоминание",
+    "vaccine": "Вакцина",
+    "course_end": "Конец курса",
+    "appointment": "Запись к врачу"
+  },
+    "push": {
+    "reminder":    { "title": "Напоминание", "body": "{{title}} · {{petName}}" },
+    "vaccine":     { "title": "Пора вакцинации", "body": "{{petName}}: {{title}}" },
+    "course_end":  { "title": "Курс заканчивается", "body": "{{petName}}: {{title}}" },
+    "appointment": { "title": "Запись к врачу", "body": "{{petName}} · {{title}}" }
+  }
+}

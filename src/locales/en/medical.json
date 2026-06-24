@@ -1,4 +1,59 @@
 {
+    "calendar": {
+      "agendaTitle": "Events on this day",
+      "empty": "No events",
+      "types": {
+        "record": "Record",
+        "prescription": "Medication",
+        "vaccine": "Vaccine",
+        "reminder": "Reminder",
+        "appointment": "Appointment"
+      },
+      "intake": { "give": "Give today?", "taken": "Taken" }
+    },
+    "appointments": {
+      "title": "My Appointments",
+      "create": "New appointment",
+      "untitled": "Appointment",
+      "sections": { "upcoming": "Upcoming", "past": "Past" },
+      "empty": { "upcoming": "No upcoming appointments", "past": "No past appointments" },
+      "status": { "requested": "Requested", "confirmed": "Confirmed", "cancelled": "Cancelled", "completed": "Completed" },
+      "actions": { "cancel": "Cancel", "delete": "Delete" },
+      "confirmDelete": { "title": "Delete appointment?", "message": "This action cannot be undone." },
+      "validation": "Please enter a clinic and pick a date & time",
+      "form": {
+        "clinicLabel": "Clinic",
+        "clinicPlaceholder": "Clinic name",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. annual check-up",
+        "dateLabel": "Date & time",
+        "datePlaceholder": "Select date & time"
+      }
+    },
+    "documents": {
+      "title": "Documents",
+      "empty": { "title": "No documents yet", "subtitle": "Scanned vet documents will appear here" }
+    },
+    "export": {
+      "button": "Export PDF",
+      "error": "Couldn't export the medical record",
+      "sections": {
+        "passport": "Passport",
+        "allergies": "Allergies",
+        "conditions": "Chronic conditions",
+        "vaccines": "Vaccines",
+        "medications": "Active medications",
+        "records": "Medical records",
+        "weight": "Weight history"
+      },
+      "fields": {
+        "gender": "Gender", "birthDate": "Date of birth", "weight": "Weight",
+        "bloodType": "Blood type", "microchip": "Microchip", "context": "Household context",
+        "since": "Since", "nextDue": "Next due", "dose": "Dose", "frequency": "Frequency",
+        "vet": "Vet", "diagnosis": "Diagnosis", "recommendations": "Recommendations",
+        "none": "—", "generated": "Generated"
+      }
+    },
     "header": {
       "title": "Medical Records",
       "back": "Back"
@@ -17,7 +72,10 @@
       },
       "upcomingVaccines": "⚠️ Upcoming Vaccines",
       "activeMedications": "Active Medications",
-      "lastVisit": "Last Vet Visit"
+      "lastVisit": "Last Vet Visit",
+      "allergyBanner": { "title": "⚠️ Allergies" },
+      "nextAppointment": { "title": "Next appointment", "none": "No upcoming appointments" },
+      "upcomingReminders": { "title": "Upcoming reminders" }
     },
     "empty": {
       "overview": {
@@ -148,7 +206,19 @@
       "cancel": "Cancel",
       "save": "Save",
       "requiredTitle": "Required",
-      "errorTitle": "Error"
+      "errorTitle": "Error",
+      "addChooser": { "title": "Add record" },
+      "procedure": {
+        "title": "Add procedure",
+        "date": "Date *",
+        "name": "Procedure name *",
+        "namePlaceholder": "e.g. Teeth cleaning, X-ray",
+        "notes": "Details",
+        "notesPlaceholder": "Any details or notes...",
+        "clinic": "Clinic Name",
+        "vet": "Vet Name",
+        "required": "Please enter a date and a procedure name."
+      }
     },
     "delete": {
       "vaccine": {
@@ -260,6 +330,7 @@
       "title": "Record",
       "attachment": "Scan",
       "attachmentUnavailable": "Preview unavailable",
+      "recommendations": "Vet recommendations",
       "loadError": "Couldn't load the record"
     },
     "scan": {

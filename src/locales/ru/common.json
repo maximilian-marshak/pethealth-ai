@@ -20,6 +20,7 @@
     "yearsOld_one": "{{count}} год",
     "yearsOld_few": "{{count}} года",
     "yearsOld_many": "{{count}} лет",
-    "yearsOld_other": "{{count}} лет"
+    "yearsOld_other": "{{count}} лет",
+    "success": "Успех"
   }
   

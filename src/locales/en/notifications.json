@@ -1,0 +1,21 @@
+{
+  "title": "Notifications",
+  "markAllRead": "Mark all read",
+  "empty": {
+    "title": "No notifications",
+    "subtitle": "Upcoming reminders, vaccines, course endings and appointments will appear here"
+  },
+  "sections": { "upcoming": "Upcoming", "past": "Past" },
+  "types": {
+    "reminder": "Reminder",
+    "vaccine": "Vaccine due",
+    "course_end": "Course ends",
+    "appointment": "Appointment"
+  },
+    "push": {
+    "reminder":    { "title": "Reminder", "body": "{{title}} · {{petName}}" },
+    "vaccine":     { "title": "Vaccine due", "body": "{{petName}}: {{title}}" },
+    "course_end":  { "title": "Course ending", "body": "{{petName}}: {{title}}" },
+    "appointment": { "title": "Appointment", "body": "{{petName}} · {{title}}" }
+  }
+}

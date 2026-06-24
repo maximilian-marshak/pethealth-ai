@@ -75,7 +75,7 @@ export async function getUserProfile(userId) {
       .from('users')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -104,6 +104,28 @@ export async function updateUserProfile(userId, updates) {
     return data;
   } catch (error) {
     console.error('Error updating user profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upsert-обновление полей пользователя (создаёт строку, если её нет — on conflict id).
+ * @param {string} userId
+ * @param {Object} updates - частичные поля public.users
+ * @returns {Promise<Object>} строка пользователя
+ */
+export async function upsertUserProfile(userId, updates) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .upsert({ id: userId, ...updates })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error upserting user profile:', error);
     throw error;
   }
 }

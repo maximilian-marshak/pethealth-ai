@@ -2,7 +2,7 @@
 // src/screens/AIAssistantHubScreen.js
 // ══════════════════════════════════════════════════
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,15 +12,19 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { usePetContext } from '../context/PetContext';
 import * as ImagePicker from 'expo-image-picker';
+import { useTheme } from '../theme/ThemeProvider';
+import Screen from '../components/Screen';
+import GlassCard from '../components/GlassCard';
 
 export default function AIAssistantHubScreen({ navigation }) {
   const { selectedPet, pets, selectPet } = usePetContext();
   const { t } = useTranslation('ai');
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [pickerVisible, setPickerVisible] = useState(false);
 
   const handleSelectPet = async (petId) => {
@@ -34,7 +38,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'health',
       title: t('hub.categories.health.title'),
       icon: 'medical',
-      color: '#FF6B6B',
       description: t('hub.categories.health.description'),
       questions: [
         t('hub.categories.health.q1'),
@@ -46,7 +49,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'nutrition',
       title: t('hub.categories.nutrition.title'),
       icon: 'restaurant',
-      color: '#4ECDC4',
       description: t('hub.categories.nutrition.description'),
       questions: [
         t('hub.categories.nutrition.q1'),
@@ -58,7 +60,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'behavior',
       title: t('hub.categories.behavior.title'),
       icon: 'school',
-      color: '#FFD93D',
       description: t('hub.categories.behavior.description'),
       questions: [
         t('hub.categories.behavior.q1'),
@@ -70,7 +71,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'grooming',
       title: t('hub.categories.grooming.title'),
       icon: 'cut',
-      color: '#A8E6CF',
       description: t('hub.categories.grooming.description'),
       questions: [
         t('hub.categories.grooming.q1'),
@@ -82,7 +82,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'emergency',
       title: t('hub.categories.emergency.title'),
       icon: 'alert-circle',
-      color: '#FF8B94',
       description: t('hub.categories.emergency.description'),
       questions: [
         t('hub.categories.emergency.q1'),
@@ -91,10 +90,20 @@ export default function AIAssistantHubScreen({ navigation }) {
       ],
     },
     {
+      id: 'relocation',
+      title: t('hub.categories.relocation.title'),
+      icon: 'airplane',
+      description: t('hub.categories.relocation.description'),
+      questions: [
+        t('hub.categories.relocation.q1'),
+        t('hub.categories.relocation.q2'),
+        t('hub.categories.relocation.q3'),
+      ],
+    },
+    {
       id: 'general',
       title: t('hub.categories.general.title'),
       icon: 'help-circle',
-      color: '#B4A7D6',
       description: t('hub.categories.general.description'),
       questions: [
         t('hub.categories.general.q1'),
@@ -109,7 +118,7 @@ export default function AIAssistantHubScreen({ navigation }) {
     navigation.navigate('AIAssistantChat', {
       category: category.id,
       title: category.title,
-      color: category.color,
+      color: theme.assistantCategories[category.id],
     });
   };
 
@@ -118,7 +127,7 @@ export default function AIAssistantHubScreen({ navigation }) {
       category: category.id,
       initialQuestion: question,
       title: category.title,
-      color: category.color,
+      color: theme.assistantCategories[category.id],
     });
   };
 
@@ -126,7 +135,7 @@ export default function AIAssistantHubScreen({ navigation }) {
     navigation.navigate('AIAssistantChat', {
       category: 'free-chat',
       title: t('chat.defaultTitle'),
-      color: '#6C63FF',
+      color: theme.accent,
     });
   };
 
@@ -161,7 +170,7 @@ export default function AIAssistantHubScreen({ navigation }) {
       navigation.navigate('AIAssistantChat', {
         category: 'photo-analysis',
         title: t('chat.titleSymptoms'),
-        color: '#FF6B6B',
+        color: theme.accent,
         photoUri: result.assets[0].uri,
         analysisType: 'symptoms',
       });
@@ -215,14 +224,14 @@ export default function AIAssistantHubScreen({ navigation }) {
     navigation.navigate('AIAssistantChat', {
       category: 'photo-analysis',
       title: titleMap[analysisType] || titleMap.general,
-      color: '#FF6B6B',
+      color: theme.accent,
       photoUri,
       analysisType,
     });
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <Screen>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -231,14 +240,14 @@ export default function AIAssistantHubScreen({ navigation }) {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View style={styles.headerIcon}>
-              <Ionicons name="chatbubbles" size={32} color="#FFFFFF" />
+              <Ionicons name="chatbubbles" size={32} color={theme.onAccent} />
             </View>
             <TouchableOpacity
               style={styles.photoButton}
               onPress={handlePhotoAnalysis}
               activeOpacity={0.7}
             >
-              <Ionicons name="camera" size={24} color="#FFFFFF" />
+              <Ionicons name="camera" size={24} color={theme.onAccent} />
             </TouchableOpacity>
           </View>
           <Text style={styles.headerTitle}>{t('hub.title')}</Text>
@@ -256,7 +265,7 @@ export default function AIAssistantHubScreen({ navigation }) {
             onPress={() => setPickerVisible(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="paw" size={24} color="#6C63FF" />
+            <Ionicons name="paw" size={24} color={theme.accent} />
             <View style={styles.petInfoText}>
               <Text style={styles.petName}>{selectedPet.name}</Text>
               <Text style={styles.petDetails}>
@@ -266,70 +275,81 @@ export default function AIAssistantHubScreen({ navigation }) {
               </Text>
             </View>
             {pets.length > 1 && (
-              <Ionicons name="chevron-down" size={20} color="#999" />
+              <Ionicons name="chevron-down" size={20} color={theme.t3} />
             )}
           </TouchableOpacity>
         )}
 
+        {/* ═══ SECTION: ASK AI ═══ */}
+        <Text style={styles.sectionTitle}>{t('hub.sections.ai')}</Text>
+
         {/* ═══ FREE CHAT CARD ═══ */}
-        <TouchableOpacity
-          style={styles.freeChatCard}
-          onPress={handleStartFreeChat}
-          activeOpacity={0.8}
-        >
-          <View style={styles.freeChatIcon}>
-            <Ionicons name="chatbubble-ellipses" size={28} color="#FFFFFF" />
-          </View>
-          <View style={styles.freeChatContent}>
-            <Text style={styles.freeChatTitle}>{t('hub.freeChat')}</Text>
-            <Text style={styles.freeChatSubtitle}>{t('hub.freeChatSubtitle')}</Text>
-          </View>
-          <Ionicons name="arrow-forward-circle" size={32} color="#6C63FF" />
-        </TouchableOpacity>
+        <GlassCard variant="decor" style={styles.freeChatCard}>
+          <TouchableOpacity
+            style={styles.freeChatInner}
+            onPress={handleStartFreeChat}
+            activeOpacity={0.8}
+          >
+            <View style={styles.freeChatIcon}>
+              <Ionicons name="chatbubble-ellipses" size={28} color={theme.onAccent} />
+            </View>
+            <View style={styles.freeChatContent}>
+              <Text style={styles.freeChatTitle}>{t('hub.freeChat')}</Text>
+              <Text style={styles.freeChatSubtitle}>{t('hub.freeChatSubtitle')}</Text>
+            </View>
+            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+          </TouchableOpacity>
+        </GlassCard>
 
         {/* ═══ PHOTO ANALYSIS CARD ═══ */}
-        <TouchableOpacity
-          style={styles.photoAnalysisCard}
-          onPress={handlePhotoAnalysis}
-          activeOpacity={0.8}
-        >
-          <View style={styles.photoAnalysisIcon}>
-            <Ionicons name="camera" size={28} color="#FFFFFF" />
-          </View>
-          <View style={styles.photoAnalysisContent}>
-            <Text style={styles.photoAnalysisTitle}>{t('hub.photoAnalysis')}</Text>
-            <Text style={styles.photoAnalysisSubtitle}>{t('hub.photoAnalysisSubtitle')}</Text>
-          </View>
-          <Ionicons name="arrow-forward-circle" size={32} color="#FF6B6B" />
-        </TouchableOpacity>
+        <GlassCard variant="decor" style={styles.photoAnalysisCard}>
+          <TouchableOpacity
+            style={styles.photoAnalysisInner}
+            onPress={handlePhotoAnalysis}
+            activeOpacity={0.8}
+          >
+            <View style={styles.photoAnalysisIcon}>
+              <Ionicons name="camera" size={28} color={theme.onAccent} />
+            </View>
+            <View style={styles.photoAnalysisContent}>
+              <Text style={styles.photoAnalysisTitle}>{t('hub.photoAnalysis')}</Text>
+              <Text style={styles.photoAnalysisSubtitle}>{t('hub.photoAnalysisSubtitle')}</Text>
+            </View>
+            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+          </TouchableOpacity>
+        </GlassCard>
 
         {/* ═══ CATEGORIES GRID ═══ */}
         <Text style={styles.sectionTitle}>{t('hub.browseByCategory')}</Text>
         <View style={styles.categoriesGrid}>
-          {categories.map((category) => (
+          {categories.map((category) => {
+            const catColor = theme.assistantCategories[category.id];
+            return (
             <TouchableOpacity
               key={category.id}
-              style={[styles.categoryCard, { borderLeftColor: category.color }]}
+              style={[styles.categoryCard, { borderLeftColor: catColor }]}
               onPress={() => handleCategoryPress(category)}
               activeOpacity={0.7}
             >
-              <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
-                <Ionicons name={category.icon} size={28} color={category.color} />
+              <View style={[styles.categoryIcon, { backgroundColor: catColor + '20' }]}>
+                <Ionicons name={category.icon} size={28} color={catColor} />
               </View>
               <View style={styles.categoryContent}>
                 <Text style={styles.categoryTitle}>{category.title}</Text>
                 <Text style={styles.categoryDescription}>{category.description}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#999" />
+              <Ionicons name="chevron-forward" size={20} color={theme.t3} />
             </TouchableOpacity>
-          ))}
+          ); })}
         </View>
 
         {/* ═══ QUICK QUESTIONS ═══ */}
         <Text style={styles.sectionTitle}>{t('hub.popularQuestions')}</Text>
-        {categories.slice(0, 3).map((category) => (
+        {categories.slice(0, 3).map((category) => {
+          const catColor = theme.assistantCategories[category.id];
+          return (
           <View key={category.id} style={styles.quickQuestionsSection}>
-            <Text style={[styles.quickQuestionsHeader, { color: category.color }]}>
+            <Text style={[styles.quickQuestionsHeader, { color: catColor }]}>
               {category.title}
             </Text>
             {category.questions.map((question, index) => (
@@ -339,13 +359,49 @@ export default function AIAssistantHubScreen({ navigation }) {
                 onPress={() => handleQuickQuestion(category, question)}
                 activeOpacity={0.7}
               >
-                <Ionicons name="help-circle-outline" size={20} color={category.color} />
+                <Ionicons name="help-circle-outline" size={20} color={catColor} />
                 <Text style={styles.quickQuestionText}>{question}</Text>
-                <Ionicons name="arrow-forward" size={16} color="#999" />
+                <Ionicons name="arrow-forward" size={16} color={theme.t3} />
               </TouchableOpacity>
             ))}
           </View>
-        ))}
+        ); })}
+
+        {/* ═══ SECTION: REFERENCE (статика, без AI) ═══ */}
+        <Text style={styles.sectionTitle}>{t('hub.sections.reference')}</Text>
+        <GlassCard variant="decor" style={styles.freeChatCard}>
+          <TouchableOpacity
+            style={styles.freeChatInner}
+            onPress={() => navigation.navigate('KnowledgeBase')}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.freeChatIcon, { backgroundColor: theme.accentPress }]}>
+              <Ionicons name="library" size={28} color={theme.onAccent} />
+            </View>
+            <View style={styles.freeChatContent}>
+              <Text style={styles.freeChatTitle}>{t('knowledge.title')}</Text>
+              <Text style={styles.freeChatSubtitle}>{t('hub.knowledgeSubtitle')}</Text>
+            </View>
+            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+          </TouchableOpacity>
+        </GlassCard>
+
+        <GlassCard variant="decor" style={styles.freeChatCard}>
+          <TouchableOpacity
+            style={styles.freeChatInner}
+            onPress={() => navigation.navigate('Relocation')}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.freeChatIcon, { backgroundColor: theme.accentPress }]}>
+              <Ionicons name="airplane" size={26} color={theme.onAccent} />
+            </View>
+            <View style={styles.freeChatContent}>
+              <Text style={styles.freeChatTitle}>{t('relocation.title')}</Text>
+              <Text style={styles.freeChatSubtitle}>{t('hub.relocationSubtitle')}</Text>
+            </View>
+            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+          </TouchableOpacity>
+        </GlassCard>
 
         <View style={styles.footerSpacing} />
       </ScrollView>
@@ -356,7 +412,7 @@ export default function AIAssistantHubScreen({ navigation }) {
         onPress={handleStartFreeChat}
         activeOpacity={0.8}
       >
-        <Ionicons name="chatbubbles" size={28} color="#FFFFFF" />
+        <Ionicons name="chatbubbles" size={28} color={theme.onAccent} />
       </TouchableOpacity>
 
       {/* ═══ PET PICKER MODAL ═══ */}
@@ -383,7 +439,7 @@ export default function AIAssistantHubScreen({ navigation }) {
                     onPress={() => handleSelectPet(pet.id)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="paw" size={20} color={isActive ? '#6C63FF' : '#999'} />
+                    <Ionicons name="paw" size={20} color={isActive ? theme.accent : theme.t3} />
                     <View style={styles.pickerRowText}>
                       <Text style={styles.pickerRowName}>{pet.name}</Text>
                       <Text style={styles.pickerRowDetails}>
@@ -393,7 +449,7 @@ export default function AIAssistantHubScreen({ navigation }) {
                       </Text>
                     </View>
                     {isActive && (
-                      <Ionicons name="checkmark-circle" size={22} color="#6C63FF" />
+                      <Ionicons name="checkmark-circle" size={22} color={theme.accent} />
                     )}
                   </TouchableOpacity>
                 );
@@ -402,26 +458,26 @@ export default function AIAssistantHubScreen({ navigation }) {
           </View>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 // ═══ STYLES ═══
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingBottom: 100,
   },
   pickerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // theme-neutral scrim
     justifyContent: 'flex-end',
   },
   pickerSheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -430,7 +486,7 @@ const styles = StyleSheet.create({
   pickerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1A1A2E',
+    color: theme.t1,
     marginBottom: 16,
   },
   pickerRow: {
@@ -440,13 +496,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
     marginBottom: 8,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.surface,
     gap: 12,
   },
   pickerRowActive: {
-    backgroundColor: '#6C63FF20',
+    backgroundColor: theme.accent + '20',
     borderWidth: 1,
-    borderColor: '#6C63FF',
+    borderColor: theme.accent,
   },
   pickerRowText: {
     flex: 1,
@@ -454,15 +510,15 @@ const styles = StyleSheet.create({
   pickerRowName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1A1A2E',
+    color: theme.t1,
   },
   pickerRowDetails: {
     fontSize: 13,
-    color: '#666',
+    color: theme.t2,
     marginTop: 2,
   },
   header: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.accentPress,
     paddingTop: 20,
     paddingBottom: 30,
     paddingHorizontal: 20,
@@ -501,7 +557,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.onAccent,
     marginBottom: 8,
   },
   headerSubtitle: {
@@ -512,12 +568,12 @@ const styles = StyleSheet.create({
   petInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     marginHorizontal: 20,
     marginTop: -20,
     padding: 16,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -530,26 +586,22 @@ const styles = StyleSheet.create({
   petName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.t1,
   },
   petDetails: {
     fontSize: 14,
-    color: '#666',
+    color: theme.t2,
     marginTop: 2,
   },
   freeChatCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#6C63FF',
     marginHorizontal: 20,
     marginTop: 20,
-    padding: 20,
     borderRadius: 20,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+  },
+  freeChatInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   freeChatIcon: {
     width: 56,
@@ -566,26 +618,22 @@ const styles = StyleSheet.create({
   freeChatTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.t1,
     marginBottom: 4,
   },
   freeChatSubtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: theme.t2,
   },
   photoAnalysisCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF6B6B',
     marginHorizontal: 20,
     marginTop: 12,
-    padding: 20,
     borderRadius: 20,
-    shadowColor: '#FF6B6B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+  },
+  photoAnalysisInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   photoAnalysisIcon: {
     width: 56,
@@ -602,17 +650,17 @@ const styles = StyleSheet.create({
   photoAnalysisTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.t1,
     marginBottom: 4,
   },
   photoAnalysisSubtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: theme.t2,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.t1,
     marginHorizontal: 20,
     marginTop: 30,
     marginBottom: 16,
@@ -623,12 +671,12 @@ const styles = StyleSheet.create({
   categoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -648,12 +696,12 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: theme.t1,
     marginBottom: 4,
   },
   categoryDescription: {
     fontSize: 13,
-    color: '#666',
+    color: theme.t2,
   },
   quickQuestionsSection: {
     marginHorizontal: 20,
@@ -667,11 +715,11 @@ const styles = StyleSheet.create({
   quickQuestionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     padding: 14,
     borderRadius: 12,
     marginBottom: 8,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
@@ -680,7 +728,7 @@ const styles = StyleSheet.create({
   quickQuestionText: {
     flex: 1,
     fontSize: 14,
-    color: '#333',
+    color: theme.t1,
     marginLeft: 10,
   },
   footerSpacing: {
@@ -693,10 +741,10 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.accent,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6C63FF',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,

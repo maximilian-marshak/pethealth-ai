@@ -1,4 +1,5 @@
 {
+  "nextLevel": "{{points}} Paws to next level",
   "greeting": {
     "morning": "Good Morning",
     "afternoon": "Good Afternoon",
@@ -24,10 +25,38 @@
     "subtitle": "Help shelter animals",
     "progressLabel": "Progress to Help Shelter",
     "donateBtn": "Help a Shelter Now!",
-    "earnMore": "+ Earn More Paws"
+    "earnMore": "+ Earn More Paws",
+    "supportShelter": "Support a shelter",
+    "monthProgressLabel": "Earned this month",
+    "balanceLabel": "Total Paws",
+    "howToEarn": {
+      "title": "How to earn Paws",
+      "subtitle": "Earn Paws by taking care of your pet's health. Paws become votes that direct the monthly charity pool to shelters.",
+      "dailyCap": "up to {{count}} per day"
+    },
+    "events": {
+      "visit_verified": "Verified vet visit",
+      "vaccination_verified": "Verified vaccination",
+      "reminder_completed": "Completed reminder",
+      "course_completed": "Completed medication course",
+      "ocr_document": "Scanned a document",
+      "daily_checkin": "Daily check-in",
+      "streak_7": "7-day care streak",
+      "streak_30": "30-day care streak",
+      "manual_first": "First manual record",
+      "medication_taken": "Marked medication as taken"
+    }
+  },
+  "rank": { "title": "Rank" },
+  "recommendations": {
+    "title": "Vet recommendations",
+    "sinceVisit": "Since last visit: {{clinic}}, {{date}}",
+    "sinceVisitDate": "Since last visit: {{date}}",
+    "seeAll": "All recommendations"
   },
   "health": {
     "sectionTitle": "Health Overview",
+    "allergyBanner": { "title": "⚠️ Allergies" },
     "vaccination": {
       "title": "Vaccinations",
       "noData": "No data",
@@ -54,7 +83,24 @@
     "medical": "Medical",
     "aiChat": "AI Chat",
     "activity": "Activity",
-    "profile": "Profile"
+    "profile": "Profile",
+    "appointments": "Appointments"
+  },
+  "tips": {
+    "title": "Tip of the Day",
+    "discuss": "Discuss with AI",
+    "items": [
+      "Keep fresh water available for your pet at all times.",
+      "Brush your pet's coat regularly to reduce shedding and catch skin issues early.",
+      "Stick to a consistent feeding schedule and avoid sudden diet changes.",
+      "Daily walks and play keep your pet physically and mentally healthy.",
+      "Check ears and teeth weekly — early signs of trouble are easy to miss.",
+      "Keep vaccinations and parasite prevention up to date.",
+      "Never feed chocolate, grapes, onions or other foods toxic to pets.",
+      "Maintain a healthy weight — ask your vet about ideal body condition.",
+      "Give your pet a calm, safe place to rest undisturbed.",
+      "Watch for changes in appetite, energy or bathroom habits and see a vet if they persist."
+    ]
   },
   "vaccinations": {
     "sectionTitle": "Upcoming Vaccinations",

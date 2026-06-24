@@ -5,7 +5,7 @@
 // Дочерние таблицы связаны с родителем колонкой record_id.
 // ══════════════════════════════════════════════════════════════
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, ActivityIndicator, Image, Modal, Dimensions,
@@ -14,15 +14,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../theme/ThemeProvider';
 import { supabase } from '../utils/supabase';
 
-const ACCENT = '#6B4EFF';
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 export default function RecordDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { t, i18n } = useTranslation('medical');
+  const { theme } = useTheme();
+  const s = useMemo(() => makeStyles(theme), [theme]);
   const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
   const fmt = (d) => (d ? new Date(d).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
 
@@ -154,14 +156,14 @@ export default function RecordDetailScreen() {
     <SafeAreaView style={s.container} edges={['top']}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.headerBtn}>
-          <Ionicons name="arrow-back" size={24} color={ACCENT} />
+          <Ionicons name="arrow-back" size={24} color={theme.accent} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('detail.title')}</Text>
         <View style={s.headerBtn} />
       </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} size="large" color={ACCENT} />
+        <ActivityIndicator style={{ marginTop: 40 }} size="large" color={theme.accent} />
       ) : loadError || !record ? (
         <View style={s.errorBox}>
           <Text style={s.errorText}>{t('detail.loadError')}</Text>
@@ -183,12 +185,20 @@ export default function RecordDetailScreen() {
             <Row label={t('review.fields.diagnosis')} value={record.diagnosis} />
             <Row label={t('review.fields.diagnosisCode')} value={record.diagnosis_code} />
             <Row label={t('review.fields.symptoms')} value={record.symptoms} />
-            <Row label={t('review.fields.recommendations')} value={record.recommendations} />
             <Row label={t('review.fields.weight')} value={weightValue} />
             <Row label={t('review.fields.temperature')} value={record.temperature} />
             <Row label={t('review.fields.followUp')} value={record.follow_up_date ? fmt(record.follow_up_date) : null} />
             <Row label={t('review.fields.urgency')} value={record.urgency ? t(`urgency.${record.urgency}`, { defaultValue: record.urgency }) : null} />
           </View>
+
+          {record.recommendations ? (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>{t('detail.recommendations')}</Text>
+              <View style={s.recoCard}>
+                <Text style={s.recoText}>{String(record.recommendations)}</Text>
+              </View>
+            </View>
+          ) : null}
 
           {/* Children */}
           <ChildSection
@@ -259,13 +269,13 @@ export default function RecordDetailScreen() {
           {/* Actions */}
           <View style={s.footer}>
             <TouchableOpacity style={[s.btn, s.btnEdit]} onPress={handleEdit} disabled={deleting}>
-              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Ionicons name="create-outline" size={18} color={theme.onAccent} />
               <Text style={s.btnEditText}>{t('card.edit')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[s.btn, s.btnDelete]} onPress={handleDelete} disabled={deleting}>
-              {deleting ? <ActivityIndicator color="#EF4444" /> : (
+              {deleting ? <ActivityIndicator color={theme.danger} /> : (
                 <>
-                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                  <Ionicons name="trash-outline" size={18} color={theme.danger} />
                   <Text style={s.btnDeleteText}>{t('card.delete')}</Text>
                 </>
               )}
@@ -298,7 +308,7 @@ export default function RecordDetailScreen() {
             accessibilityLabel={t('common:close')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="close" size={28} color="#fff" />
+            <Ionicons name="close" size={28} color={theme.onAccent} />
           </TouchableOpacity>
         </View>
       </Modal>
@@ -306,36 +316,39 @@ export default function RecordDetailScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  container:   { flex: 1, backgroundColor: '#F9FAFB' },
+const makeStyles = (theme) => StyleSheet.create({
+  container:   { flex: 1, backgroundColor: theme.bg },
   errorBox:    { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 },
-  errorText:   { fontSize: 15, color: '#6B7280', textAlign: 'center' },
-  viewerBackdrop: { flex: 1, backgroundColor: '#000' },
+  errorText:   { fontSize: 15, color: theme.t3, textAlign: 'center' },
+  // Полноэкранный просмотр изображения — фон намеренно чёрный (theme-neutral, как scrim).
+  viewerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,1)' },
   viewerScroll:   { flex: 1 },
   viewerContent:  { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
   viewerImage:    { width: SCREEN_W, height: SCREEN_H },
-  viewerClose:    { position: 'absolute', top: 48, right: 16, width: 44, height: 44, borderRadius: 22, backgroundColor: ACCENT, alignItems: 'center', justifyContent: 'center' },
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  viewerClose:    { position: 'absolute', top: 48, right: 16, width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accent, alignItems: 'center', justifyContent: 'center' },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, backgroundColor: theme.surface, borderBottomWidth: 1, borderBottomColor: theme.hairline },
   headerBtn:   { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: theme.t1 },
   content:     { padding: 16, paddingBottom: 40 },
   topRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  date:        { fontSize: 18, fontWeight: '700', color: '#1F2937' },
-  badge:       { backgroundColor: '#EEF2FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  badgeText:   { fontSize: 11, fontWeight: '700', color: ACCENT },
-  section:     { marginBottom: 16, borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingTop: 12 },
-  sectionTitle:{ fontSize: 15, fontWeight: '700', color: '#374151', marginBottom: 8 },
+  date:        { fontSize: 18, fontWeight: '700', color: theme.t1 },
+  badge:       { backgroundColor: theme.accentTint, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  badgeText:   { fontSize: 11, fontWeight: '700', color: theme.accent },
+  section:     { marginBottom: 16, borderTopWidth: 1, borderTopColor: theme.hairline, paddingTop: 12 },
+  sectionTitle:{ fontSize: 15, fontWeight: '700', color: theme.t2, marginBottom: 8 },
   row:         { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 6 },
-  rowLabel:    { fontSize: 13, color: '#6B7280', flexShrink: 0 },
-  rowValue:    { fontSize: 13, color: '#1F2937', fontWeight: '500', flex: 1, textAlign: 'right' },
-  childCard:   { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
-  childTitle:  { fontSize: 15, fontWeight: '600', color: '#1F2937', marginBottom: 6 },
-  attachment:  { width: '100%', height: 240, borderRadius: 12, backgroundColor: '#E5E7EB' },
-  attachmentUnavailable: { fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' },
+  rowLabel:    { fontSize: 13, color: theme.t3, flexShrink: 0 },
+  rowValue:    { fontSize: 13, color: theme.t1, fontWeight: '500', flex: 1, textAlign: 'right' },
+  childCard:   { backgroundColor: theme.surface, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: theme.hairline },
+  childTitle:  { fontSize: 15, fontWeight: '600', color: theme.t1, marginBottom: 6 },
+  recoCard:    { backgroundColor: theme.accentTint, borderLeftWidth: 3, borderLeftColor: theme.accent, borderRadius: 10, padding: 12 },
+  recoText:    { fontSize: 14, color: theme.t1, lineHeight: 20 },
+  attachment:  { width: '100%', height: 240, borderRadius: 12, backgroundColor: theme.hairline },
+  attachmentUnavailable: { fontSize: 13, color: theme.t4, fontStyle: 'italic' },
   footer:      { flexDirection: 'row', gap: 12, marginTop: 8 },
   btn:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12 },
-  btnEdit:     { backgroundColor: ACCENT },
-  btnEditText: { fontSize: 15, fontWeight: '600', color: '#fff' },
-  btnDelete:   { backgroundColor: '#FEE2E2' },
-  btnDeleteText:{ fontSize: 15, fontWeight: '600', color: '#EF4444' },
+  btnEdit:     { backgroundColor: theme.accent },
+  btnEditText: { fontSize: 15, fontWeight: '600', color: theme.onAccent },
+  btnDelete:   { backgroundColor: theme.danger + '22' },
+  btnDeleteText:{ fontSize: 15, fontWeight: '600', color: theme.danger },
 });

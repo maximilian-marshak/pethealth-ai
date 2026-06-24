@@ -12,7 +12,7 @@ import { useLoyaltyPoints } from './useLoyaltyPoints';
  * @returns {number} progressToNext - Progress percentage to next badge (0-100)
  */
 export function useBadges() {
-  const { totalDonated, donations } = useCharity();
+  const { totalDonated, donations, shelterCount } = useCharity();
   const { balance } = useLoyaltyPoints();
 
   const badgesData = useMemo(() => {
@@ -81,7 +81,7 @@ export function useBadges() {
         color: '#95E1D3', // Mint
         threshold: 3,
         category: 'charity',
-        unlocked: false, // TODO: Calculate unique shelters
+        unlocked: shelterCount >= 3,
         requirement: 'unique_shelters',
       },
     ];
@@ -123,7 +123,7 @@ export function useBadges() {
       nextBadge,
       progressToNext: Math.round(progressToNext),
     };
-  }, [totalDonated, balance, donations]);
+  }, [totalDonated, balance, donations, shelterCount]);
 
   return badgesData;
 }

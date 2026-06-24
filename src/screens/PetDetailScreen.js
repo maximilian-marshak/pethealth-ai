@@ -2,7 +2,7 @@
 // src/screens/PetDetailScreen.js
 // ══════════════════════════════════════════════════
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -25,21 +25,49 @@ import * as Haptics from 'expo-haptics';
 import { LineChart } from 'react-native-chart-kit';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { usePets } from '../hooks/usePets';
+import { useUnits } from '../hooks/useUnits';
+import { formatWeight, formatWeightValue, unitLabel, convertWeight } from '../utils/formatWeight';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../utils/supabase';
 import { pickAndUpload } from '../services/imageUploadService';
+import { useTheme } from '../theme/ThemeProvider';
+import Screen from '../components/Screen';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 // Тяжесть аллергии: хранится mild/moderate/severe или null (CHECK в БД).
+// Подпись локализуется в месте отрисовки через t('detail.severity.<key>').
 const SEVERITY_OPTIONS = [
-  { value: null,       label: 'Не указано' },
-  { value: 'mild',     label: 'Лёгкая' },
-  { value: 'moderate', label: 'Средняя' },
-  { value: 'severe',   label: 'Тяжёлая' },
+  { value: null,       key: 'none' },
+  { value: 'mild',     key: 'mild' },
+  { value: 'moderate', key: 'moderate' },
+  { value: 'severe',   key: 'severe' },
 ];
+
+// Тип события/записи → ключ категориальной палитры theme.eventTypes (единая с Medical).
+const EVENT_TYPE_KEY = {
+  vaccination:        'vaccine',
+  parasite_treatment: 'prescription',
+  medication:         'prescription',
+  vet_visit:          'appointment',
+  grooming:           'reminder',
+  checkup:            'record',
+  surgery:            'record',
+  diagnosis:          'record',
+  other:              'record',
+};
+// Цвет события по типу (категориальная палитра; дефолт — record).
+const eventColorFor = (theme, type) => theme.eventTypes[EVENT_TYPE_KEY[type] || 'record'];
+
+// Severity → семантика уровня (Лёгкая→ok, Средняя→warn, Тяжёлая→danger, «—»→t3).
+const severityColorFor = (theme, value) =>
+  value === 'severe' ? theme.danger : value === 'moderate' ? theme.warn : value === 'mild' ? theme.ok : theme.t3;
 
 // Поле даты для модалок паспорта: хранит YYYY-MM-DD, показывает DD.MM.YYYY.
 const PassportDateField = ({ label, value, onChange }) => {
+  const { t } = useTranslation('pets');
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [show, setShow] = useState(false);
   const dateVal = value ? new Date(value + 'T00:00:00') : new Date();
   const handle = (event, selected) => {
@@ -53,17 +81,17 @@ const PassportDateField = ({ label, value, onChange }) => {
     }
     if (Platform.OS === 'ios') setShow(false);
   };
-  const display = value ? `${value.slice(8, 10)}.${value.slice(5, 7)}.${value.slice(0, 4)}` : 'Выберите дату';
+  const display = value ? `${value.slice(8, 10)}.${value.slice(5, 7)}.${value.slice(0, 4)}` : t('detail.pickDate');
   return (
     <View style={styles.modalInputGroup}>
       <Text style={styles.modalInputLabel}>{label}</Text>
       <View style={styles.modalInputRow}>
         <TouchableOpacity style={[styles.modalInput, styles.passportDateField]} onPress={() => setShow(true)} activeOpacity={0.7}>
-          <Ionicons name="calendar-outline" size={18} color={value ? '#6B4EFF' : '#C0C0C0'} />
-          <Text style={[styles.passportDateText, !value && { color: '#C0C0C0' }]}>{display}</Text>
+          <Ionicons name="calendar-outline" size={18} color={value ? theme.accent : theme.t4} />
+          <Text style={[styles.passportDateText, !value && { color: theme.t4 }]}>{display}</Text>
           {value ? (
             <TouchableOpacity onPress={() => onChange('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close-circle" size={18} color="#C0C0C0" />
+              <Ionicons name="close-circle" size={18} color={theme.t4} />
             </TouchableOpacity>
           ) : null}
         </TouchableOpacity>
@@ -81,6 +109,10 @@ const PassportDateField = ({ label, value, onChange }) => {
 export default function PetDetailScreen({ route, navigation }) {
   const petId = route?.params?.petId;
   const { pets, updatePetPhoto, deletePet } = usePets();
+  const { unit } = useUnits();
+  const { t, i18n } = useTranslation('pets');
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   // ─── Core state ───────────────────────────────
   const [pet, setPet]               = useState(null);
@@ -124,6 +156,34 @@ export default function PetDetailScreen({ route, navigation }) {
   const [cActive, setCActive]             = useState(true);
   const [cNotes, setCNotes]               = useState('');
   const [savingCondition, setSavingCondition] = useState(false);
+
+  // ─── Passport (blood_type / pet_context) ───
+  const [passportModal, setPassportModal] = useState(false);
+  const [pBlood, setPBlood]               = useState('');
+  const [pContext, setPContext]           = useState('');
+  const [savingPassport, setSavingPassport] = useState(false);
+
+  const openPassportEdit = () => {
+    setPBlood(pet?.blood_type || '');
+    setPContext(pet?.pet_context || '');
+    setPassportModal(true);
+  };
+
+  const savePassport = async () => {
+    setSavingPassport(true);
+    try {
+      const blood_type = pBlood.trim() || null;
+      const pet_context = pContext.trim() || null;
+      const { error } = await supabase.from('pets').update({ blood_type, pet_context }).eq('id', petId);
+      if (error) throw error;
+      setPet((prev) => (prev ? { ...prev, blood_type, pet_context } : prev));
+      setPassportModal(false);
+    } catch (e) {
+      Alert.alert(t('passport.editTitle'), e.message);
+    } finally {
+      setSavingPassport(false);
+    }
+  };
 
   // ═══ GUARD: нет petId ════════════════════════
   useEffect(() => {
@@ -239,7 +299,6 @@ export default function PetDetailScreen({ route, navigation }) {
               title: v.vaccine_name,
               date:  v.next_due_date,
               icon:  'medkit-outline',
-              color: '#FF6B6B',
             });
           }
         });
@@ -248,8 +307,8 @@ export default function PetDetailScreen({ route, navigation }) {
       if (reminders) {
         const iconMap = {
           vaccination: 'medkit-outline',
-          checkup:     'stethoscope-outline',
-          vet_visit:   'hospital-outline',
+          checkup:     'pulse-outline',
+          vet_visit:   'business-outline',
           medication:  'medical-outline',
           grooming:    'cut-outline',
         };
@@ -259,7 +318,6 @@ export default function PetDetailScreen({ route, navigation }) {
             title: r.title,
             date:  r.due_date,
             icon:  iconMap[r.reminder_type] || 'calendar-outline',
-            color: '#6C63FF',
           });
         });
       }
@@ -290,26 +348,24 @@ export default function PetDetailScreen({ route, navigation }) {
         .limit(2);
 
       const typeIconMap = {
-        vaccination:        { icon: 'medkit-outline',      color: '#FF6B6B' },
-        parasite_treatment: { icon: 'bug-outline',         color: '#8BC34A' },
-        checkup:            { icon: 'stethoscope-outline', color: '#2196F3' },
-        surgery:            { icon: 'cut-outline',         color: '#FF9800' },
-        diagnosis:          { icon: 'clipboard-outline',   color: '#9C27B0' },
-        other:              { icon: 'document-outline',    color: '#9E9E9E' },
+        vaccination:        'medkit-outline',
+        parasite_treatment: 'bug-outline',
+        checkup:            'pulse-outline',
+        surgery:            'cut-outline',
+        diagnosis:          'clipboard-outline',
+        other:              'document-outline',
       };
 
       const records = [];
 
       if (medRecords) {
         medRecords.forEach(r => {
-          const meta = typeIconMap[r.record_type] || typeIconMap.other;
           records.push({
             type:        r.record_type,
             title:       r.title,
             date:        r.date,
             description: r.description || '',
-            icon:        meta.icon,
-            color:       meta.color,
+            icon:        typeIconMap[r.record_type] || typeIconMap.other,
           });
         });
       }
@@ -320,9 +376,8 @@ export default function PetDetailScreen({ route, navigation }) {
             type:        'vaccination',
             title:       v.vaccine_name,
             date:        v.date_given,
-            description: v.notes || 'Вакцинация',
+            description: v.notes || t('detail.events.vaccinationFallback'),
             icon:        'medkit-outline',
-            color:       '#FF6B6B',
           });
         });
       }
@@ -390,7 +445,7 @@ export default function PetDetailScreen({ route, navigation }) {
   const handleSaveWeight = async () => {
     const parsed = parseFloat(newWeight.replace(',', '.'));
     if (!parsed || parsed <= 0 || parsed > 200) {
-      Alert.alert('Ошибка', 'Введите корректный вес (0–200)');
+      Alert.alert(t('common:error'), t('detail.weight.invalid'));
       return;
     }
 
@@ -429,7 +484,7 @@ export default function PetDetailScreen({ route, navigation }) {
       await loadWeightHistory();
     } catch (error) {
       console.error('Error saving weight:', error);
-      Alert.alert('Ошибка', 'Не удалось сохранить вес');
+      Alert.alert(t('common:error'), t('detail.weight.saveError'));
     } finally {
       setSavingWeight(false);
     }
@@ -450,7 +505,7 @@ export default function PetDetailScreen({ route, navigation }) {
     setAllergyModal(true);
   };
   const saveAllergy = async () => {
-    if (!aSubstance.trim()) { Alert.alert('Ошибка', 'Укажите вещество (аллерген)'); return; }
+    if (!aSubstance.trim()) { Alert.alert(t('common:error'), t('detail.allergy.substanceRequired')); return; }
     setSavingAllergy(true);
     try {
       const payload = {
@@ -466,20 +521,20 @@ export default function PetDetailScreen({ route, navigation }) {
       setAllergyModal(false); setEditAllergy(null);
       await loadAllergies();
     } catch (e) {
-      Alert.alert('Ошибка', e.message);
+      Alert.alert(t('common:error'), e.message);
     } finally {
       setSavingAllergy(false);
     }
   };
   const deleteAllergy = (row) => {
-    Alert.alert('Удалить аллергию?', row.substance, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: async () => {
+    Alert.alert(t('alerts.deleteAllergy.title'), t('alerts.deleteAllergy.message', { name: row.substance }), [
+      { text: t('common:cancel'), style: 'cancel' },
+      { text: t('common:delete'), style: 'destructive', onPress: async () => {
         try {
           const { error } = await supabase.from('pet_allergies').delete().eq('id', row.id);
           if (error) throw error;
           await loadAllergies();
-        } catch (e) { Alert.alert('Ошибка', e.message); }
+        } catch (e) { Alert.alert(t('common:error'), e.message); }
       } },
     ]);
   };
@@ -500,7 +555,7 @@ export default function PetDetailScreen({ route, navigation }) {
     setCondModal(true);
   };
   const saveCondition = async () => {
-    if (!cCondition.trim()) { Alert.alert('Ошибка', 'Укажите название заболевания'); return; }
+    if (!cCondition.trim()) { Alert.alert(t('common:error'), t('detail.condition.nameRequired')); return; }
     setSavingCondition(true);
     try {
       const payload = {
@@ -517,20 +572,20 @@ export default function PetDetailScreen({ route, navigation }) {
       setCondModal(false); setEditCondition(null);
       await loadConditions();
     } catch (e) {
-      Alert.alert('Ошибка', e.message);
+      Alert.alert(t('common:error'), e.message);
     } finally {
       setSavingCondition(false);
     }
   };
   const deleteCondition = (row) => {
-    Alert.alert('Удалить заболевание?', row.condition, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: async () => {
+    Alert.alert(t('alerts.deleteCondition.title'), t('alerts.deleteCondition.message', { name: row.condition }), [
+      { text: t('common:cancel'), style: 'cancel' },
+      { text: t('common:delete'), style: 'destructive', onPress: async () => {
         try {
           const { error } = await supabase.from('pet_conditions').delete().eq('id', row.id);
           if (error) throw error;
           await loadConditions();
-        } catch (e) { Alert.alert('Ошибка', e.message); }
+        } catch (e) { Alert.alert(t('common:error'), e.message); }
       } },
     ]);
   };
@@ -539,13 +594,22 @@ export default function PetDetailScreen({ route, navigation }) {
   const getChartData = () => {
     // Берём последние 8, переворачиваем в хронологический порядок
     const sorted = [...weightHistory].reverse().slice(-8);
-    if (sorted.length < 2) return null;
+    // Оставляем только записи с числовым весом (numeric из БД может прийти строкой,
+    // встречаются null) — иначе LineChart получит NaN. Метки берём из того же
+    // отфильтрованного массива, чтобы длины совпадали.
+    const valid = sorted.filter((w) => Number.isFinite(Number(w.weight)));
+    if (valid.length < 2) return null;
 
-    const labels = sorted.map(w => {
+    const points = valid.map((w) => convertWeight(Number(w.weight), unit));
+    // Вырожденный случай: все значения равны (max === min) → диапазон 0 → деление
+    // на ноль в chart-kit. Не рисуем график (карточка веса остаётся без графика).
+    if (Math.min(...points) === Math.max(...points)) return null;
+
+    const labels = valid.map((w) => {
       const d = new Date(w.measured_at);
       return `${d.getDate()}/${d.getMonth() + 1}`;
     });
-    const datasets = [{ data: sorted.map(w => w.weight) }];
+    const datasets = [{ data: points }];
 
     return { labels, datasets };
   };
@@ -557,9 +621,9 @@ export default function PetDetailScreen({ route, navigation }) {
     const prev   = weightHistory[1].weight;
     const diff   = latest - prev;
 
-    if (Math.abs(diff) < 0.05) return { type: 'stable', diff: 0, label: 'Стабильно' };
-    if (diff > 0)               return { type: 'up',     diff,   label: `+${diff.toFixed(1)} кг` };
-    return                              { type: 'down',   diff,   label: `${diff.toFixed(1)} кг` };
+    if (Math.abs(diff) < 0.05) return { type: 'stable', diff: 0 };
+    if (diff > 0)               return { type: 'up',     diff };
+    return                              { type: 'down',   diff };
   };
 
   // ═══ PHOTO UPLOAD ════════════════════════════
@@ -576,11 +640,11 @@ export default function PetDetailScreen({ route, navigation }) {
         await updatePetPhoto(petId, newUrl);
         setPet({ ...pet, avatar_url: newUrl });
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Успех', 'Фото питомца обновлено!');
+        Alert.alert(t('common:success'), t('detail.alerts.photoSuccess'));
       }
     } catch (error) {
       console.error('❌ Error updating photo:', error);
-      Alert.alert('Ошибка', error.message || 'Не удалось обновить фото');
+      Alert.alert(t('common:error'), error.message || t('detail.alerts.photoError'));
     } finally {
       setUploading(false);
     }
@@ -589,12 +653,12 @@ export default function PetDetailScreen({ route, navigation }) {
   // ═══ DELETE PET ══════════════════════════════
   const handleDelete = () => {
     Alert.alert(
-      'Удалить питомца?',
-      `Вы уверены, что хотите удалить ${pet?.name}? Питомец будет скрыт.`,
+      t('detail.alerts.deletePet.title'),
+      t('detail.alerts.deletePet.message', { name: pet?.name }),
       [
-        { text: 'Отмена', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Удалить',
+          text: t('common:delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -602,7 +666,7 @@ export default function PetDetailScreen({ route, navigation }) {
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               navigation.goBack();
             } catch {
-              Alert.alert('Ошибка', 'Не удалось удалить питомца');
+              Alert.alert(t('common:error'), t('detail.alerts.deletePet.error'));
             }
           },
         },
@@ -612,30 +676,38 @@ export default function PetDetailScreen({ route, navigation }) {
 
   // ═══ HELPERS ══════════════════════════════════
   const calculateAge = (birthDate) => {
-    if (!birthDate) return 'Неизвестно';
+    if (!birthDate) return t('detail.age.unknown');
     const today = new Date();
     const birth = new Date(birthDate);
     const years  = today.getFullYear() - birth.getFullYear();
     const months = today.getMonth()    - birth.getMonth();
 
-    if (years === 0)  return `${Math.max(months, 1)} мес.`;
-    if (months < 0)   return `${years - 1} ${pluralYears(years - 1)}`;
-    return `${years} ${pluralYears(years)}`;
+    if (years === 0)  return t('detail.age.months', { count: Math.max(months, 1) });
+    if (months < 0)   return t('detail.age.years', { count: years - 1 });
+    return t('detail.age.years', { count: years });
   };
 
-  const pluralYears = (n) =>
-    n === 1 ? 'год' : n < 5 ? 'года' : 'лет';
+  // Пол с учётом вида: для собак кобель/сука, для кошек кот/кошка, иначе самец/самка.
+  // В EN все формы сводятся к Male/Female (видовой нюанс только в RU).
+  const genderLabel = () => {
+    if (pet?.gender !== 'male' && pet?.gender !== 'female') return '—';
+    const sp = pet?.species === 'dog' ? 'dog' : pet?.species === 'cat' ? 'cat' : 'generic';
+    return t(`detail.info.genderValue.${sp}.${pet.gender}`);
+  };
+
+  // Локаль для toLocaleDateString — по языку приложения (а не хардкод ru-RU).
+  const dateLocale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
 
   const formatDate = (dateString) => {
     if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString('ru-RU', {
+    return new Date(dateString).toLocaleDateString(dateLocale, {
       day: 'numeric', month: 'long', year: 'numeric',
     });
   };
 
   const formatShortDate = (dateString) => {
     if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString('ru-RU', {
+    return new Date(dateString).toLocaleDateString(dateLocale, {
       day: 'numeric', month: 'short',
     });
   };
@@ -644,54 +716,67 @@ export default function PetDetailScreen({ route, navigation }) {
     const diffDays = Math.ceil(
       (new Date(dateString).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
     );
-    if (diffDays <= 0) return 'Сегодня';
-    if (diffDays === 1) return 'Завтра';
-    if (diffDays < 7)  return `Через ${diffDays} дн.`;
-    if (diffDays < 30) return `Через ${Math.floor(diffDays / 7)} нед.`;
-    return `Через ${Math.floor(diffDays / 30)} мес.`;
+    if (diffDays <= 0) return t('detail.relative.today');
+    if (diffDays === 1) return t('detail.relative.tomorrow');
+    if (diffDays < 7)  return t('detail.relative.inDays', { count: diffDays });
+    if (diffDays < 30) return t('detail.relative.inWeeks', { count: Math.floor(diffDays / 7) });
+    return t('detail.relative.inMonths', { count: Math.floor(diffDays / 30) });
   };
 
   // ═══ LOADING GUARDS ══════════════════════════
   if (!petId || loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6C63FF" />
-      </View>
+      <Screen>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.accent} />
+        </View>
+      </Screen>
     );
   }
 
   if (!pet) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.notFoundText}>Питомец не найден</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← Назад</Text>
-        </TouchableOpacity>
-      </View>
+      <Screen>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.notFoundText}>{t('detail.notFound')}</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Text style={styles.backBtnText}>← {t('common:back')}</Text>
+          </TouchableOpacity>
+        </View>
+      </Screen>
     );
   }
 
   const chartData  = getChartData();
   const trend      = getWeightTrend();
-  const trendColor =
-    trend?.type === 'up' ? '#FF6B6B' :
-    trend?.type === 'down' ? '#51CF66' : '#6C63FF';
+  const trendColor = theme.t3;
   const trendIcon =
     trend?.type === 'up' ? 'trending-up' :
     trend?.type === 'down' ? 'trending-down' : 'remove';
+  // Подпись тренда: «Стабильно» либо «±X <ед.>» в единицах пользователя.
+  let trendText = '';
+  if (trend) {
+    if (trend.type === 'stable') {
+      trendText = t('detail.weight.trend.stable');
+    } else {
+      const conv = convertWeight(trend.diff, unit) || 0;
+      const value = (conv > 0 ? '+' : '') + (Math.round(conv * 10) / 10);
+      trendText = t('detail.weight.trend.delta', { value, unit: unitLabel(unit) });
+    }
+  }
 
   // ══════════════════════════════════════════════
   // RENDER
   // ══════════════════════════════════════════════
   return (
-    <>
+    <Screen>
       <ScrollView
         style={styles.container}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#6C63FF"
+            tintColor={theme.accent}
           />
         }
       >
@@ -701,7 +786,7 @@ export default function PetDetailScreen({ route, navigation }) {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="arrow-back" size={24} color="#1A1A2E" />
+            <Ionicons name="arrow-back" size={24} color={theme.t1} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>{pet.name}</Text>
@@ -711,7 +796,7 @@ export default function PetDetailScreen({ route, navigation }) {
               style={[styles.headerButton, styles.deleteButton]}
               onPress={handleDelete}
             >
-              <Ionicons name="trash-outline" size={22} color="#FF6B6B" />
+              <Ionicons name="trash-outline" size={22} color={theme.danger} />
             </TouchableOpacity>
           </View>
         </View>
@@ -725,7 +810,7 @@ export default function PetDetailScreen({ route, navigation }) {
           >
             {uploading ? (
               <View style={styles.uploadingOverlay}>
-                <ActivityIndicator size="large" color="#fff" />
+                <ActivityIndicator size="large" color={theme.onAccent} />
               </View>
             ) : (
               <>
@@ -738,7 +823,7 @@ export default function PetDetailScreen({ route, navigation }) {
                   style={styles.avatar}
                 />
                 <View style={styles.cameraIcon}>
-                  <Ionicons name="camera" size={18} color="#fff" />
+                  <Ionicons name="camera" size={18} color={theme.onAccent} />
                 </View>
               </>
             )}
@@ -748,16 +833,16 @@ export default function PetDetailScreen({ route, navigation }) {
           <Text style={styles.petBreed}>{pet.breed || pet.species}</Text>
           <Text style={styles.petMeta}>
             {calculateAge(pet.birth_date)}
-            {pet.weight ? ` • ${pet.weight} ${pet.weight_unit || 'кг'}` : ''}
+            {pet.weight ? ` • ${formatWeight(pet.weight, unit)}` : ''}
           </Text>
         </View>
 
         {/* ─── ⚠️ ALLERGY ALERT (safety-critical, над плитками) ─── */}
         {allergies.length > 0 && (
           <View style={styles.allergyBanner}>
-            <Ionicons name="warning" size={22} color="#EF4444" />
+            <Ionicons name="warning" size={22} color={theme.danger} />
             <View style={styles.allergyBannerText}>
-              <Text style={styles.allergyBannerTitle}>Аллергии</Text>
+              <Text style={styles.allergyBannerTitle}>{t('detail.stats.allergies')}</Text>
               <Text style={styles.allergyBannerList}>
                 {allergies.map((a) => a.substance).filter(Boolean).join(', ')}
               </Text>
@@ -768,28 +853,28 @@ export default function PetDetailScreen({ route, navigation }) {
         {/* ─── QUICK STATS ──────────────────── */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Ionicons name="medkit-outline" size={28} color="#FF6B6B" />
+            <Ionicons name="medkit-outline" size={28} color={theme.accent} />
             <Text style={styles.statValue}>{stats.vaccinations}</Text>
-            <Text style={styles.statLabel}>Прививки</Text>
+            <Text style={styles.statLabel}>{t('detail.stats.vaccinations')}</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="document-text-outline" size={28} color="#4ECDC4" />
+            <Ionicons name="document-text-outline" size={28} color={theme.accent} />
             <Text style={styles.statValue}>{stats.medicalRecords}</Text>
-            <Text style={styles.statLabel}>Записи</Text>
+            <Text style={styles.statLabel}>{t('detail.stats.records')}</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="calendar-outline" size={28} color="#6C63FF" />
+            <Ionicons name="calendar-outline" size={28} color={theme.accent} />
             <Text style={styles.statValue}>
               {stats.daysSinceLastVisit !== null ? stats.daysSinceLastVisit : '—'}
             </Text>
-            <Text style={styles.statLabel}>Дней назад</Text>
+            <Text style={styles.statLabel}>{t('detail.stats.daysAgo')}</Text>
           </View>
         </View>
 
         {/* ─── WEIGHT DYNAMICS ──────────────── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>⚖️ Динамика веса</Text>
+            <Text style={styles.sectionTitle}>{t('detail.weight.section')}</Text>
             <TouchableOpacity
               style={styles.addWeightBtn}
               onPress={() => {
@@ -797,25 +882,25 @@ export default function PetDetailScreen({ route, navigation }) {
                 setWeightModalVisible(true);
               }}
             >
-              <Ionicons name="add" size={18} color="#6C63FF" />
-              <Text style={styles.addWeightBtnText}>Добавить</Text>
+              <Ionicons name="add" size={18} color={theme.accent} />
+              <Text style={styles.addWeightBtnText}>{t('common:add')}</Text>
             </TouchableOpacity>
           </View>
 
           {weightLoading ? (
             <View style={styles.weightLoadingBox}>
-              <ActivityIndicator color="#6C63FF" />
+              <ActivityIndicator color={theme.accent} />
             </View>
           ) : weightHistory.length === 0 ? (
             /* ── Empty weight ─────────────── */
             <View style={styles.emptyCard}>
-              <Ionicons name="scale-outline" size={32} color="#E0E0E0" />
-              <Text style={styles.emptyText}>Нет данных о весе</Text>
+              <Ionicons name="scale-outline" size={32} color={theme.hairline} />
+              <Text style={styles.emptyText}>{t('detail.weight.empty')}</Text>
               <TouchableOpacity
                 style={styles.emptyAddBtn}
                 onPress={() => setWeightModalVisible(true)}
               >
-                <Text style={styles.emptyAddBtnText}>+ Добавить первый вес</Text>
+                <Text style={styles.emptyAddBtnText}>{t('detail.weight.addFirst')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -823,20 +908,20 @@ export default function PetDetailScreen({ route, navigation }) {
               {/* Current weight + trend */}
               <View style={styles.weightTopRow}>
                 <View>
-                  <Text style={styles.weightCurrentLabel}>Текущий вес</Text>
+                  <Text style={styles.weightCurrentLabel}>{t('detail.weight.current')}</Text>
                   <Text style={styles.weightCurrentValue}>
-                    {weightHistory[0].weight}{' '}
+                    {formatWeightValue(weightHistory[0].weight, unit)}{' '}
                     <Text style={styles.weightUnit}>
-                      {weightHistory[0].weight_unit || 'кг'}
+                      {unitLabel(unit)}
                     </Text>
                   </Text>
                 </View>
 
                 {trend && (
-                  <View style={[styles.trendBadge, { backgroundColor: trendColor + '18' }]}>
+                  <View style={[styles.trendBadge, { backgroundColor: theme.t3 + '22' }]}>
                     <Ionicons name={trendIcon} size={16} color={trendColor} />
                     <Text style={[styles.trendText, { color: trendColor }]}>
-                      {trend.label}
+                      {trendText}
                     </Text>
                   </View>
                 )}
@@ -850,16 +935,16 @@ export default function PetDetailScreen({ route, navigation }) {
                     width={SCREEN_WIDTH - 80}
                     height={160}
                     chartConfig={{
-                      backgroundGradientFrom: '#fff',
-                      backgroundGradientTo:   '#fff',
-                      color: (opacity = 1) => `rgba(108,99,255,${opacity})`,
-                      labelColor: () => '#888',
+                      backgroundGradientFrom: theme.surface,
+                      backgroundGradientTo:   theme.surface,
+                      color: () => theme.accent,
+                      labelColor: () => theme.t3,
                       strokeWidth: 2,
                       decimalPlaces: 1,
                       propsForDots: {
                         r: '4',
                         strokeWidth: '2',
-                        stroke: '#6C63FF',
+                        stroke: theme.accent,
                       },
                     }}
                     bezier
@@ -873,7 +958,7 @@ export default function PetDetailScreen({ route, navigation }) {
 
               {/* History list (последние 5) */}
               <View style={styles.weightHistoryList}>
-                <Text style={styles.weightHistoryTitle}>История измерений</Text>
+                <Text style={styles.weightHistoryTitle}>{t('detail.weight.historyTitle')}</Text>
                 {weightHistory.slice(0, 5).map((item, index) => (
                   <View
                     key={item.id}
@@ -886,7 +971,7 @@ export default function PetDetailScreen({ route, navigation }) {
                       <View style={styles.weightHistoryDot} />
                       <View>
                         <Text style={styles.weightHistoryValue}>
-                          {item.weight} {item.weight_unit || 'кг'}
+                          {formatWeight(item.weight, unit)}
                         </Text>
                         {item.notes ? (
                           <Text style={styles.weightHistoryNote} numberOfLines={1}>
@@ -905,22 +990,44 @@ export default function PetDetailScreen({ route, navigation }) {
           )}
         </View>
 
+        {/* ─── 🪪 PASSPORT (blood type / context) ─── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🪪 {t('passport.title')}</Text>
+            <TouchableOpacity onPress={openPassportEdit} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="create-outline" size={20} color={theme.accent} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.passportRow}>
+            <Text style={styles.passportInfoLabel}>{t('passport.bloodType')}</Text>
+            <Text style={[styles.passportInfoValue, !pet?.blood_type && styles.passportInfoEmpty]}>
+              {pet?.blood_type || t('passport.empty')}
+            </Text>
+          </View>
+          <View style={styles.passportRow}>
+            <Text style={styles.passportInfoLabel}>{t('passport.context')}</Text>
+            <Text style={[styles.passportInfoValue, !pet?.pet_context && styles.passportInfoEmpty]}>
+              {pet?.pet_context || t('passport.empty')}
+            </Text>
+          </View>
+        </View>
+
         {/* ─── 🤧 ALLERGIES (паспорт) ─── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🤧 Аллергии</Text>
+            <Text style={styles.sectionTitle}>{t('detail.allergy.section')}</Text>
             <TouchableOpacity style={styles.addWeightBtn} onPress={openAddAllergy}>
-              <Ionicons name="add" size={18} color="#fff" />
-              <Text style={styles.addWeightBtnText}>Добавить</Text>
+              <Ionicons name="add" size={18} color={theme.onAccent} />
+              <Text style={styles.addWeightBtnText}>{t('common:add')}</Text>
             </TouchableOpacity>
           </View>
           {allergies.length === 0 ? (
-            <Text style={styles.emptyText}>Нет данных об аллергиях</Text>
+            <Text style={styles.emptyText}>{t('detail.allergy.empty')}</Text>
           ) : (
             allergies.map((a) => {
               const parts = [];
               if (a.reaction) parts.push(a.reaction);
-              if (a.severity) parts.push(a.severity);
+              if (a.severity) parts.push(t('detail.severity.' + a.severity));
               if (a.noted_on) parts.push(formatDate(a.noted_on));
               return (
                 <View key={a.id} style={styles.passportRow}>
@@ -928,10 +1035,10 @@ export default function PetDetailScreen({ route, navigation }) {
                     <Text style={styles.passportName}>{a.substance}</Text>
                     <View style={styles.passportActions}>
                       <TouchableOpacity onPress={() => openEditAllergy(a)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Ionicons name="create-outline" size={18} color="#6B4EFF" />
+                        <Ionicons name="create-outline" size={18} color={theme.accent} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => deleteAllergy(a)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                        <Ionicons name="trash-outline" size={18} color={theme.danger} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -947,18 +1054,18 @@ export default function PetDetailScreen({ route, navigation }) {
         {/* ─── 🩺 CHRONIC CONDITIONS ─── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🩺 Хронические заболевания</Text>
+            <Text style={styles.sectionTitle}>{t('detail.condition.section')}</Text>
             <TouchableOpacity style={styles.addWeightBtn} onPress={openAddCondition}>
-              <Ionicons name="add" size={18} color="#fff" />
-              <Text style={styles.addWeightBtnText}>Добавить</Text>
+              <Ionicons name="add" size={18} color={theme.onAccent} />
+              <Text style={styles.addWeightBtnText}>{t('common:add')}</Text>
             </TouchableOpacity>
           </View>
           {conditions.length === 0 ? (
-            <Text style={styles.emptyText}>Нет хронических заболеваний</Text>
+            <Text style={styles.emptyText}>{t('detail.condition.empty')}</Text>
           ) : (
             conditions.map((c) => {
               const sub = [];
-              if (c.since_date) sub.push(`С ${formatDate(c.since_date)}`);
+              if (c.since_date) sub.push(t('detail.condition.since', { date: formatDate(c.since_date) }));
               if (c.notes) sub.push(c.notes);
               return (
                 <View key={c.id} style={styles.passportRow}>
@@ -969,14 +1076,14 @@ export default function PetDetailScreen({ route, navigation }) {
                     <View style={styles.passportHeadRight}>
                       <View style={[styles.condBadge, c.active ? styles.condBadgeActive : styles.condBadgeRemission]}>
                         <Text style={[styles.condBadgeText, c.active ? styles.condBadgeTextActive : styles.condBadgeTextRemission]}>
-                          {c.active ? 'Активно' : 'В ремиссии'}
+                          {c.active ? t('detail.condition.active') : t('detail.condition.remission')}
                         </Text>
                       </View>
                       <TouchableOpacity onPress={() => openEditCondition(c)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Ionicons name="create-outline" size={18} color="#6B4EFF" />
+                        <Ionicons name="create-outline" size={18} color={theme.accent} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => deleteCondition(c)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                        <Ionicons name="trash-outline" size={18} color={theme.danger} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -992,11 +1099,13 @@ export default function PetDetailScreen({ route, navigation }) {
         {/* ─── UPCOMING EVENTS ──────────────── */}
         {upcomingEvents.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📅 Ближайшие события</Text>
-            {upcomingEvents.map((event, index) => (
+            <Text style={styles.sectionTitle}>{t('detail.events.section')}</Text>
+            {upcomingEvents.map((event, index) => {
+              const evColor = eventColorFor(theme, event.type);
+              return (
               <View key={index} style={styles.eventCard}>
-                <View style={[styles.eventIconWrap, { backgroundColor: event.color + '20' }]}>
-                  <Ionicons name={event.icon} size={20} color={event.color} />
+                <View style={[styles.eventIconWrap, { backgroundColor: evColor + '20' }]}>
+                  <Ionicons name={event.icon} size={20} color={evColor} />
                 </View>
                 <View style={styles.eventContent}>
                   <Text style={styles.eventTitle}>{event.title}</Text>
@@ -1004,34 +1113,37 @@ export default function PetDetailScreen({ route, navigation }) {
                 </View>
                 <Text style={styles.eventBadge}>{daysUntil(event.date)}</Text>
               </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
         {/* ─── RECENT MEDICAL RECORDS ───────── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🏥 Медицинские записи</Text>
+            <Text style={styles.sectionTitle}>{t('detail.records.section')}</Text>
             <TouchableOpacity
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 navigation.navigate('Medical');
               }}
             >
-              <Text style={styles.seeAll}>Все →</Text>
+              <Text style={styles.seeAll}>{t('detail.records.seeAll')}</Text>
             </TouchableOpacity>
           </View>
 
           {recentRecords.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Ionicons name="document-outline" size={32} color="#E0E0E0" />
-              <Text style={styles.emptyText}>Нет медицинских записей</Text>
+              <Ionicons name="document-outline" size={32} color={theme.hairline} />
+              <Text style={styles.emptyText}>{t('detail.records.empty')}</Text>
             </View>
           ) : (
-            recentRecords.map((record, index) => (
+            recentRecords.map((record, index) => {
+              const recColor = eventColorFor(theme, record.type);
+              return (
               <View key={index} style={styles.recordCard}>
-                <View style={[styles.recordIconWrap, { backgroundColor: record.color + '20' }]}>
-                  <Ionicons name={record.icon} size={20} color={record.color} />
+                <View style={[styles.recordIconWrap, { backgroundColor: recColor + '20' }]}>
+                  <Ionicons name={record.icon} size={20} color={recColor} />
                 </View>
                 <View style={styles.recordContent}>
                   <Text style={styles.recordTitle}>{record.title}</Text>
@@ -1043,16 +1155,17 @@ export default function PetDetailScreen({ route, navigation }) {
                   ) : null}
                 </View>
               </View>
-            ))
+              );
+            })
           )}
         </View>
 
         {/* ─── QUICK ACTIONS ────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚡ Быстрые действия</Text>
+          <Text style={styles.sectionTitle}>{t('detail.quickActions.section')}</Text>
           <View style={styles.actionsGrid}>
             <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: '#F3F0FF' }]}
+              style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 navigation.navigate('Assistant', {
@@ -1061,64 +1174,61 @@ export default function PetDetailScreen({ route, navigation }) {
                 });
               }}
             >
-              <Ionicons name="scan-outline" size={28} color="#6C63FF" />
-              <Text style={styles.actionText}>AI Анализ</Text>
+              <Ionicons name="scan-outline" size={28} color={theme.accent} />
+              <Text style={styles.actionText}>{t('detail.quickActions.aiAnalysis')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: '#E8F4FD' }]}
+              style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
               onPress={() => navigation.navigate('Medical')}
             >
-              <Ionicons name="document-text-outline" size={28} color="#4ECDC4" />
-              <Text style={styles.actionText}>Записи</Text>
+              <Ionicons name="document-text-outline" size={28} color={theme.accent} />
+              <Text style={styles.actionText}>{t('detail.quickActions.records')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: '#FFE8E8' }]}
+              style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
               onPress={() => navigation.navigate('Medical')}
             >
-              <Ionicons name="medkit-outline" size={28} color="#FF6B6B" />
-              <Text style={styles.actionText}>Прививки</Text>
+              <Ionicons name="medkit-outline" size={28} color={theme.accent} />
+              <Text style={styles.actionText}>{t('detail.quickActions.vaccines')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: '#E8FFE8' }]}
+              style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
               onPress={() => navigation.navigate('Activity')}
             >
-              <Ionicons name="fitness-outline" size={28} color="#51CF66" />
-              <Text style={styles.actionText}>Активность</Text>
+              <Ionicons name="fitness-outline" size={28} color={theme.accent} />
+              <Text style={styles.actionText}>{t('detail.quickActions.activity')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* ─── INFO SECTION ─────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ℹ️ Информация</Text>
+          <Text style={styles.sectionTitle}>{t('detail.info.section')}</Text>
           <View style={styles.infoCard}>
             <InfoRow
               icon="calendar-outline"
-              label="Дата рождения"
+              label={t('detail.info.birthDate')}
               value={pet.birth_date ? formatDate(pet.birth_date) : '—'}
             />
             <InfoRow
               icon={pet.gender === 'male' ? 'male-outline' : 'female-outline'}
-              label="Пол"
-              value={
-                pet.gender === 'male'   ? 'Кобель / Кот' :
-                pet.gender === 'female' ? 'Сука / Кошка'  : '—'
-              }
+              label={t('detail.info.gender')}
+              value={genderLabel()}
             />
             {pet.microchip_id && (
               <InfoRow
                 icon="barcode-outline"
-                label="Микрочип"
+                label={t('detail.info.microchip')}
                 value={pet.microchip_id}
               />
             )}
             <InfoRow
               icon="medkit-outline"
-              label="Кастрирован"
-              value={pet.is_neutered ? 'Да' : 'Нет'}
+              label={t('detail.info.neutered')}
+              value={pet.is_neutered ? t('common:yes') : t('common:no')}
               isLast
             />
           </View>
@@ -1143,7 +1253,7 @@ export default function PetDetailScreen({ route, navigation }) {
           <View style={styles.modalContainer}>
             {/* Modal header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Добавить вес</Text>
+              <Text style={styles.modalTitle}>{t('detail.weight.modal.title')}</Text>
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={() => {
@@ -1152,7 +1262,7 @@ export default function PetDetailScreen({ route, navigation }) {
                   setWeightNote('');
                 }}
               >
-                <Ionicons name="close" size={22} color="#888" />
+                <Ionicons name="close" size={22} color={theme.t3} />
               </TouchableOpacity>
             </View>
 
@@ -1161,12 +1271,12 @@ export default function PetDetailScreen({ route, navigation }) {
 
             {/* Weight input */}
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Вес</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.weight.modal.weightLabel')}</Text>
               <View style={styles.modalInputRow}>
                 <TextInput
                   style={styles.modalInput}
                   placeholder="0.0"
-                  placeholderTextColor="#C0C0C0"
+                  placeholderTextColor={theme.t4}
                   keyboardType="decimal-pad"
                   value={newWeight}
                   onChangeText={setNewWeight}
@@ -1174,7 +1284,7 @@ export default function PetDetailScreen({ route, navigation }) {
                 />
                 <View style={styles.modalUnitBadge}>
                   <Text style={styles.modalUnitText}>
-                    {pet.weight_unit || 'кг'}
+                    {unitLabel(unit)}
                   </Text>
                 </View>
               </View>
@@ -1182,11 +1292,11 @@ export default function PetDetailScreen({ route, navigation }) {
 
             {/* Note input */}
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Заметка (необязательно)</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.weight.modal.noteLabel')}</Text>
               <TextInput
                 style={[styles.modalInput, styles.modalInputNote]}
-                placeholder="Например: после стрижки"
-                placeholderTextColor="#C0C0C0"
+                placeholder={t('detail.weight.modal.notePlaceholder')}
+                placeholderTextColor={theme.t4}
                 value={weightNote}
                 onChangeText={setWeightNote}
                 multiline
@@ -1201,9 +1311,9 @@ export default function PetDetailScreen({ route, navigation }) {
               disabled={savingWeight}
             >
               {savingWeight ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={theme.onAccent} />
               ) : (
-                <Text style={styles.modalSaveBtnText}>Сохранить</Text>
+                <Text style={styles.modalSaveBtnText}>{t('common:save')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -1211,48 +1321,82 @@ export default function PetDetailScreen({ route, navigation }) {
       </Modal>
 
       {/* ══════ ALLERGY MODAL ══════ */}
-      <Modal visible={allergyModal} animationType="slide" transparent onRequestClose={() => setAllergyModal(false)}>
+      <Modal visible={passportModal} animationType="slide" transparent onRequestClose={() => setPassportModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editAllergy ? 'Изменить аллергию' : 'Добавить аллергию'}</Text>
-              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setAllergyModal(false)}>
-                <Ionicons name="close" size={22} color="#888" />
+              <Text style={styles.modalTitle}>{t('passport.editTitle')}</Text>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setPassportModal(false)}>
+                <Ionicons name="close" size={22} color={theme.t3} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Вещество (аллерген) *</Text>
+              <Text style={styles.modalInputLabel}>{t('passport.bloodType')}</Text>
               <View style={styles.modalInputRow}>
-                <TextInput style={styles.modalInput} placeholder="Напр.: курица, амоксициллин" placeholderTextColor="#C0C0C0" value={aSubstance} onChangeText={setASubstance} />
+                <TextInput style={styles.modalInput} placeholder={t('passport.bloodTypePlaceholder')} placeholderTextColor={theme.t4} value={pBlood} onChangeText={setPBlood} />
               </View>
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Реакция</Text>
+              <Text style={styles.modalInputLabel}>{t('passport.context')}</Text>
+              <TextInput style={[styles.modalInput, styles.modalInputNote]} placeholder={t('passport.contextPlaceholder')} placeholderTextColor={theme.t4} value={pContext} onChangeText={setPContext} multiline />
+            </View>
+
+            <TouchableOpacity style={[styles.modalSaveBtn, savingPassport && styles.modalSaveBtnDisabled]} onPress={savePassport} disabled={savingPassport}>
+              {savingPassport ? <ActivityIndicator color={theme.onAccent} /> : <Text style={styles.modalSaveBtnText}>{t('common:save')}</Text>}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal visible={allergyModal} animationType="slide" transparent onRequestClose={() => setAllergyModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{editAllergy ? t('detail.allergy.modal.editTitle') : t('detail.allergy.modal.addTitle')}</Text>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setAllergyModal(false)}>
+                <Ionicons name="close" size={22} color={theme.t3} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalInputLabel}>{t('detail.allergy.modal.substanceLabel')}</Text>
               <View style={styles.modalInputRow}>
-                <TextInput style={styles.modalInput} placeholder="Напр.: зуд, отёк" placeholderTextColor="#C0C0C0" value={aReaction} onChangeText={setAReaction} />
+                <TextInput style={styles.modalInput} placeholder={t('detail.allergy.modal.substancePlaceholder')} placeholderTextColor={theme.t4} value={aSubstance} onChangeText={setASubstance} />
               </View>
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Тяжесть</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.allergy.modal.reactionLabel')}</Text>
+              <View style={styles.modalInputRow}>
+                <TextInput style={styles.modalInput} placeholder={t('detail.allergy.modal.reactionPlaceholder')} placeholderTextColor={theme.t4} value={aReaction} onChangeText={setAReaction} />
+              </View>
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalInputLabel}>{t('detail.allergy.modal.severityLabel')}</Text>
               <View style={styles.sevRow}>
                 {SEVERITY_OPTIONS.map((opt) => {
                   const active = aSeverity === opt.value;
+                  const sevColor = severityColorFor(theme, opt.value); // уровень → семантика
                   return (
-                    <TouchableOpacity key={String(opt.value)} style={[styles.sevChip, active && styles.sevChipActive]} onPress={() => setASeverity(opt.value)}>
-                      <Text style={[styles.sevChipText, active && styles.sevChipTextActive]}>{opt.label}</Text>
+                    <TouchableOpacity
+                      key={String(opt.value)}
+                      style={[styles.sevChip, active && { backgroundColor: sevColor + '22', borderColor: sevColor }]}
+                      onPress={() => setASeverity(opt.value)}
+                    >
+                      <Text style={[styles.sevChipText, active && { color: sevColor, fontWeight: '600' }]}>{t('detail.severity.' + opt.key)}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
             </View>
 
-            <PassportDateField label="Дата выявления" value={aNotedOn} onChange={setANotedOn} />
+            <PassportDateField label={t('detail.allergy.modal.notedOnLabel')} value={aNotedOn} onChange={setANotedOn} />
 
             <TouchableOpacity style={[styles.modalSaveBtn, savingAllergy && styles.modalSaveBtnDisabled]} onPress={saveAllergy} disabled={savingAllergy}>
-              {savingAllergy ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSaveBtnText}>Сохранить</Text>}
+              {savingAllergy ? <ActivityIndicator color={theme.onAccent} /> : <Text style={styles.modalSaveBtnText}>{t('common:save')}</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -1263,47 +1407,47 @@ export default function PetDetailScreen({ route, navigation }) {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editCondition ? 'Изменить заболевание' : 'Добавить заболевание'}</Text>
+              <Text style={styles.modalTitle}>{editCondition ? t('detail.condition.modal.editTitle') : t('detail.condition.modal.addTitle')}</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setCondModal(false)}>
-                <Ionicons name="close" size={22} color="#888" />
+                <Ionicons name="close" size={22} color={theme.t3} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Заболевание *</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.condition.modal.nameLabel')}</Text>
               <View style={styles.modalInputRow}>
-                <TextInput style={styles.modalInput} placeholder="Напр.: атопический дерматит" placeholderTextColor="#C0C0C0" value={cCondition} onChangeText={setCCondition} />
+                <TextInput style={styles.modalInput} placeholder={t('detail.condition.modal.namePlaceholder')} placeholderTextColor={theme.t4} value={cCondition} onChangeText={setCCondition} />
               </View>
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Код (МКБ/прочее)</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.condition.modal.codeLabel')}</Text>
               <View style={styles.modalInputRow}>
-                <TextInput style={styles.modalInput} placeholder="Напр.: L20" placeholderTextColor="#C0C0C0" value={cCode} onChangeText={setCCode} />
+                <TextInput style={styles.modalInput} placeholder={t('detail.condition.modal.codePlaceholder')} placeholderTextColor={theme.t4} value={cCode} onChangeText={setCCode} />
               </View>
             </View>
 
-            <PassportDateField label="С какого времени" value={cSince} onChange={setCSince} />
+            <PassportDateField label={t('detail.condition.modal.sinceLabel')} value={cSince} onChange={setCSince} />
 
             <View style={styles.toggleRow}>
-              <Text style={styles.modalInputLabel}>Активно</Text>
-              <Switch value={cActive} onValueChange={setCActive} trackColor={{ true: '#6B4EFF', false: '#D1D5DB' }} thumbColor="#fff" />
+              <Text style={styles.modalInputLabel}>{t('detail.condition.active')}</Text>
+              <Switch value={cActive} onValueChange={setCActive} trackColor={{ true: theme.accent, false: theme.hairline }} thumbColor={theme.onAccent} />
             </View>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalInputLabel}>Заметки</Text>
+              <Text style={styles.modalInputLabel}>{t('detail.condition.modal.notesLabel')}</Text>
               <View style={styles.modalInputRow}>
-                <TextInput style={[styles.modalInput, styles.modalInputNote]} placeholder="Доп. информация" placeholderTextColor="#C0C0C0" value={cNotes} onChangeText={setCNotes} multiline maxLength={300} />
+                <TextInput style={[styles.modalInput, styles.modalInputNote]} placeholder={t('detail.condition.modal.notesPlaceholder')} placeholderTextColor={theme.t4} value={cNotes} onChangeText={setCNotes} multiline maxLength={300} />
               </View>
             </View>
 
             <TouchableOpacity style={[styles.modalSaveBtn, savingCondition && styles.modalSaveBtnDisabled]} onPress={saveCondition} disabled={savingCondition}>
-              {savingCondition ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSaveBtnText}>Сохранить</Text>}
+              {savingCondition ? <ActivityIndicator color={theme.onAccent} /> : <Text style={styles.modalSaveBtnText}>{t('common:save')}</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </>
+    </Screen>
   );
 }
 
@@ -1311,10 +1455,12 @@ export default function PetDetailScreen({ route, navigation }) {
 // INFO ROW COMPONENT
 // ══════════════════════════════════════════════════
 function InfoRow({ icon, label, value, isLast }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
     <View style={[styles.infoRow, isLast && { borderBottomWidth: 0 }]}>
       <View style={styles.infoIconWrap}>
-        <Ionicons name={icon} size={18} color="#6C63FF" />
+        <Ionicons name={icon} size={18} color={theme.accent} />
       </View>
       <View style={styles.infoContent}>
         <Text style={styles.infoLabel}>{label}</Text>
@@ -1327,26 +1473,26 @@ function InfoRow({ icon, label, value, isLast }) {
 // ══════════════════════════════════════════════════
 // STYLES
 // ══════════════════════════════════════════════════
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: 'transparent',
     gap: 16,
   },
-  notFoundText: { fontSize: 16, color: '#888' },
+  notFoundText: { fontSize: 16, color: theme.t3 },
   backBtn: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#F3F0FF',
+    backgroundColor: theme.accentTint,
     borderRadius: 10,
   },
-  backBtnText: { color: '#6C63FF', fontWeight: '600' },
+  backBtnText: { color: theme.accentPress, fontWeight: '600' },
 
   // ─── Header ───────────────────────────────────
   header: {
@@ -1356,50 +1502,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
   },
   backButton: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.surface,
     justifyContent: 'center', alignItems: 'center',
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A2E' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: theme.t1 },
   headerActions: { flexDirection: 'row', gap: 10 },
   headerButton: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#F3F0FF',
+    backgroundColor: theme.accentTint,
     justifyContent: 'center', alignItems: 'center',
   },
-  deleteButton: { backgroundColor: '#FFE8E8' },
+  deleteButton: { backgroundColor: theme.danger + '22' },
 
   // ─── Photo section ────────────────────────────
   photoSection: {
     alignItems: 'center',
     paddingVertical: 24,
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: theme.hairline,
   },
   avatarContainer: { position: 'relative', marginBottom: 16 },
   avatar: {
     width: 130, height: 130, borderRadius: 65,
-    borderWidth: 4, borderColor: '#6C63FF',
+    borderWidth: 4, borderColor: theme.accent,
   },
   uploadingOverlay: {
     width: 130, height: 130, borderRadius: 65,
-    backgroundColor: 'rgba(108,99,255,0.8)',
+    backgroundColor: theme.accent + 'CC',
     justifyContent: 'center', alignItems: 'center',
   },
   cameraIcon: {
     position: 'absolute', bottom: 0, right: 0,
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.accentPress,
     borderRadius: 18, width: 36, height: 36,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 3, borderColor: '#fff',
+    borderWidth: 3, borderColor: theme.surface,
   },
-  petName: { fontSize: 26, fontWeight: 'bold', color: '#1A1A2E', marginBottom: 4 },
-  petBreed: { fontSize: 15, color: '#666', marginBottom: 6 },
-  petMeta:  { fontSize: 13, color: '#888' },
+  petName: { fontSize: 26, fontWeight: 'bold', color: theme.t1, marginBottom: 4 },
+  petBreed: { fontSize: 15, color: theme.t2, marginBottom: 6 },
+  petMeta:  { fontSize: 13, color: theme.t3 },
 
   // ─── Stats ────────────────────────────────────
   statsContainer: {
@@ -1409,13 +1555,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statCard: {
-    flex: 1, backgroundColor: '#fff', borderRadius: 16,
+    flex: 1, backgroundColor: theme.surface, borderRadius: 16,
     paddingVertical: 16, alignItems: 'center', gap: 6,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
-  statValue: { fontSize: 22, fontWeight: 'bold', color: '#1A1A2E' },
-  statLabel: { fontSize: 11, color: '#888', textAlign: 'center' },
+  statValue: { fontSize: 22, fontWeight: 'bold', color: theme.t1 },
+  statLabel: { fontSize: 11, color: theme.t3, textAlign: 'center' },
 
   // ─── Sections ─────────────────────────────────
   section: { paddingHorizontal: 20, marginTop: 20 },
@@ -1426,26 +1572,26 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 17, fontWeight: '700', color: '#1A1A2E', marginBottom: 12,
+    fontSize: 17, fontWeight: '700', color: theme.t1, marginBottom: 12,
   },
-  seeAll: { fontSize: 14, color: '#6C63FF', fontWeight: '600' },
+  seeAll: { fontSize: 14, color: theme.accentPress, fontWeight: '600' },
 
   // ─── Weight ───────────────────────────────────
   addWeightBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#F3F0FF',
+    backgroundColor: theme.accentTint,
     paddingHorizontal: 12, paddingVertical: 6,
     borderRadius: 20,
   },
-  addWeightBtnText: { fontSize: 13, color: '#6C63FF', fontWeight: '600' },
+  addWeightBtnText: { fontSize: 13, color: theme.accentPress, fontWeight: '600' },
 
   weightLoadingBox: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 32,
+    backgroundColor: theme.surface, borderRadius: 16, padding: 32,
     alignItems: 'center',
   },
   weightCard: {
-    backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    backgroundColor: theme.surface, borderRadius: 16, overflow: 'hidden',
+    shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
   },
   weightTopRow: {
@@ -1455,9 +1601,9 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 8,
   },
-  weightCurrentLabel: { fontSize: 12, color: '#888', marginBottom: 4 },
-  weightCurrentValue: { fontSize: 28, fontWeight: 'bold', color: '#1A1A2E' },
-  weightUnit:         { fontSize: 16, color: '#888', fontWeight: '400' },
+  weightCurrentLabel: { fontSize: 12, color: theme.t3, marginBottom: 4 },
+  weightCurrentValue: { fontSize: 28, fontWeight: 'bold', color: theme.t1 },
+  weightUnit:         { fontSize: 16, color: theme.t3, fontWeight: '400' },
   trendBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
@@ -1468,11 +1614,11 @@ const styles = StyleSheet.create({
   chart: { borderRadius: 10 },
 
   weightHistoryList: {
-    borderTopWidth: 1, borderTopColor: '#F5F5F5',
+    borderTopWidth: 1, borderTopColor: theme.hairline,
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4,
   },
   weightHistoryTitle: {
-    fontSize: 12, fontWeight: '600', color: '#888',
+    fontSize: 12, fontWeight: '600', color: theme.t3,
     marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5,
   },
   weightHistoryRow: {
@@ -1481,31 +1627,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+    borderBottomColor: theme.hairline,
   },
   weightHistoryLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   weightHistoryDot: {
     width: 8, height: 8, borderRadius: 4,
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.accent,
   },
-  weightHistoryValue: { fontSize: 14, fontWeight: '600', color: '#1A1A2E' },
-  weightHistoryNote:  { fontSize: 11, color: '#888', marginTop: 1 },
-  weightHistoryDate:  { fontSize: 12, color: '#888' },
+  weightHistoryValue: { fontSize: 14, fontWeight: '600', color: theme.t1 },
+  weightHistoryNote:  { fontSize: 11, color: theme.t3, marginTop: 1 },
+  weightHistoryDate:  { fontSize: 12, color: theme.t3 },
 
   emptyAddBtn: {
     marginTop: 10,
-    backgroundColor: '#F3F0FF',
+    backgroundColor: theme.accentTint,
     paddingHorizontal: 16, paddingVertical: 8,
     borderRadius: 20,
   },
-  emptyAddBtnText: { color: '#6C63FF', fontWeight: '600', fontSize: 13 },
+  emptyAddBtnText: { color: theme.accentPress, fontWeight: '600', fontSize: 13 },
 
   // ─── Events ───────────────────────────────────
   eventCard: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', padding: 14,
+    backgroundColor: theme.surface, padding: 14,
     borderRadius: 14, marginBottom: 8,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
   },
   eventIconWrap: {
@@ -1513,20 +1659,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   eventContent: { flex: 1 },
-  eventTitle:   { fontSize: 14, fontWeight: '600', color: '#1A1A2E', marginBottom: 3 },
-  eventDate:    { fontSize: 12, color: '#888' },
+  eventTitle:   { fontSize: 14, fontWeight: '600', color: theme.t1, marginBottom: 3 },
+  eventDate:    { fontSize: 12, color: theme.t3 },
   eventBadge: {
-    backgroundColor: '#F3F0FF',
+    backgroundColor: theme.accentTint,
     paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 10, fontSize: 11, fontWeight: '600', color: '#6C63FF',
+    borderRadius: 10, fontSize: 11, fontWeight: '600', color: theme.accentPress,
   },
 
   // ─── Records ──────────────────────────────────
   recordCard: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', padding: 14,
+    backgroundColor: theme.surface, padding: 14,
     borderRadius: 14, marginBottom: 8,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
   },
   recordIconWrap: {
@@ -1534,39 +1680,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   recordContent: { flex: 1 },
-  recordTitle:   { fontSize: 14, fontWeight: '600', color: '#1A1A2E', marginBottom: 3 },
-  recordDate:    { fontSize: 12, color: '#888', marginBottom: 2 },
-  recordDescription: { fontSize: 12, color: '#666' },
+  recordTitle:   { fontSize: 14, fontWeight: '600', color: theme.t1, marginBottom: 3 },
+  recordDate:    { fontSize: 12, color: theme.t3, marginBottom: 2 },
+  recordDescription: { fontSize: 12, color: theme.t2 },
 
   // ─── Empty card ───────────────────────────────
   emptyCard: {
-    backgroundColor: '#fff', borderRadius: 14,
+    backgroundColor: theme.surface, borderRadius: 14,
     padding: 24, alignItems: 'center', gap: 8,
   },
-  emptyText: { fontSize: 14, color: '#B0B0B0' },
-  allergyBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 20, marginTop: 16, padding: 14, backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#EF4444', borderRadius: 12 },
+  emptyText: { fontSize: 14, color: theme.t3 },
+  allergyBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 20, marginTop: 16, padding: 14, backgroundColor: theme.danger + '14', borderWidth: 1, borderColor: theme.danger, borderRadius: 12 },
   allergyBannerText: { flex: 1 },
-  allergyBannerTitle: { fontSize: 14, fontWeight: '700', color: '#B91C1C' },
-  allergyBannerList: { fontSize: 13, color: '#B91C1C', marginTop: 2 },
-  passportRow: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginTop: 8, borderWidth: 1, borderColor: '#F0F0F5' },
+  allergyBannerTitle: { fontSize: 14, fontWeight: '700', color: theme.danger },
+  allergyBannerList: { fontSize: 13, color: theme.danger, marginTop: 2 },
+  passportRow: { backgroundColor: theme.surface, borderRadius: 12, padding: 14, marginTop: 8, borderWidth: 1, borderColor: theme.hairline },
   passportHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  passportName: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', flexShrink: 1 },
-  passportSub: { fontSize: 13, color: '#6B7280', marginTop: 4 },
+  passportName: { fontSize: 15, fontWeight: '700', color: theme.t1, flexShrink: 1 },
+  passportSub: { fontSize: 13, color: theme.t3, marginTop: 4 },
+  passportInfoLabel: { fontSize: 12, fontWeight: '600', color: theme.t3 },
+  passportInfoValue: { fontSize: 15, color: theme.t1, marginTop: 3 },
+  passportInfoEmpty: { color: theme.t4, fontStyle: 'italic' },
   condBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
-  condBadgeActive: { backgroundColor: '#FEE2E2' },
-  condBadgeRemission: { backgroundColor: '#E5E7EB' },
+  condBadgeActive: { backgroundColor: theme.danger + '22' },
+  condBadgeRemission: { backgroundColor: theme.hairline },
   condBadgeText: { fontSize: 11, fontWeight: '700' },
-  condBadgeTextActive: { color: '#B91C1C' },
-  condBadgeTextRemission: { color: '#6B7280' },
+  condBadgeTextActive: { color: theme.danger },
+  condBadgeTextRemission: { color: theme.t3 },
   passportActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   passportHeadRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   passportDateField: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  passportDateText: { flex: 1, fontSize: 15, color: '#1A1A2E' },
+  passportDateText: { flex: 1, fontSize: 15, color: theme.t1 },
   sevRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  sevChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
-  sevChipActive: { backgroundColor: '#6B4EFF', borderColor: '#6B4EFF' },
-  sevChipText: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
-  sevChipTextActive: { color: '#fff', fontWeight: '600' },
+  // Базовый чип — нейтраль; активный (семантика уровня) задаётся inline в render.
+  sevChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline },
+  sevChipText: { fontSize: 13, color: theme.t3, fontWeight: '500' },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 8 },
 
   // ─── Actions ──────────────────────────────────
@@ -1574,39 +1722,39 @@ const styles = StyleSheet.create({
   actionButton: {
     width: '47%', aspectRatio: 1.6, borderRadius: 16,
     justifyContent: 'center', alignItems: 'center', gap: 6,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
   },
-  actionText: { fontSize: 13, fontWeight: '600', color: '#1A1A2E' },
+  actionText: { fontSize: 13, fontWeight: '600', color: theme.t1 },
 
   // ─── Info ─────────────────────────────────────
   infoCard: {
-    backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    backgroundColor: theme.surface, borderRadius: 16, paddingHorizontal: 16,
+    shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
   infoRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F5F5F5',
+    borderBottomWidth: 1, borderBottomColor: theme.hairline,
   },
   infoIconWrap: {
     width: 34, height: 34, borderRadius: 10,
-    backgroundColor: '#F3F0FF',
+    backgroundColor: theme.accentTint,
     justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   infoContent: { flex: 1 },
-  infoLabel:   { fontSize: 12, color: '#888', marginBottom: 2 },
-  infoValue:   { fontSize: 14, fontWeight: '500', color: '#1A1A2E' },
+  infoLabel:   { fontSize: 12, color: theme.t3, marginBottom: 2 },
+  infoValue:   { fontSize: 14, fontWeight: '500', color: theme.t1 },
 
   // ─── Modal ────────────────────────────────────
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.45)', // theme-neutral scrim
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     borderTopLeftRadius: 28, borderTopRightRadius: 28,
     paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40,
   },
@@ -1616,23 +1764,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  modalTitle:   { fontSize: 20, fontWeight: '700', color: '#1A1A2E' },
+  modalTitle:   { fontSize: 20, fontWeight: '700', color: theme.t1 },
   modalCloseBtn: {
     width: 34, height: 34, borderRadius: 17,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.hairline,
     justifyContent: 'center', alignItems: 'center',
   },
-  modalSubtitle: { fontSize: 14, color: '#888', marginBottom: 24 },
+  modalSubtitle: { fontSize: 14, color: theme.t3, marginBottom: 24 },
 
   modalInputGroup: { marginBottom: 16 },
-  modalInputLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 8 },
+  modalInputLabel: { fontSize: 13, fontWeight: '600', color: theme.t2, marginBottom: 8 },
   modalInputRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   modalInput: {
     flex: 1,
-    backgroundColor: '#F8F9FA', borderRadius: 14,
+    backgroundColor: theme.surface, borderRadius: 14,
     paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 18, fontWeight: '600', color: '#1A1A2E',
-    borderWidth: 1.5, borderColor: '#EBEBEB',
+    fontSize: 18, fontWeight: '600', color: theme.t1,
+    borderWidth: 1.5, borderColor: theme.hairline,
   },
   modalInputNote: {
     fontSize: 14, fontWeight: '400',
@@ -1640,20 +1788,20 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   modalUnitBadge: {
-    backgroundColor: '#F3F0FF', borderRadius: 12,
+    backgroundColor: theme.accentTint, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 14,
   },
-  modalUnitText: { fontSize: 16, fontWeight: '700', color: '#6C63FF' },
+  modalUnitText: { fontSize: 16, fontWeight: '700', color: theme.accentPress },
 
   modalSaveBtn: {
-    backgroundColor: '#6C63FF', borderRadius: 16,
+    backgroundColor: theme.accentPress, borderRadius: 16,
     paddingVertical: 16, alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#6C63FF', shadowOffset: { width: 0, height: 4 },
+    shadowColor: theme.accent, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
   },
   modalSaveBtnDisabled: { opacity: 0.6 },
-  modalSaveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  modalSaveBtnText: { color: theme.onAccent, fontSize: 16, fontWeight: '700' },
 
   bottomPadding: { height: 40 },
 });

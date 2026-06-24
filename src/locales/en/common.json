@@ -18,6 +18,7 @@
     "english": "English",
     "russian": "Russian",
     "yearsOld_one": "{{count}} year",
-    "yearsOld_other": "{{count}} years"
+    "yearsOld_other": "{{count}} years",
+    "success": "Success"
   }
     

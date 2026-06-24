@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../theme/ThemeProvider';
+import Screen from '../components/Screen';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -18,6 +20,8 @@ export default function LoginScreen({ navigation }) {
   const [isSignUp, setIsSignUp] = useState(false);
 
   const { signIn, signUp } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -43,6 +47,7 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
+    <Screen>
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
@@ -58,6 +63,7 @@ export default function LoginScreen({ navigation }) {
           <TextInput
             style={styles.input}
             placeholder="Email"
+            placeholderTextColor={theme.t4}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -66,6 +72,7 @@ export default function LoginScreen({ navigation }) {
           <TextInput
             style={styles.input}
             placeholder="Password"
+            placeholderTextColor={theme.t4}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -91,13 +98,14 @@ export default function LoginScreen({ navigation }) {
         </View>
       </View>
     </KeyboardAvoidingView>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: 'transparent',
   },
   inner: {
     flex: 1,
@@ -112,12 +120,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#6C63FF',
+    color: theme.accent,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: theme.t2,
     marginBottom: 48,
   },
   form: {
@@ -125,28 +133,29 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   input: {
-    backgroundColor: '#FFF',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.hairline,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     fontSize: 16,
+    color: theme.t1,
   },
   button: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.accentPress,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     marginBottom: 16,
   },
   buttonText: {
-    color: '#FFF',
+    color: theme.onAccent,
     fontSize: 18,
     fontWeight: 'bold',
   },
   switchText: {
-    color: '#6C63FF',
+    color: theme.accentPress,
     textAlign: 'center',
     fontSize: 14,
   },

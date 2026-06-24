@@ -1,4 +1,23 @@
 {
+  "alerts": {
+    "deleteAllergy": {
+      "title": "Удалить аллергию?",
+      "message": "{{name}}"
+    },
+    "deleteCondition": {
+      "title": "Удалить заболевание?",
+      "message": "{{name}}"
+    }
+  },
+  "passport": {
+    "title": "Паспорт",
+    "editTitle": "Редактировать паспорт",
+    "bloodType": "Группа крови",
+    "bloodTypePlaceholder": "напр. DEA 1.1+",
+    "context": "Бытовой контекст",
+    "contextPlaceholder": "напр. живёт с 2 кошками, домашний, большой двор",
+    "empty": "Не указано"
+  },
   "title": "Мои питомцы",
   "addPet": "Добавить питомца",
   "addNewPet": "Добавить питомца",
@@ -61,5 +80,135 @@
   "auth": {
     "logOut": "Выйти",
     "ok": "ОК"
+  },
+  "detail": {
+    "severity": {
+      "none": "Не указано",
+      "mild": "Лёгкая",
+      "moderate": "Средняя",
+      "severe": "Тяжёлая"
+    },
+    "pickDate": "Выберите дату",
+    "notFound": "Питомец не найден",
+    "stats": {
+      "allergies": "Аллергии",
+      "vaccinations": "Прививки",
+      "records": "Записи",
+      "daysAgo": "Дней назад"
+    },
+    "alerts": {
+      "deletePet": {
+        "title": "Удалить питомца?",
+        "message": "Вы уверены, что хотите удалить {{name}}? Питомец будет скрыт.",
+        "error": "Не удалось удалить питомца"
+      },
+      "photoSuccess": "Фото питомца обновлено!",
+      "photoError": "Не удалось обновить фото"
+    },
+    "weight": {
+      "section": "⚖️ Динамика веса",
+      "empty": "Нет данных о весе",
+      "addFirst": "+ Добавить первый вес",
+      "current": "Текущий вес",
+      "historyTitle": "История измерений",
+      "invalid": "Введите корректный вес (0–200)",
+      "saveError": "Не удалось сохранить вес",
+      "trend": {
+        "stable": "Стабильно",
+        "delta": "{{value}} {{unit}}"
+      },
+      "modal": {
+        "title": "Добавить вес",
+        "weightLabel": "Вес",
+        "noteLabel": "Заметка (необязательно)",
+        "notePlaceholder": "Например: после стрижки"
+      }
+    },
+    "age": {
+      "unknown": "Неизвестно",
+      "months": "{{count}} мес.",
+      "years_one": "{{count}} год",
+      "years_few": "{{count}} года",
+      "years_many": "{{count}} лет",
+      "years_other": "{{count}} лет"
+    },
+    "relative": {
+      "today": "Сегодня",
+      "tomorrow": "Завтра",
+      "inDays": "Через {{count}} дн.",
+      "inWeeks": "Через {{count}} нед.",
+      "inMonths": "Через {{count}} мес."
+    },
+    "allergy": {
+      "section": "🤧 Аллергии",
+      "empty": "Нет данных об аллергиях",
+      "substanceRequired": "Укажите вещество (аллерген)",
+      "modal": {
+        "addTitle": "Добавить аллергию",
+        "editTitle": "Изменить аллергию",
+        "substanceLabel": "Вещество (аллерген) *",
+        "substancePlaceholder": "Напр.: курица, амоксициллин",
+        "reactionLabel": "Реакция",
+        "reactionPlaceholder": "Напр.: зуд, отёк",
+        "severityLabel": "Тяжесть",
+        "notedOnLabel": "Дата выявления"
+      }
+    },
+    "condition": {
+      "section": "🩺 Хронические заболевания",
+      "empty": "Нет хронических заболеваний",
+      "nameRequired": "Укажите название заболевания",
+      "since": "С {{date}}",
+      "active": "Активно",
+      "remission": "В ремиссии",
+      "modal": {
+        "addTitle": "Добавить заболевание",
+        "editTitle": "Изменить заболевание",
+        "nameLabel": "Заболевание *",
+        "namePlaceholder": "Напр.: атопический дерматит",
+        "codeLabel": "Код (МКБ/прочее)",
+        "codePlaceholder": "Напр.: L20",
+        "sinceLabel": "С какого времени",
+        "notesLabel": "Заметки",
+        "notesPlaceholder": "Доп. информация"
+      }
+    },
+    "events": {
+      "section": "📅 Ближайшие события",
+      "vaccinationFallback": "Вакцинация"
+    },
+    "records": {
+      "section": "🏥 Медицинские записи",
+      "seeAll": "Все →",
+      "empty": "Нет медицинских записей"
+    },
+    "quickActions": {
+      "section": "⚡ Быстрые действия",
+      "aiAnalysis": "AI Анализ",
+      "records": "Записи",
+      "vaccines": "Прививки",
+      "activity": "Активность"
+    },
+    "info": {
+      "section": "ℹ️ Информация",
+      "birthDate": "Дата рождения",
+      "gender": "Пол",
+      "microchip": "Микрочип",
+      "neutered": "Кастрирован",
+      "genderValue": {
+        "dog": {
+          "male": "Кобель",
+          "female": "Сука"
+        },
+        "cat": {
+          "male": "Кот",
+          "female": "Кошка"
+        },
+        "generic": {
+          "male": "Самец",
+          "female": "Самка"
+        }
+      }
+    }
   }
 }

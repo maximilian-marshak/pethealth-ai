@@ -1,18 +1,23 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../theme/ThemeProvider';
 
 const DONATION_OPTIONS = [100, 500, 1000];
 
 export default function ShelterCard({ shelter, onDonate, userPoints }) {
+  const { t } = useTranslation('charity');
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <MaterialCommunityIcons name="home-heart" size={32} color="#8B5CF6" />
+        <MaterialCommunityIcons name="home-heart" size={32} color={theme.accent} />
         <View style={styles.headerText}>
           <Text style={styles.name}>{shelter.name}</Text>
           <View style={styles.locationRow}>
-            <MaterialCommunityIcons name="map-marker" size={16} color="#6B7280" />
+            <MaterialCommunityIcons name="map-marker" size={16} color={theme.t3} />
             <Text style={styles.city}>{shelter.city}</Text>
           </View>
         </View>
@@ -24,23 +29,23 @@ export default function ShelterCard({ shelter, onDonate, userPoints }) {
 
       {shelter.address && (
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="home" size={16} color="#6B7280" />
+          <MaterialCommunityIcons name="home" size={16} color={theme.t3} />
           <Text style={styles.infoText}>{shelter.address}</Text>
         </View>
       )}
 
       {shelter.phone && (
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="phone" size={16} color="#6B7280" />
+          <MaterialCommunityIcons name="phone" size={16} color={theme.t3} />
           <Text style={styles.infoText}>{shelter.phone}</Text>
         </View>
       )}
 
       {shelter.total_donations > 0 && (
         <View style={styles.statsRow}>
-          <MaterialCommunityIcons name="heart" size={16} color="#EF4444" />
+          <MaterialCommunityIcons name="heart" size={16} color={theme.accent} />
           <Text style={styles.statsText}>
-            Собрано: {shelter.total_donations} Paws
+            {t('votesLabel', { count: shelter.total_donations })}
           </Text>
         </View>
       )}
@@ -71,13 +76,13 @@ export default function ShelterCard({ shelter, onDonate, userPoints }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   card: {
-    backgroundColor: 'white',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -95,7 +100,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: theme.t1,
     marginBottom: 4,
   },
   locationRow: {
@@ -104,12 +109,12 @@ const styles = StyleSheet.create({
   },
   city: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.t3,
     marginLeft: 4,
   },
   description: {
     fontSize: 14,
-    color: '#4B5563',
+    color: theme.t2,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -120,7 +125,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.t3,
     marginLeft: 8,
   },
   statsRow: {
@@ -130,11 +135,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: theme.hairline,
   },
   statsText: {
     fontSize: 14,
-    color: '#EF4444',
+    color: theme.t2,
     fontWeight: '600',
     marginLeft: 6,
   },
@@ -146,20 +151,20 @@ const styles = StyleSheet.create({
   },
   donateButton: {
     flex: 1,
-    backgroundColor: '#8B5CF6',
+    backgroundColor: theme.accentPress,
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
   },
   donateButtonDisabled: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.hairline,
   },
   donateButtonText: {
-    color: 'white',
+    color: theme.onAccent,
     fontSize: 16,
     fontWeight: '600',
   },
   donateButtonTextDisabled: {
-    color: '#9CA3AF',
+    color: theme.t4,
   },
 });

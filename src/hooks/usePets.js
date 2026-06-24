@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
 import * as imageUploadService from '../services/imageUploadService';
@@ -47,6 +47,12 @@ export const usePets = () => {
       setLoading(false);
     }
   }, [user]);
+
+  // Стабильный id инстанса (уникальное имя Realtime-канала) + ref на актуальный
+  // fetchPets, чтобы не пересоздавать подписку при смене идентичности функции.
+  const instanceIdRef = useRef(Math.random().toString(36).slice(2));
+  const fetchPetsRef = useRef(fetchPets);
+  fetchPetsRef.current = fetchPets;
 
   // Add new pet
   const addPet = async (petData) => {
@@ -203,14 +209,18 @@ export const usePets = () => {
     fetchPets();
   }, [fetchPets]);
 
-  // Real-time subscription
+  // Real-time subscription — уникальный канал на инстанс (имя с user.id +
+  // instanceId), чтобы несколько инстансов usePets не делили один topic и не
+  // ловили "add postgres_changes ... after subscribe()". Пересоздаётся только
+  // при смене пользователя.
   useEffect(() => {
     if (!user) return;
 
-    console.log('🔄 Setting up real-time subscription for pets...');
+    const channelName = `pets_changes_${user.id}_${instanceIdRef.current}`;
+    console.log('🔄 Setting up real-time subscription for pets...', channelName);
 
-    const subscription = supabase
-      .channel('pets_changes')
+    const channel = supabase
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -221,16 +231,16 @@ export const usePets = () => {
         },
         (payload) => {
           console.log('🔔 Real-time pets update:', payload.eventType);
-          fetchPets();
+          fetchPetsRef.current?.();
         }
       )
       .subscribe();
 
     return () => {
-      console.log('🔌 Unsubscribing from pets changes...');
-      subscription.unsubscribe();
+      console.log('🔌 Removing pets changes channel...');
+      supabase.removeChannel(channel);
     };
-  }, [user, fetchPets]);
+  }, [user?.id]);
 
   return {
     pets,

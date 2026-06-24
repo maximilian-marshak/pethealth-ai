@@ -1,4 +1,23 @@
 {
+  "alerts": {
+    "deleteAllergy": {
+      "title": "Delete allergy?",
+      "message": "{{name}}"
+    },
+    "deleteCondition": {
+      "title": "Delete condition?",
+      "message": "{{name}}"
+    }
+  },
+  "passport": {
+    "title": "Passport",
+    "editTitle": "Edit passport",
+    "bloodType": "Blood type",
+    "bloodTypePlaceholder": "e.g. DEA 1.1+",
+    "context": "Household context",
+    "contextPlaceholder": "e.g. lives with 2 cats, indoor, large yard",
+    "empty": "Not specified"
+  },
   "title": "My Pets",
   "addPet": "Add Pet",
   "addNewPet": "Add New Pet",
@@ -61,5 +80,133 @@
   "auth": {
     "logOut": "Log Out",
     "ok": "OK"
+  },
+  "detail": {
+    "severity": {
+      "none": "Not specified",
+      "mild": "Mild",
+      "moderate": "Moderate",
+      "severe": "Severe"
+    },
+    "pickDate": "Select date",
+    "notFound": "Pet not found",
+    "stats": {
+      "allergies": "Allergies",
+      "vaccinations": "Vaccinations",
+      "records": "Records",
+      "daysAgo": "Days ago"
+    },
+    "alerts": {
+      "deletePet": {
+        "title": "Delete pet?",
+        "message": "Are you sure you want to delete {{name}}? The pet will be hidden.",
+        "error": "Failed to delete pet"
+      },
+      "photoSuccess": "Pet photo updated!",
+      "photoError": "Failed to update photo"
+    },
+    "weight": {
+      "section": "⚖️ Weight dynamics",
+      "empty": "No weight data",
+      "addFirst": "+ Add first weight",
+      "current": "Current weight",
+      "historyTitle": "Measurement history",
+      "invalid": "Enter a valid weight (0–200)",
+      "saveError": "Failed to save weight",
+      "trend": {
+        "stable": "Stable",
+        "delta": "{{value}} {{unit}}"
+      },
+      "modal": {
+        "title": "Add weight",
+        "weightLabel": "Weight",
+        "noteLabel": "Note (optional)",
+        "notePlaceholder": "E.g.: after grooming"
+      }
+    },
+    "age": {
+      "unknown": "Unknown",
+      "months": "{{count}} mo.",
+      "years_one": "{{count}} year",
+      "years_other": "{{count}} years"
+    },
+    "relative": {
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "inDays": "In {{count}} d.",
+      "inWeeks": "In {{count}} w.",
+      "inMonths": "In {{count}} mo."
+    },
+    "allergy": {
+      "section": "🤧 Allergies",
+      "empty": "No allergy data",
+      "substanceRequired": "Specify the substance (allergen)",
+      "modal": {
+        "addTitle": "Add allergy",
+        "editTitle": "Edit allergy",
+        "substanceLabel": "Substance (allergen) *",
+        "substancePlaceholder": "E.g.: chicken, amoxicillin",
+        "reactionLabel": "Reaction",
+        "reactionPlaceholder": "E.g.: itching, swelling",
+        "severityLabel": "Severity",
+        "notedOnLabel": "Date noted"
+      }
+    },
+    "condition": {
+      "section": "🩺 Chronic conditions",
+      "empty": "No chronic conditions",
+      "nameRequired": "Specify the condition name",
+      "since": "Since {{date}}",
+      "active": "Active",
+      "remission": "In remission",
+      "modal": {
+        "addTitle": "Add condition",
+        "editTitle": "Edit condition",
+        "nameLabel": "Condition *",
+        "namePlaceholder": "E.g.: atopic dermatitis",
+        "codeLabel": "Code (ICD/other)",
+        "codePlaceholder": "E.g.: L20",
+        "sinceLabel": "Since when",
+        "notesLabel": "Notes",
+        "notesPlaceholder": "Additional information"
+      }
+    },
+    "events": {
+      "section": "📅 Upcoming events",
+      "vaccinationFallback": "Vaccination"
+    },
+    "records": {
+      "section": "🏥 Medical records",
+      "seeAll": "All →",
+      "empty": "No medical records"
+    },
+    "quickActions": {
+      "section": "⚡ Quick actions",
+      "aiAnalysis": "AI Analysis",
+      "records": "Records",
+      "vaccines": "Vaccines",
+      "activity": "Activity"
+    },
+    "info": {
+      "section": "ℹ️ Information",
+      "birthDate": "Date of birth",
+      "gender": "Gender",
+      "microchip": "Microchip",
+      "neutered": "Neutered",
+      "genderValue": {
+        "dog": {
+          "male": "Male",
+          "female": "Female"
+        },
+        "cat": {
+          "male": "Male",
+          "female": "Female"
+        },
+        "generic": {
+          "male": "Male",
+          "female": "Female"
+        }
+      }
+    }
   }
 }

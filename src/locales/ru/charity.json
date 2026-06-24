@@ -1,0 +1,17 @@
+{
+  "subtitle": "Ваши Paws — это голоса. В конце периода благотворительный пул делится между приютами пропорционально голосам.",
+  "insufficientTitle": "Недостаточно Paws",
+  "insufficientMessage": "У вас {{have}} Paws, а нужно {{need}} Paws",
+  "errorTitle": "Ошибка",
+  "confirmVoteTitle": "Подтвердите голос",
+  "voteAmount": "{{amount}} Paws как голос",
+  "balanceLabel": "Ваш баланс:",
+  "balanceChange": "{{from}} → {{to}} Paws",
+  "cancel": "Отмена",
+  "confirm": "Подтвердить",
+  "voteThanksTitle": "🎉 Спасибо!",
+  "voteThanksMessage": "Ваш голос учтён: {{amount}} Paws за приют «{{shelter}}». В конце периода пул делится между приютами пропорционально голосам. Баланс: {{balance}} Paws",
+  "votesLabel": "Голосов: {{count}}",
+  "votesUnit": "голосов",
+  "poolInfo": "Ваши Paws — это голоса: они определяют долю приюта в благотворительном пуле периода, а не покупают фиксированную сумму. Чем больше доля голосов приюта, тем больше его доля в пуле."
+}

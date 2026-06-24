@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,16 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCharity } from '../../hooks/useCharity';
+import { useTranslation } from 'react-i18next';
+import Screen from '../../components/Screen';
+import { useTheme } from '../../theme/ThemeProvider';
 
 // ====================================
 // КОМПОНЕНТ: Карточка статистики
 // ====================================
 function StatCard({ icon, label, value, color }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
     <View style={styles.statCard}>
       <MaterialCommunityIcons name={icon} size={32} color={color} />
@@ -29,6 +34,9 @@ function StatCard({ icon, label, value, color }) {
 // КОМПОНЕНТ: Карточка доната
 // ====================================
 function DonationCard({ donation }) {
+  const { t } = useTranslation('charity');
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   // Форматируем дату
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -45,7 +53,7 @@ function DonationCard({ donation }) {
     <View style={styles.donationCard}>
       <View style={styles.donationHeader}>
         <View style={styles.donationIconContainer}>
-          <MaterialCommunityIcons name="heart" size={24} color="#EF4444" />
+          <MaterialCommunityIcons name="heart" size={24} color={theme.accent} />
         </View>
         <View style={styles.donationInfo}>
           <Text style={styles.donationShelter} numberOfLines={1}>
@@ -57,7 +65,7 @@ function DonationCard({ donation }) {
         </View>
         <View style={styles.donationAmountContainer}>
           <Text style={styles.donationAmount}>{donation.points_spent}</Text>
-          <Text style={styles.donationPaws}>Paws</Text>
+          <Text style={styles.donationPaws}>{t('votesUnit')}</Text>
         </View>
       </View>
     </View>
@@ -68,12 +76,14 @@ function DonationCard({ donation }) {
 // КОМПОНЕНТ: Empty State
 // ====================================
 function EmptyState() {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
     <View style={styles.emptyState}>
       <MaterialCommunityIcons 
         name="heart-broken-outline" 
-        size={80} 
-        color="#D1D5DB" 
+        size={80}
+        color={theme.hairline}
       />
       <Text style={styles.emptyStateTitle}>
         Пока нет пожертвований
@@ -89,6 +99,8 @@ function EmptyState() {
 // КОМПОНЕНТ: Мотивационная карточка
 // ====================================
 function MotivationalCard({ totalDonated }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const getMotivationalMessage = () => {
     if (totalDonated === 0) {
       return {
@@ -121,15 +133,15 @@ function MotivationalCard({ totalDonated }) {
 
   return (
     <LinearGradient
-      colors={['#8B5CF6', '#6366F1']}
+      colors={[theme.accent, theme.accentPress]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.motivationalCard}
     >
-      <MaterialCommunityIcons 
-        name={message.icon} 
-        size={40} 
-        color="white" 
+      <MaterialCommunityIcons
+        name={message.icon}
+        size={40}
+        color={theme.onAccent}
       />
       <Text style={styles.motivationalTitle}>{message.title}</Text>
       <Text style={styles.motivationalText}>{message.text}</Text>
@@ -142,6 +154,9 @@ function MotivationalCard({ totalDonated }) {
 // ====================================
 export default function CharityHistoryScreen() {
   const { donations, totalDonated, loading, refreshDonations } = useCharity();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { t } = useTranslation('charity');
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(async () => {
@@ -158,14 +173,17 @@ export default function CharityHistoryScreen() {
   // Состояние загрузки
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#8B5CF6" />
-        <Text style={styles.loadingText}>Загрузка истории...</Text>
-      </View>
+      <Screen>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={theme.accent} />
+          <Text style={styles.loadingText}>Загрузка истории...</Text>
+        </View>
+      </Screen>
     );
   }
 
   return (
+    <Screen>
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
@@ -175,8 +193,8 @@ export default function CharityHistoryScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#8B5CF6"
-            colors={['#8B5CF6']}
+            tintColor={theme.accent}
+            colors={[theme.accent]}
           />
         }
       >
@@ -189,19 +207,19 @@ export default function CharityHistoryScreen() {
             icon="heart-multiple"
             label="Всего пожертвовано"
             value={`${totalDonated} 🐾`}
-            color="#EF4444"
+            color={theme.accent}
           />
           <StatCard
             icon="home-heart"
             label="Помогли приютам"
             value={uniqueShelters}
-            color="#8B5CF6"
+            color={theme.accent}
           />
           <StatCard
             icon="cash-multiple"
             label="Донатов"
             value={donations.length}
-            color="#10B981"
+            color={theme.accent}
           />
         </View>
 
@@ -211,9 +229,9 @@ export default function CharityHistoryScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>История пожертвований</Text>
               <MaterialCommunityIcons 
-                name="history" 
-                size={20} 
-                color="#6B7280" 
+                name="history"
+                size={20}
+                color={theme.t3}
               />
             </View>
             
@@ -231,33 +249,33 @@ export default function CharityHistoryScreen() {
         {/* Информационный блок */}
         <View style={styles.infoCard}>
           <MaterialCommunityIcons 
-            name="information-outline" 
-            size={24} 
-            color="#8B5CF6" 
+            name="information-outline"
+            size={24}
+            color={theme.accent}
           />
           <Text style={styles.infoText}>
-            Ваши Paws помогают приютам в Минске, Гродно, Бресте, Витебске, 
-            Гомеле и Могилёве обеспечивать животных кормом, лекарствами и уходом.
+            {t('poolInfo')}
           </Text>
         </View>
       </ScrollView>
     </View>
+    </Screen>
   );
 }
 
 // ====================================
 // СТИЛИ
 // ====================================
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: 'transparent',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: 'transparent',
   },
   scrollView: {
     flex: 1,
@@ -269,14 +287,14 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6B7280',
+    color: theme.t3,
   },
-  
+
   // Заголовок экрана
   screenTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: theme.t1,
     marginBottom: 20,
   },
 
@@ -289,11 +307,11 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -302,12 +320,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: theme.t1,
     marginTop: 8,
   },
   statLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.t3,
     textAlign: 'center',
     marginTop: 4,
   },
@@ -322,16 +340,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1F2937',
+    color: theme.t1,
   },
 
   // Карточка доната
   donationCard: {
-    backgroundColor: 'white',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -345,7 +363,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: theme.accentTint,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -356,12 +374,12 @@ const styles = StyleSheet.create({
   donationShelter: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: theme.t1,
     marginBottom: 4,
   },
   donationDate: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.t3,
   },
   donationAmountContainer: {
     alignItems: 'flex-end',
@@ -369,11 +387,11 @@ const styles = StyleSheet.create({
   donationAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#8B5CF6',
+    color: theme.accent,
   },
   donationPaws: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.t3,
   },
 
   // Empty State
@@ -385,13 +403,13 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1F2937',
+    color: theme.t1,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.t3,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -407,20 +425,20 @@ const styles = StyleSheet.create({
   motivationalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
+    color: theme.onAccent,
     marginTop: 12,
     marginBottom: 8,
   },
   motivationalText: {
     fontSize: 14,
-    color: 'white',
+    color: theme.onAccent,
     textAlign: 'center',
     opacity: 0.9,
   },
 
   // Информационная карточка
   infoCard: {
-    backgroundColor: '#EDE9FE',
+    backgroundColor: theme.accentTint,
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
@@ -430,7 +448,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.t3,
     marginLeft: 12,
     lineHeight: 20,
   },

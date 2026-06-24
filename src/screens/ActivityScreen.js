@@ -1,5 +1,5 @@
 // screens/ActivityScreen.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,8 +18,9 @@ import { supabase } from '../utils/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
-import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../theme/ThemeProvider';
+import Screen from '../components/Screen';
 
 const { width } = Dimensions.get('window');
 
@@ -32,16 +33,10 @@ const ACTIVITY_TYPES = [
   { value: 'other', icon: 'ellipsis-horizontal' },
 ];
 
-const ACTIVITY_TO_REWARD = {
-  walk: 'training',
-  play: 'training',
-  exercise: 'training',
-  training: 'training',
-  other: null,
-};
-
 export default function ActivityScreen() {
   const { t, i18n } = useTranslation('activity');
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [pets, setPets] = useState([]);
   const [selectedPetId, setSelectedPetId] = useState(null);
@@ -62,7 +57,6 @@ export default function ActivityScreen() {
   const [activityDate, setActivityDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const { addPoints } = useLoyaltyPoints();
 
   useEffect(() => {
     fetchPets();
@@ -206,23 +200,8 @@ export default function ActivityScreen() {
 
       if (error) throw error;
 
-      const rewardType = ACTIVITY_TO_REWARD[activityType];
-
-      if (rewardType) {
-        const pointsAdded = await addPoints(rewardType, activityType);
-
-        if (pointsAdded) {
-          Alert.alert(
-            t('alerts.successTitle'),
-            t('alerts.successMessage'),
-            [{ text: t('alerts.successButton'), style: 'default' }]
-          );
-        } else {
-          Alert.alert(t('common:ok'), t('alerts.successSimple'));
-        }
-      } else {
-        Alert.alert(t('common:ok'), t('alerts.successSimple'));
-      }
+      // Логирование активности баллов не начисляет — только проверяемые события.
+      Alert.alert(t('common:ok'), t('alerts.successSimple'));
 
       setModalVisible(false);
       resetForm();
@@ -303,17 +282,17 @@ export default function ActivityScreen() {
         <Text style={styles.statTitle}>{t(`stats.${titleKey}`)}</Text>
         <View style={styles.statRow}>
           <View style={styles.statItem}>
-            <Ionicons name="calendar-outline" size={20} color="#6B46C1" />
+            <Ionicons name="calendar-outline" size={20} color={theme.accent} />
             <Text style={styles.statValue}>{data.count}</Text>
             <Text style={styles.statLabel}>{t('stats.activities')}</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons name="time-outline" size={20} color="#059669" />
+            <Ionicons name="time-outline" size={20} color={theme.accent} />
             <Text style={styles.statValue}>{data.duration}</Text>
             <Text style={styles.statLabel}>{t('stats.minutes')}</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons name="navigate-outline" size={20} color="#DC2626" />
+            <Ionicons name="navigate-outline" size={20} color={theme.accent} />
             <Text style={styles.statValue}>{data.distance.toFixed(1)}</Text>
             <Text style={styles.statLabel}>{t('stats.km')}</Text>
           </View>
@@ -329,7 +308,7 @@ export default function ActivityScreen() {
           <Ionicons
             name={getActivityIcon(item.activity_type)}
             size={24}
-            color="#6B46C1"
+            color={theme.accent}
             style={styles.activityIcon}
           />
           <View style={styles.activityInfo}>
@@ -343,18 +322,18 @@ export default function ActivityScreen() {
           onPress={() => handleDeleteActivity(item.id)}
           style={styles.deleteButton}
         >
-          <Ionicons name="trash-outline" size={20} color="#EF4444" />
+          <Ionicons name="trash-outline" size={20} color={theme.danger} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.activityDetails}>
         <View style={styles.detailItem}>
-          <Ionicons name="time-outline" size={16} color="#6B7280" />
+          <Ionicons name="time-outline" size={16} color={theme.t3} />
           <Text style={styles.detailText}>{item.duration} {t('stats.minutes')}</Text>
         </View>
         {item.distance && (
           <View style={styles.detailItem}>
-            <Ionicons name="navigate-outline" size={16} color="#6B7280" />
+            <Ionicons name="navigate-outline" size={16} color={theme.t3} />
             <Text style={styles.detailText}>{item.distance} {t('stats.km')}</Text>
           </View>
         )}
@@ -366,15 +345,18 @@ export default function ActivityScreen() {
     </View>
   );
 
+  const _rgb = (hex) => { const h = (hex || '').replace('#',''); return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) }; };
+  const _ac = _rgb(theme.accent);
+
   const chartConfig = {
-    backgroundColor: '#ffffff',
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
+    backgroundColor: theme.surface,
+    backgroundGradientFrom: theme.surface,
+    backgroundGradientTo: theme.surface,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(107, 70, 193, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(107, 70, 193, ${opacity})`,
+    color: (opacity = 1) => `rgba(${_ac.r}, ${_ac.g}, ${_ac.b}, ${opacity})`,
+    labelColor: () => theme.t3,
     style: { borderRadius: 16 },
-    propsForDots: { r: '4', strokeWidth: '2', stroke: '#6B46C1' },
+    propsForDots: { r: '4', strokeWidth: '2', stroke: theme.accent },
   };
 
   const lineChartData = {
@@ -396,17 +378,18 @@ export default function ActivityScreen() {
   };
 
   const pieData = chartData.types.slice(0, 5).map((type, index) => {
-    const colors = ['#6B46C1', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE'];
+    const colors = [theme.accent, theme.accent + 'CC', theme.accent + '99', theme.accent + '66', theme.accent + '40'];
     return {
       name: getActivityLabel(type.name),
       duration: type.duration,
       color: colors[index],
-      legendFontColor: '#374151',
+      legendFontColor: theme.t2,
       legendFontSize: 12,
     };
   });
 
   return (
+    <Screen>
     <View style={styles.container}>
       {/* Pet Selector */}
       <View style={styles.petSelector}>
@@ -502,7 +485,7 @@ export default function ActivityScreen() {
 
         {activities.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="walk-outline" size={64} color="#D1D5DB" />
+            <Ionicons name="walk-outline" size={64} color={theme.hairline} />
             <Text style={styles.emptyText}>{t('empty.title')}</Text>
             <Text style={styles.emptySubtext}>{t('empty.subtitle')}</Text>
           </View>
@@ -521,7 +504,7 @@ export default function ActivityScreen() {
         style={styles.fab}
         onPress={() => setModalVisible(true)}
       >
-        <Ionicons name="add" size={28} color="#FFFFFF" />
+        <Ionicons name="add" size={28} color={theme.onAccent} />
       </TouchableOpacity>
 
       {/* Modal */}
@@ -536,7 +519,7 @@ export default function ActivityScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('modal.title')}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#6B7280" />
+                <Ionicons name="close" size={24} color={theme.t3} />
               </TouchableOpacity>
             </View>
 
@@ -560,7 +543,7 @@ export default function ActivityScreen() {
                     <Ionicons
                       name={type.icon}
                       size={24}
-                      color={activityType === type.value ? '#FFFFFF' : '#6B46C1'}
+                      color={activityType === type.value ? theme.onAccent : theme.accent}
                     />
                     <Text
                       style={[
@@ -580,7 +563,7 @@ export default function ActivityScreen() {
                 style={styles.dateButton}
                 onPress={() => setShowDatePicker(true)}
               >
-                <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                <Ionicons name="calendar-outline" size={20} color={theme.t3} />
                 <Text style={styles.dateButtonText}>
                   {activityDate.toLocaleDateString(
                     i18n.language === 'ru' ? 'ru-RU' : 'en-US'
@@ -652,69 +635,70 @@ export default function ActivityScreen() {
         </View>
       </Modal>
     </View>
+    </Screen>
   );
 }
 
 // Styles без изменений — полностью сохранены
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+const makeStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: 'transparent' },
   petSelector: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: theme.hairline,
   },
   petButton: {
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surface,
   },
-  petButtonActive: { backgroundColor: '#6B46C1' },
-  petButtonText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
-  petButtonTextActive: { color: '#FFFFFF' },
+  petButtonActive: { backgroundColor: theme.accentPress },
+  petButtonText: { fontSize: 14, fontWeight: '600', color: theme.t2 },
+  petButtonTextActive: { color: theme.onAccent },
   content: { flex: 1 },
   statsContainer: { padding: 16, gap: 12 },
   statCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
   },
-  statTitle: { fontSize: 16, fontWeight: '600', color: '#1F2937', marginBottom: 12 },
+  statTitle: { fontSize: 16, fontWeight: '600', color: theme.t1, marginBottom: 12 },
   statRow: { flexDirection: 'row', justifyContent: 'space-around' },
   statItem: { alignItems: 'center', gap: 4 },
-  statValue: { fontSize: 24, fontWeight: '700', color: '#1F2937' },
-  statLabel: { fontSize: 12, color: '#6B7280' },
+  statValue: { fontSize: 24, fontWeight: '700', color: theme.t1 },
+  statLabel: { fontSize: 12, color: theme.t3 },
   chartCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 3,
   },
-  chartTitle: { fontSize: 16, fontWeight: '600', color: '#1F2937', marginBottom: 12 },
+  chartTitle: { fontSize: 16, fontWeight: '600', color: theme.t1, marginBottom: 12 },
   chart: { marginVertical: 8, borderRadius: 12 },
   listHeader: { paddingHorizontal: 16, paddingVertical: 12 },
-  listTitle: { fontSize: 18, fontWeight: '600', color: '#1F2937' },
+  listTitle: { fontSize: 18, fontWeight: '600', color: theme.t1 },
   activityCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 16,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -729,16 +713,16 @@ const styles = StyleSheet.create({
   activityTitleRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   activityIcon: { marginRight: 12 },
   activityInfo: { flex: 1 },
-  activityType: { fontSize: 16, fontWeight: '600', color: '#1F2937', marginBottom: 2 },
-  activityDate: { fontSize: 14, color: '#6B7280' },
+  activityType: { fontSize: 16, fontWeight: '600', color: theme.t1, marginBottom: 2 },
+  activityDate: { fontSize: 14, color: theme.t3 },
   deleteButton: { padding: 4 },
   activityDetails: { flexDirection: 'row', gap: 16 },
   detailItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  detailText: { fontSize: 14, color: '#6B7280' },
-  activityNotes: { fontSize: 14, color: '#4B5563', marginTop: 8, fontStyle: 'italic' },
+  detailText: { fontSize: 14, color: theme.t3 },
+  activityNotes: { fontSize: 14, color: theme.t2, marginTop: 8, fontStyle: 'italic' },
   emptyState: { alignItems: 'center', padding: 48 },
-  emptyText: { fontSize: 18, fontWeight: '600', color: '#9CA3AF', marginTop: 16 },
-  emptySubtext: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginTop: 8 },
+  emptyText: { fontSize: 18, fontWeight: '600', color: theme.t3, marginTop: 16 },
+  emptySubtext: { fontSize: 14, color: theme.t3, textAlign: 'center', marginTop: 8 },
   fab: {
     position: 'absolute',
     right: 20,
@@ -746,10 +730,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#6B46C1',
+    backgroundColor: theme.accentPress,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -757,11 +741,11 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // theme-neutral scrim
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -772,14 +756,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: theme.hairline,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: '#1F2937' },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: theme.t1 },
   modalBody: { padding: 20 },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.t2,
     marginBottom: 8,
     marginTop: 16,
   },
@@ -790,30 +774,30 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: theme.hairline,
     marginRight: 8,
     minWidth: 80,
   },
-  typeButtonActive: { backgroundColor: '#6B46C1', borderColor: '#6B46C1' },
-  typeButtonText: { fontSize: 12, color: '#6B46C1', marginTop: 4, fontWeight: '500' },
-  typeButtonTextActive: { color: '#FFFFFF' },
+  typeButtonActive: { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
+  typeButtonText: { fontSize: 12, color: theme.accent, marginTop: 4, fontWeight: '500' },
+  typeButtonTextActive: { color: theme.onAccent },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: theme.hairline,
     borderRadius: 8,
     gap: 8,
   },
-  dateButtonText: { fontSize: 16, color: '#1F2937' },
+  dateButtonText: { fontSize: 16, color: theme.t1 },
   input: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: theme.hairline,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#1F2937',
+    color: theme.t1,
   },
   textArea: { height: 100, paddingTop: 12 },
   modalFooter: {
@@ -821,23 +805,23 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: theme.hairline,
   },
   cancelButton: {
     flex: 1,
     padding: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: theme.hairline,
     alignItems: 'center',
   },
-  cancelButtonText: { fontSize: 16, fontWeight: '600', color: '#6B7280' },
+  cancelButtonText: { fontSize: 16, fontWeight: '600', color: theme.t2 },
   saveButton: {
     flex: 1,
     padding: 16,
     borderRadius: 8,
-    backgroundColor: '#6B46C1',
+    backgroundColor: theme.accentPress,
     alignItems: 'center',
   },
-  saveButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+  saveButtonText: { fontSize: 16, fontWeight: '600', color: theme.onAccent },
 });

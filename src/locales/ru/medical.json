@@ -1,4 +1,59 @@
 {
+    "calendar": {
+      "agendaTitle": "События дня",
+      "empty": "Нет событий",
+      "types": {
+        "record": "Запись",
+        "prescription": "Лекарство",
+        "vaccine": "Вакцина",
+        "reminder": "Напоминание",
+        "appointment": "Запись"
+      },
+      "intake": { "give": "Дал сегодня?", "taken": "Принято" }
+    },
+    "appointments": {
+      "title": "Мои записи",
+      "create": "Создать запись",
+      "untitled": "Запись",
+      "sections": { "upcoming": "Предстоящие", "past": "Прошедшие" },
+      "empty": { "upcoming": "Нет предстоящих записей", "past": "Нет прошедших записей" },
+      "status": { "requested": "Заявка", "confirmed": "Подтверждена", "cancelled": "Отменена", "completed": "Завершена" },
+      "actions": { "cancel": "Отменить", "delete": "Удалить" },
+      "confirmDelete": { "title": "Удалить запись?", "message": "Это действие нельзя отменить." },
+      "validation": "Укажите клинику и выберите дату и время",
+      "form": {
+        "clinicLabel": "Клиника",
+        "clinicPlaceholder": "Название клиники",
+        "reasonLabel": "Причина (необязательно)",
+        "reasonPlaceholder": "напр. ежегодный осмотр",
+        "dateLabel": "Дата и время",
+        "datePlaceholder": "Выберите дату и время"
+      }
+    },
+    "documents": {
+      "title": "Документы",
+      "empty": { "title": "Документов пока нет", "subtitle": "Отсканированные ветеринарные документы появятся здесь" }
+    },
+    "export": {
+      "button": "Экспорт PDF",
+      "error": "Не удалось экспортировать медкарту",
+      "sections": {
+        "passport": "Паспорт",
+        "allergies": "Аллергии",
+        "conditions": "Хронические заболевания",
+        "vaccines": "Вакцины",
+        "medications": "Активные лекарства",
+        "records": "Медзаписи",
+        "weight": "История веса"
+      },
+      "fields": {
+        "gender": "Пол", "birthDate": "Дата рождения", "weight": "Вес",
+        "bloodType": "Группа крови", "microchip": "Чип", "context": "Бытовой контекст",
+        "since": "С", "nextDue": "Следующая", "dose": "Доза", "frequency": "Частота",
+        "vet": "Врач", "diagnosis": "Диагноз", "recommendations": "Рекомендации",
+        "none": "—", "generated": "Сформировано"
+      }
+    },
     "header": {
       "title": "Медкарта",
       "back": "Назад"
@@ -17,7 +72,10 @@
       },
       "upcomingVaccines": "⚠️ Ближайшие вакцины",
       "activeMedications": "Активные лекарства",
-      "lastVisit": "Последний визит к ветеринару"
+      "lastVisit": "Последний визит к ветеринару",
+      "allergyBanner": { "title": "⚠️ Аллергии" },
+      "nextAppointment": { "title": "Ближайший приём", "none": "Нет запланированных" },
+      "upcomingReminders": { "title": "Ближайшие напоминания" }
     },
     "empty": {
       "overview": {
@@ -148,7 +206,19 @@
       "cancel": "Отмена",
       "save": "Сохранить",
       "requiredTitle": "Обязательное поле",
-      "errorTitle": "Ошибка"
+      "errorTitle": "Ошибка",
+      "addChooser": { "title": "Добавить запись" },
+      "procedure": {
+        "title": "Добавить процедуру",
+        "date": "Дата *",
+        "name": "Название процедуры *",
+        "namePlaceholder": "напр. чистка зубов, рентген",
+        "notes": "Детали",
+        "notesPlaceholder": "Любые детали или заметки...",
+        "clinic": "Клиника",
+        "vet": "Ветеринар",
+        "required": "Укажите дату и название процедуры."
+      }
     },
     "delete": {
       "vaccine": {
@@ -260,6 +330,7 @@
       "title": "Запись",
       "attachment": "Скан",
       "attachmentUnavailable": "Превью недоступно",
+      "recommendations": "Рекомендации врача",
       "loadError": "Не удалось загрузить запись"
     },
     "scan": {

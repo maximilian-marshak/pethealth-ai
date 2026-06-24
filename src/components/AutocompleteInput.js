@@ -6,8 +6,8 @@
 
 import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTheme } from '../theme/ThemeProvider';
 
-const ACCENT = '#6B4EFF';
 const MAX_SUGGESTIONS = 6;
 
 export default function AutocompleteInput({
@@ -21,6 +21,8 @@ export default function AutocompleteInput({
   multiline,
   t,
 }) {
+  const { theme } = useTheme();
+  const a = useMemo(() => makeStyles(theme), [theme]);
   const [focused, setFocused] = useState(false);
 
   const q = (value || '').trim().toLowerCase();
@@ -67,7 +69,7 @@ export default function AutocompleteInput({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={theme.t4}
         keyboardType={keyboardType}
         multiline={multiline}
         autoCorrect={false}
@@ -94,17 +96,18 @@ export default function AutocompleteInput({
   );
 }
 
-const a = StyleSheet.create({
+// Фабрика стилей от темы (layout + цвета из токенов). Цвета: см. карту миграции.
+const makeStyles = (theme) => StyleSheet.create({
   wrap:      { marginBottom: 12 },
   labelRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  label:     { fontSize: 13, fontWeight: '600', color: '#374151' },
-  checkHint: { fontSize: 11, fontWeight: '600', color: '#B45309', backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6 },
-  input:     { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#1F2937' },
+  label:     { fontSize: 13, fontWeight: '600', color: theme.t2 },
+  checkHint: { fontSize: 11, fontWeight: '600', color: theme.warn, backgroundColor: theme.warn + '22', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6 },
+  input:     { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: theme.t1 },
   textArea:  { height: 70, textAlignVertical: 'top', paddingTop: 10 },
-  flagged:   { borderColor: '#F59E0B', borderWidth: 1.5, backgroundColor: '#FFFBEB' },
-  dropdown:  { marginTop: 4, backgroundColor: '#fff', borderWidth: 1, borderColor: ACCENT, borderRadius: 10, overflow: 'hidden' },
+  flagged:   { borderColor: theme.warn, borderWidth: 1.5, backgroundColor: theme.warn + '14' },
+  dropdown:  { marginTop: 4, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.accent, borderRadius: 10, overflow: 'hidden' },
   row:       { paddingHorizontal: 14, paddingVertical: 10 },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: '#EEF2FF' },
-  rowName:   { fontSize: 15, color: '#1F2937', fontWeight: '500' },
-  rowSub:    { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: theme.accentTint },
+  rowName:   { fontSize: 15, color: theme.t1, fontWeight: '500' },
+  rowSub:    { fontSize: 12, color: theme.t4, marginTop: 2 },
 });

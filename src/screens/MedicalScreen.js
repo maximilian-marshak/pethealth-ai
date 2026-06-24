@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,16 +13,29 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../utils/supabase';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect, StackActions } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { usePetContext } from '../context/PetContext';
+import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { parseMedicalDocument } from '../services/ocrService';
 import AutocompleteInput from '../components/AutocompleteInput';
 import { VACCINES, DRUGS } from '../data/medicalPresets';
+import { Calendar } from 'react-native-calendars';
+import { useMedicalCalendar } from '../hooks/useMedicalCalendar';
+import { useMedicationIntakes } from '../hooks/useMedicationIntakes';
+import { useUnits } from '../hooks/useUnits';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { collectMedicalExport } from '../utils/collectMedicalExport';
+import { buildMedicalExportHtml } from '../utils/medicalExportHtml';
+import { usePetHealth } from '../hooks/usePetHealth';
+import { useAppointments } from '../hooks/useAppointments';
+import { useTheme } from '../theme/ThemeProvider';
+import { buildTheme } from '../theme/theme';
+import Screen from '../components/Screen';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -69,6 +82,9 @@ const isEmptyOCR = (d) => {
 // ─── DatePicker Field ─────────────────────────────────────────────────────────
 
 const DatePickerField = ({ label, value, onChange, placeholder }) => {
+  const { theme } = useTheme();
+  const dpStyles = useMemo(() => makeDpStyles(theme), [theme]);
+  const mStyles = useMemo(() => makeMStyles(theme), [theme]);
   const [show, setShow] = useState(false);
   const dateValue = value ? new Date(value + 'T00:00:00') : new Date();
 
@@ -95,7 +111,7 @@ const DatePickerField = ({ label, value, onChange, placeholder }) => {
         <Ionicons
           name="calendar-outline"
           size={18}
-          color={value ? '#6366F1' : '#9CA3AF'}
+          color={value ? theme.accent : theme.t4}
           style={dpStyles.icon}
         />
         <Text style={[dpStyles.text, !value && dpStyles.placeholder]}>
@@ -106,10 +122,10 @@ const DatePickerField = ({ label, value, onChange, placeholder }) => {
             onPress={() => onChange('')}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+            <Ionicons name="close-circle" size={18} color={theme.t3} />
           </TouchableOpacity>
         ) : (
-          <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
+          <Ionicons name="chevron-down" size={16} color={theme.t3} />
         )}
       </TouchableOpacity>
       {show && (
@@ -130,6 +146,8 @@ const DatePickerField = ({ label, value, onChange, placeholder }) => {
 
 const VaccineModal = ({ visible, onClose, onSave, editData }) => {
   const { t } = useTranslation('medical');
+  const { theme } = useTheme();
+  const mStyles = useMemo(() => makeMStyles(theme), [theme]);
 
   const [name,      setName]      = useState('');
   const [dateGiven, setDateGiven] = useState('');
@@ -212,7 +230,7 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
             value={vet}
             onChangeText={setVet}
             placeholder={t('modal.vaccine.adminByPlaceholder')}
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={theme.t4}
           />
 
           <Text style={mStyles.label}>{t('modal.vaccine.typeLabel')}</Text>
@@ -236,7 +254,7 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
             value={notes}
             onChangeText={setNotes}
             placeholder={t('modal.vaccine.notesPlaceholder')}
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={theme.t4}
             multiline
             numberOfLines={3}
           />
@@ -254,7 +272,7 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
               disabled={saving}
             >
               {saving
-                ? <ActivityIndicator color="#fff" size="small" />
+                ? <ActivityIndicator color={theme.onAccent} size="small" />
                 : <Text style={mStyles.btnSaveText}>{t('modal.save')}</Text>
               }
             </TouchableOpacity>
@@ -269,6 +287,8 @@ const VaccineModal = ({ visible, onClose, onSave, editData }) => {
 
 const MedicationModal = ({ visible, onClose, onSave, editData }) => {
   const { t } = useTranslation('medical');
+  const { theme } = useTheme();
+  const mStyles = useMemo(() => makeMStyles(theme), [theme]);
 
   const [name,       setName]       = useState('');
   const [dosage,     setDosage]     = useState('');
@@ -346,7 +366,7 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
               value={dosage}
               onChangeText={setDosage}
               placeholder={t('modal.medication.dosagePlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
             />
 
             <Text style={mStyles.label}>{t('modal.medication.frequencyLabel')}</Text>
@@ -355,7 +375,7 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
               value={frequency}
               onChangeText={setFrequency}
               placeholder={t('modal.medication.frequencyPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
             />
 
             <DatePickerField
@@ -378,7 +398,7 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
               value={prescriber}
               onChangeText={setPrescriber}
               placeholder={t('modal.medication.prescriberPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
             />
 
             <Text style={mStyles.label}>{t('modal.medication.notesLabel')}</Text>
@@ -387,7 +407,7 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
               value={notes}
               onChangeText={setNotes}
               placeholder={t('modal.medication.notesPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
               multiline
               numberOfLines={3}
             />
@@ -421,7 +441,7 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
                 disabled={saving}
               >
                 {saving
-                  ? <ActivityIndicator color="#fff" size="small" />
+                  ? <ActivityIndicator color={theme.onAccent} size="small" />
                   : <Text style={mStyles.btnSaveText}>{t('modal.save')}</Text>
                 }
               </TouchableOpacity>
@@ -437,6 +457,8 @@ const MedicationModal = ({ visible, onClose, onSave, editData }) => {
 
 const RecordModal = ({ visible, onClose, onSave, editData }) => {
   const { t } = useTranslation('medical');
+  const { theme } = useTheme();
+  const mStyles = useMemo(() => makeMStyles(theme), [theme]);
 
   const [visitDate,       setVisitDate]       = useState('');
   const [vetName,         setVetName]         = useState('');
@@ -522,7 +544,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               value={vetName}
               onChangeText={setVetName}
               placeholder={t('modal.record.vetNamePlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
             />
 
             <Text style={mStyles.label}>{t('modal.record.clinicLabel')}</Text>
@@ -531,7 +553,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               value={clinic}
               onChangeText={setClinic}
               placeholder={t('modal.record.clinicPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
             />
 
             <Text style={mStyles.label}>{t('modal.record.diagnosisLabel')}</Text>
@@ -540,7 +562,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               value={diagnosis}
               onChangeText={setDiagnosis}
               placeholder={t('modal.record.diagnosisPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
             />
 
             <Text style={mStyles.label}>{t('modal.record.diagnosisCodeLabel')}</Text>
@@ -549,7 +571,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               value={diagnosisCode}
               onChangeText={setDiagnosisCode}
               placeholder={t('modal.record.diagnosisCodePlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
             />
 
             <Text style={mStyles.label}>{t('modal.record.symptomsLabel')}</Text>
@@ -558,7 +580,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               value={symptoms}
               onChangeText={setSymptoms}
               placeholder={t('modal.record.symptomsPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
               multiline
               numberOfLines={3}
             />
@@ -569,7 +591,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               value={recommendations}
               onChangeText={setRecommendations}
               placeholder={t('modal.record.recommendationsPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
               multiline
               numberOfLines={3}
             />
@@ -580,7 +602,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               value={weight}
               onChangeText={setWeight}
               placeholder={t('modal.record.weightPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
               keyboardType="decimal-pad"
             />
 
@@ -590,7 +612,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
               value={temperature}
               onChangeText={setTemperature}
               placeholder={t('modal.record.temperaturePlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.t4}
               keyboardType="decimal-pad"
             />
 
@@ -629,7 +651,7 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
                 disabled={saving}
               >
                 {saving
-                  ? <ActivityIndicator color="#fff" size="small" />
+                  ? <ActivityIndicator color={theme.onAccent} size="small" />
                   : <Text style={mStyles.btnSaveText}>{t('modal.save')}</Text>
                 }
               </TouchableOpacity>
@@ -641,20 +663,154 @@ const RecordModal = ({ visible, onClose, onSave, editData }) => {
   );
 };
 
+const ProcedureModal = ({ visible, onClose, onSave }) => {
+  const { t } = useTranslation('medical');
+  const { theme } = useTheme();
+  const mStyles = useMemo(() => makeMStyles(theme), [theme]);
+
+  const [occurredAt, setOccurredAt] = useState('');
+  const [name,       setName]       = useState('');
+  const [notes,      setNotes]      = useState('');
+  const [clinic,     setClinic]     = useState('');
+  const [vetName,    setVetName]    = useState('');
+  const [saving,     setSaving]     = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    setOccurredAt(''); setName(''); setNotes(''); setClinic(''); setVetName('');
+  }, [visible]);
+
+  const handleSave = async () => {
+    if (!occurredAt || !name.trim()) {
+      Alert.alert(t('modal.requiredTitle'), t('modal.procedure.required'));
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave({
+        occurred_at: occurredAt,
+        name:        name.trim(),
+        notes:       notes.trim() || null,
+        clinic_name: clinic.trim() || null,
+        vet_name:    vetName.trim() || null,
+      });
+    } catch (err) {
+      Alert.alert(t('modal.errorTitle'), err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={mStyles.overlay}>
+        <View style={mStyles.sheet}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={mStyles.title}>{t('modal.procedure.title')}</Text>
+
+            <DatePickerField
+              label={t('modal.procedure.date')}
+              value={occurredAt}
+              onChange={setOccurredAt}
+              placeholder={t('modal.record.visitDatePlaceholder')}
+            />
+
+            <Text style={mStyles.label}>{t('modal.procedure.name')}</Text>
+            <TextInput
+              style={mStyles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder={t('modal.procedure.namePlaceholder')}
+              placeholderTextColor={theme.t4}
+            />
+
+            <Text style={mStyles.label}>{t('modal.procedure.notes')}</Text>
+            <TextInput
+              style={[mStyles.input, mStyles.textArea]}
+              value={notes}
+              onChangeText={setNotes}
+              placeholder={t('modal.procedure.notesPlaceholder')}
+              placeholderTextColor={theme.t4}
+              multiline
+              numberOfLines={3}
+            />
+
+            <Text style={mStyles.label}>{t('modal.procedure.clinic')}</Text>
+            <TextInput
+              style={mStyles.input}
+              value={clinic}
+              onChangeText={setClinic}
+              placeholder={t('modal.record.clinicPlaceholder')}
+              placeholderTextColor={theme.t4}
+            />
+
+            <Text style={mStyles.label}>{t('modal.procedure.vet')}</Text>
+            <TextInput
+              style={mStyles.input}
+              value={vetName}
+              onChangeText={setVetName}
+              placeholder={t('modal.record.vetNamePlaceholder')}
+              placeholderTextColor={theme.t4}
+            />
+
+            <View style={mStyles.row}>
+              <TouchableOpacity style={[mStyles.btn, mStyles.btnCancel]} onPress={onClose}>
+                <Text style={mStyles.btnCancelText}>{t('modal.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[mStyles.btn, mStyles.btnSave]} onPress={handleSave} disabled={saving}>
+                {saving
+                  ? <ActivityIndicator color={theme.onAccent} size="small" />
+                  : <Text style={mStyles.btnSaveText}>{t('common:save')}</Text>}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
+
+// Иконки типов (цвет — из theme.eventTypes в компоненте; палитра категориальная).
+const AGENDA_ICONS = {
+  record:       'document-text-outline',
+  prescription: 'medical-outline',
+  vaccine:      'medkit-outline',
+  reminder:     'notifications-outline',
+  appointment:  'today-outline',
+};
+// Порядок типов для легенды календаря.
+const EVENT_TYPE_KEYS = ['record', 'prescription', 'vaccine', 'reminder', 'appointment'];
 
 export default function MedicalScreen() {
   const navigation = useNavigation();
   const { t, i18n } = useTranslation('medical');
+  const { theme, accent } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  // Семантика статусов записи (как StatusCards): requested→warn, confirmed→ok, cancelled→danger, completed→нейтраль.
+  const apptStatusColor = { requested: theme.warn, confirmed: theme.ok, cancelled: theme.danger, completed: theme.t3 };
 
   // Локаль для formatDate
   const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
   const fmt    = (dateStr) => formatDate(dateStr, locale);
 
   const { pets, selectedPet, selectPet, loading: petsLoading } = usePetContext();
+  const { awardEvent } = useLoyaltyPoints();
+  const { markedDates, itemsByDate } = useMedicalCalendar(selectedPet?.id, theme.eventTypes);
+  const { isTaken, markTaken, unmark } = useMedicationIntakes(selectedPet?.id);
+  const { unit } = useUnits();
+  const { allergies } = usePetHealth(selectedPet?.id);
+  const { future } = useAppointments(selectedPet?.id);
+  // ymd сегодняшнего ЛОКАЛЬНОГО дня — тоггл приёма доступен только для дней ≤ сегодня.
+  const _today = new Date();
+  const todayYmd = `${_today.getFullYear()}-${String(_today.getMonth() + 1).padStart(2, '0')}-${String(_today.getDate()).padStart(2, '0')}`;
 
   const [activeTab,   setActiveTab]   = useState('overview');
+  const [viewMode,    setViewMode]    = useState('list');
+  const [selectedDate, setSelectedDate] = useState(null);
   const [scanning,    setScanning]    = useState(false);
+  const [exporting,   setExporting]   = useState(false);
   const [vaccines,    setVaccines]    = useState([]);
   const [medications, setMedications] = useState([]);
   const [records,     setRecords]     = useState([]);
@@ -663,6 +819,7 @@ export default function MedicalScreen() {
   const [vaccineModal, setVaccineModal] = useState(false);
   const [medModal,     setMedModal]     = useState(false);
   const [recordModal,  setRecordModal]  = useState(false);
+  const [procedureModal, setProcedureModal] = useState(false);
   const [editVaccine,  setEditVaccine]  = useState(null);
   const [editMed,      setEditMed]      = useState(null);
   const [editRecord,   setEditRecord]   = useState(null);
@@ -749,6 +906,8 @@ export default function MedicalScreen() {
         };
         const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
+        // Начисление за первую ручную медзапись (идемпотентно по dedup_key на сервере).
+        await awardEvent('manual_first', `${selectedPet.id}|manual_first`, { sourceType: 'manual' });
       }
       setVaccineModal(false); setEditVaccine(null);
       await loadMedicalData();
@@ -818,6 +977,8 @@ export default function MedicalScreen() {
         };
         const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
+        // Начисление за первую ручную медзапись (идемпотентно по dedup_key на сервере).
+        await awardEvent('manual_first', `${selectedPet.id}|manual_first`, { sourceType: 'manual' });
       }
       setMedModal(false); setEditMed(null);
       await loadMedicalData();
@@ -884,8 +1045,36 @@ export default function MedicalScreen() {
         };
         const { error } = await supabase.rpc('save_medical_record', { p_payload });
         if (error) throw error;
+        // Начисление за первую ручную медзапись (идемпотентно по dedup_key на сервере).
+        await awardEvent('manual_first', `${selectedPet.id}|manual_first`, { sourceType: 'manual' });
       }
       setRecordModal(false); setEditRecord(null);
+      await loadMedicalData();
+    } catch (err) {
+      Alert.alert(t('modal.errorTitle'), err.message);
+    }
+  };
+
+  const saveProcedure = async (formData) => {
+    try {
+      const fields = {
+        occurred_at:     formData.occurred_at || null,
+        diagnosis:       formData.name || null,          // название процедуры
+        recommendations: formData.notes || null,
+        clinic_name:     formData.clinic_name || null,
+        vet_name:        formData.vet_name || null,
+      };
+      const p_payload = {
+        pet_id:      selectedPet.id,
+        record_type: 'procedure',
+        source:      'manual',
+        ...fields,
+      };
+      const { error } = await supabase.rpc('save_medical_record', { p_payload });
+      if (error) throw error;
+      // Начисление за первую ручную медзапись (идемпотентно по dedup_key на сервере).
+      await awardEvent('manual_first', `${selectedPet.id}|manual_first`, { sourceType: 'manual' });
+      setProcedureModal(false);
       await loadMedicalData();
     } catch (err) {
       Alert.alert(t('modal.errorTitle'), err.message);
@@ -933,7 +1122,6 @@ export default function MedicalScreen() {
   const runScan = async (fromCamera) => {
     const scanId = Date.now();
     const source = fromCamera ? 'camera' : 'gallery';
-    console.log('🔵 SCAN START', scanId, 'source:', source);
     try {
       const perm = fromCamera
         ? await ImagePicker.requestCameraPermissionsAsync()
@@ -947,7 +1135,6 @@ export default function MedicalScreen() {
         ? await ImagePicker.launchCameraAsync({ quality: 0.9 })
         : await ImagePicker.launchImageLibraryAsync({ quality: 0.9, mediaTypes: ['images'] });
       if (picked.canceled || !picked.assets?.length) return;
-      console.log('🔵', scanId, 'picked uri:', picked.assets[0].uri);
 
       setScanning(true);
       const manipulated = await ImageManipulator.manipulateAsync(
@@ -955,7 +1142,6 @@ export default function MedicalScreen() {
         [{ resize: { width: 1024 } }],
         { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
-      console.log('🔵', scanId, 'manip uri:', manipulated.uri, 'base64 len:', manipulated.base64?.length, 'base64 head:', manipulated.base64?.slice(0, 24));
 
       const ocr = await parseMedicalDocument(manipulated.base64, 'image/jpeg');
       console.log('🧾 OCR result', scanId, JSON.stringify(ocr, null, 2));
@@ -989,6 +1175,37 @@ export default function MedicalScreen() {
     }
   };
 
+  // ─── Экспорт медкарты в PDF (собрать → HTML → печать → share) ───
+  const handleExport = async () => {
+    if (!selectedPet?.id || exporting) return;
+    setExporting(true);
+    try {
+      const data = await collectMedicalExport(selectedPet.id);
+      // PDF всегда светлый (печать на белом) — берём LIGHT-схему независимо от dark-режима
+      // приложения; акцент-пресет (mint/peach/blue) сохраняем.
+      const pdf = buildTheme('light', accent);
+      const pdfColors = {
+        accent: pdf.accent, text: pdf.t1, text2: pdf.t2, muted: pdf.t3,
+        faint: pdf.t4, line: pdf.hairline, danger: pdf.danger, dangerBg: pdf.danger + '14',
+      };
+      const html = buildMedicalExportHtml(data, { unit, lang: i18n.language, t, colors: pdfColors });
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: t('export.button'),
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert(t('export.error'), '');
+      }
+    } catch (e) {
+      Alert.alert(t('export.error'), e?.message || '');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleScan = () => {
     Alert.alert(
       t('scan.sourceTitle'),
@@ -1007,10 +1224,28 @@ export default function MedicalScreen() {
     const activeMeds   = medications.filter(m => m.active);
     const visits       = records.filter(r => r.record_type === 'visit');
     const recentRecord = visits[0];
+    const petAllergies = allergies || [];
+    const futureAppts  = (future || []).filter(a => a.status !== 'cancelled');
+    const fmtDT = (ts) =>
+      ts
+        ? new Date(ts).toLocaleString(locale, {
+            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+          })
+        : '';
+    // Ближайшие напоминания: type 'reminder' c датой [сегодня .. +30 дней], по возрастанию.
+    const _end = new Date();
+    _end.setDate(_end.getDate() + 30);
+    const in30Ymd = `${_end.getFullYear()}-${String(_end.getMonth() + 1).padStart(2, '0')}-${String(_end.getDate()).padStart(2, '0')}`;
+    const upcomingReminders = Object.entries(itemsByDate || {})
+      .filter(([d]) => d >= todayYmd && d <= in30Ymd)
+      .flatMap(([, evs]) => evs.filter((e) => e.type === 'reminder'))
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     const isEmpty =
       vaccines.length === 0 &&
       medications.length === 0 &&
-      records.length === 0;
+      records.length === 0 &&
+      petAllergies.length === 0 &&
+      futureAppts.length === 0;
 
     if (isEmpty) {
       return (
@@ -1026,21 +1261,68 @@ export default function MedicalScreen() {
 
     return (
       <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+        {/* Allergy banner */}
+        {petAllergies.length > 0 && (
+          <View style={styles.ovAllergyBanner}>
+            <Ionicons name="alert-circle" size={20} color={theme.danger} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.ovAllergyTitle}>{t('overview.allergyBanner.title')}</Text>
+              <Text style={styles.ovAllergyList}>
+                {petAllergies.map((a) => (a.severity ? `${a.substance} (${a.severity})` : a.substance)).join(', ')}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, { backgroundColor: '#EEF2FF' }]}>
+          <View style={[styles.summaryCard, { backgroundColor: theme.accentTint }]}>
             <Text style={styles.summaryNum}>{vaccines.length}</Text>
             <Text style={styles.summaryLabel}>{t('overview.summary.vaccines')}</Text>
           </View>
-          <View style={[styles.summaryCard, { backgroundColor: '#F0FDF4' }]}>
+          <View style={[styles.summaryCard, { backgroundColor: theme.ok + '1A' }]}>
             <Text style={styles.summaryNum}>{activeMeds.length}</Text>
             <Text style={styles.summaryLabel}>{t('overview.summary.activeMeds')}</Text>
           </View>
-          <View style={[styles.summaryCard, { backgroundColor: '#FFF7ED' }]}>
+          <View style={[styles.summaryCard, { backgroundColor: theme.warn + '1A' }]}>
             <Text style={styles.summaryNum}>{visits.length}</Text>
             <Text style={styles.summaryLabel}>{t('overview.summary.vetVisits')}</Text>
           </View>
         </View>
+
+        {/* Next Appointment */}
+        <TouchableOpacity
+          style={styles.section}
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate('Appointments', { petId: selectedPet.id })}
+        >
+          <Text style={styles.sectionTitle}>{t('overview.nextAppointment.title')}</Text>
+          {futureAppts[0] ? (
+            <View style={styles.ovApptCard}>
+              <View style={styles.ovApptHead}>
+                <Text style={styles.overviewCardName} numberOfLines={1}>
+                  {futureAppts[0].clinic_name || t('appointments.untitled')}
+                </Text>
+                <View style={[styles.ovStatusBadge, { backgroundColor: (apptStatusColor[futureAppts[0].status] || theme.t3) + '22' }]}>
+                  <Text style={[styles.ovStatusText, { color: apptStatusColor[futureAppts[0].status] || theme.t3 }]}>
+                    {t(`appointments.status.${futureAppts[0].status}`, { defaultValue: futureAppts[0].status })}
+                  </Text>
+                </View>
+              </View>
+              {futureAppts[0].reason ? (
+                <Text style={styles.overviewCardSub}>{futureAppts[0].reason}</Text>
+              ) : null}
+              <View style={styles.ovApptDate}>
+                <Ionicons name="time-outline" size={14} color={theme.accent} />
+                <Text style={styles.ovApptDateText}>{fmtDT(futureAppts[0].requested_at)}</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.ovApptCard}>
+              <Text style={styles.ovApptNone}>{t('overview.nextAppointment.none')}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* Upcoming Vaccines */}
         {vaccines.length > 0 && (
@@ -1066,6 +1348,19 @@ export default function MedicalScreen() {
                 </View>
               );
             })}
+          </View>
+        )}
+
+        {/* Upcoming Reminders */}
+        {upcomingReminders.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('overview.upcomingReminders.title')}</Text>
+            {upcomingReminders.map((r, i) => (
+              <View key={`${r.refId || i}-${r.date}`} style={styles.ovReminderRow}>
+                <Text style={styles.ovReminderDate}>{fmt(r.date)}</Text>
+                <Text style={styles.ovReminderTitle} numberOfLines={1}>{r.title}</Text>
+              </View>
+            ))}
           </View>
         )}
 
@@ -1364,7 +1659,7 @@ export default function MedicalScreen() {
   const TABS = ['overview', 'vaccines', 'medications', 'records'];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <Screen>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -1377,11 +1672,37 @@ export default function MedicalScreen() {
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.scanBtn}
+            onPress={() => { if (selectedPet?.id) navigation.navigate('Appointments', { petId: selectedPet.id }); }}
+          >
+            <Ionicons name="today-outline" size={20} color={theme.accent} />
+          </TouchableOpacity>
+          {selectedPet?.id && (
+            <TouchableOpacity
+              style={styles.scanBtn}
+              onPress={() => navigation.navigate('Documents', { petId: selectedPet.id })}
+            >
+              <Ionicons name="documents-outline" size={20} color={theme.accent} />
+            </TouchableOpacity>
+          )}
+          {selectedPet?.id && (
+            <TouchableOpacity
+              style={styles.scanBtn}
+              onPress={handleExport}
+              disabled={exporting}
+            >
+              {exporting
+                ? <ActivityIndicator size="small" color={theme.accent} />
+                : <Ionicons name="share-outline" size={20} color={theme.accent} />}
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.scanBtn}
             onPress={handleScan}
             disabled={scanning}
           >
-            <Ionicons name="scan-outline" size={20} color="#6366F1" />
+            <Ionicons name="scan-outline" size={20} color={theme.accent} />
           </TouchableOpacity>
+          {viewMode === 'list' && (
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => {
@@ -1390,7 +1711,11 @@ export default function MedicalScreen() {
               } else if (activeTab === 'medications') {
                 setEditMed(null); setMedModal(true);
               } else if (activeTab === 'records') {
-                setEditRecord(null); setRecordModal(true);
+                Alert.alert(t('modal.addChooser.title'), undefined, [
+                  { text: t('recordTypes.visit'), onPress: () => { setEditRecord(null); setRecordModal(true); } },
+                  { text: t('recordTypes.procedure'), onPress: () => setProcedureModal(true) },
+                  { text: t('modal.cancel'), style: 'cancel' },
+                ]);
               }
             }}
           >
@@ -1398,12 +1723,13 @@ export default function MedicalScreen() {
               {activeTab === 'overview' ? '···' : '+'}
             </Text>
           </TouchableOpacity>
+          )}
         </View>
       </View>
 
       {/* Pet Switcher */}
       {petsLoading ? (
-        <ActivityIndicator style={{ marginVertical: 12 }} color="#6366F1" />
+        <ActivityIndicator style={{ marginVertical: 12 }} color={theme.accent} />
       ) : (
         <ScrollView
           horizontal
@@ -1431,7 +1757,24 @@ export default function MedicalScreen() {
         </ScrollView>
       )}
 
-      {/* Tabs */}
+      {/* View toggle: list ↔ calendar */}
+      <View style={styles.viewToggle}>
+        <TouchableOpacity
+          style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
+          onPress={() => setViewMode('list')}
+        >
+          <Ionicons name="list-outline" size={20} color={viewMode === 'list' ? theme.onAccent : theme.accent} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.viewToggleBtn, viewMode === 'calendar' && styles.viewToggleBtnActive]}
+          onPress={() => setViewMode('calendar')}
+        >
+          <Ionicons name="calendar-outline" size={20} color={viewMode === 'calendar' ? theme.onAccent : theme.accent} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Tabs (только в режиме списка) */}
+      {viewMode === 'list' && (
       <View style={styles.tabs}>
         {TABS.map(tab => (
           <TouchableOpacity
@@ -1448,10 +1791,113 @@ export default function MedicalScreen() {
           </TouchableOpacity>
         ))}
       </View>
+      )}
 
       {/* Content */}
-      {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} size="large" color="#6366F1" />
+      {viewMode === 'calendar' ? (
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          <Calendar
+            markingType="multi-dot"
+            onDayPress={(d) => setSelectedDate(d.dateString)}
+            markedDates={selectedDate
+              ? { ...markedDates, [selectedDate]: { ...(markedDates[selectedDate] || {}), selected: true, selectedColor: theme.accentPress } }
+              : markedDates}
+            theme={{
+              calendarBackground: 'transparent',
+              monthTextColor: theme.t1,
+              dayTextColor: theme.t1,
+              textSectionTitleColor: theme.t3,
+              textDisabledColor: theme.t4,
+              todayTextColor: theme.accent,
+              selectedDayBackgroundColor: theme.accentPress,
+              selectedDayTextColor: theme.onAccent,
+              arrowColor: theme.accent,
+              dotColor: theme.accent,
+            }}
+            style={styles.calendar}
+          />
+
+          {/* Легенда типов событий (категориальная палитра) */}
+          <View style={styles.legend}>
+            {EVENT_TYPE_KEYS.map((type) => (
+              <View key={type} style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: theme.eventTypes[type] }]} />
+                <Text style={styles.legendText}>{t(`calendar.types.${type}`)}</Text>
+              </View>
+            ))}
+          </View>
+          {selectedDate ? (
+            <View style={styles.agenda}>
+              <Text style={styles.agendaTitle}>{t('calendar.agendaTitle')}</Text>
+              {(itemsByDate[selectedDate] || []).length === 0 ? (
+                <Text style={styles.agendaEmpty}>{t('calendar.empty')}</Text>
+              ) : (
+                itemsByDate[selectedDate].map((ev, i) => {
+                  const evIcon = AGENDA_ICONS[ev.type] || AGENDA_ICONS.record;
+                  const evColor = theme.eventTypes[ev.type] || theme.eventTypes.record;
+                  const isRecord = ev.type === 'record';
+                  const isAppointment = ev.type === 'appointment';
+                  const tappable = isRecord || isAppointment;
+                  const onPress = isRecord
+                    ? () => navigation.navigate('RecordDetail', { recordId: ev.recordId, petId: selectedPet.id })
+                    : isAppointment
+                    ? () => navigation.navigate('Appointments', { petId: selectedPet.id })
+                    : undefined;
+                  const isPrescription = ev.type === 'prescription';
+                  const canToggle = isPrescription && selectedDate <= todayYmd; // не отмечаем будущие дозы
+                  const taken = isPrescription && isTaken(ev.refId, selectedDate);
+                  return (
+                    <TouchableOpacity
+                      key={`${ev.type}-${ev.refId || ev.recordId || i}`}
+                      style={styles.agendaCard}
+                      activeOpacity={tappable ? 0.7 : 1}
+                      disabled={!tappable}
+                      onPress={onPress}
+                    >
+                      <View style={[styles.agendaIcon, { backgroundColor: evColor + '22' }]}>
+                        <Ionicons name={evIcon} size={18} color={evColor} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.agendaType}>{t(`calendar.types.${ev.type}`)}</Text>
+                        {ev.title ? <Text style={styles.agendaItemTitle} numberOfLines={1}>{ev.title}</Text> : null}
+                      </View>
+                      {tappable && <Ionicons name="chevron-forward" size={18} color={theme.t4} />}
+                      {canToggle && (
+                        <TouchableOpacity
+                          style={styles.intakeToggle}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            if (taken) {
+                              unmark(ev.refId, selectedDate).catch(() => {});
+                            } else {
+                              // Начисление только при отметке (не при снятии); dedup по рецепт|день.
+                              markTaken(ev.refId, selectedDate)
+                                .then(() =>
+                                  awardEvent('medication_taken', `${ev.refId}|med_taken|${selectedDate}`, { sourceType: 'app' })
+                                )
+                                .catch(() => {});
+                            }
+                          }}
+                        >
+                          <Ionicons
+                            name={taken ? 'checkmark-circle' : 'ellipse-outline'}
+                            size={22}
+                            color={taken ? theme.ok : theme.t3}
+                          />
+                          <Text style={[styles.intakeLabel, taken && { color: theme.ok }]}>
+                            {taken ? t('calendar.intake.taken') : t('calendar.intake.give')}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </View>
+          ) : null}
+        </ScrollView>
+      ) : loading ? (
+        <ActivityIndicator style={{ marginTop: 40 }} size="large" color={theme.accent} />
       ) : (
         <>
           {activeTab === 'overview'    && renderOverview()}
@@ -1480,112 +1926,147 @@ export default function MedicalScreen() {
         onSave={saveRecord}
         editData={editRecord}
       />
+      <ProcedureModal
+        visible={procedureModal}
+        onClose={() => setProcedureModal(false)}
+        onSave={saveProcedure}
+      />
 
       {scanning && (
         <View style={styles.scanOverlay}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color={theme.onAccent} />
           <Text style={styles.scanOverlayText}>{t('scan.loading')}</Text>
         </View>
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 // ─── Styles (без изменений) ───────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container:            { flex: 1, backgroundColor: '#F9FAFB' },
-  header:               { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+const makeStyles = (theme) => StyleSheet.create({
+  container:            { flex: 1, backgroundColor: 'transparent' },
+  header:               { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: 'transparent', borderBottomWidth: 1, borderBottomColor: theme.hairline },
   backBtn:              { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow:            { fontSize: 22, color: '#6366F1', fontWeight: '600' },
-  headerTitle:          { fontSize: 18, fontWeight: '700', color: '#1F2937' },
-  addBtn:               { width: 36, height: 36, backgroundColor: '#6366F1', borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  addBtnText:           { color: '#fff', fontSize: 22, fontWeight: '300', lineHeight: 28 },
+  backArrow:            { fontSize: 22, color: theme.accent, fontWeight: '600' },
+  headerTitle:          { fontSize: 18, fontWeight: '700', color: theme.t1 },
+  addBtn:               { width: 36, height: 36, backgroundColor: theme.accentPress, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  addBtnText:           { color: theme.onAccent, fontSize: 22, fontWeight: '300', lineHeight: 28 },
   headerActions:        { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  scanBtn:              { width: 36, height: 36, backgroundColor: '#EEF2FF', borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  scanOverlay:          { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', gap: 14 },
-  scanOverlayText:      { color: '#fff', fontSize: 15, fontWeight: '600' },
-  petSwitcher:          { maxHeight: 52, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  scanBtn:              { width: 36, height: 36, backgroundColor: theme.accentTint, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  scanOverlay:          { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', gap: 14 }, // theme-neutral scrim
+  scanOverlayText:      { color: theme.onAccent, fontSize: 15, fontWeight: '600' },
+  petSwitcher:          { maxHeight: 52, backgroundColor: 'transparent', borderBottomWidth: 1, borderBottomColor: theme.hairline },
   petSwitcherContent:   { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  petChip:              { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
-  petChipActive:        { backgroundColor: '#6366F1', borderColor: '#6366F1' },
-  petChipText:          { fontSize: 14, fontWeight: '500', color: '#6B7280' },
-  petChipTextActive:    { color: '#fff', fontWeight: '600' },
-  tabs:                 { flexDirection: 'row', backgroundColor: '#fff', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  petChip:              { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, backgroundColor: theme.hairline, borderWidth: 1, borderColor: theme.hairline },
+  petChipActive:        { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
+  petChipText:          { fontSize: 14, fontWeight: '500', color: theme.t2 },
+  petChipTextActive:    { color: theme.onAccent, fontWeight: '600' },
+  tabs:                 { flexDirection: 'row', backgroundColor: 'transparent', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.hairline },
   tab:                  { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive:            { borderBottomColor: '#6366F1' },
-  tabText:              { fontSize: 12, fontWeight: '500', color: '#9CA3AF' },
-  tabTextActive:        { color: '#6366F1', fontWeight: '700' },
+  tabActive:            { borderBottomColor: theme.accent },
+  tabText:              { fontSize: 12, fontWeight: '500', color: theme.t3 },
+  tabTextActive:        { color: theme.accentPress, fontWeight: '700' },
+  viewToggle:           { flexDirection: 'row', alignSelf: 'center', backgroundColor: theme.accentTint, borderRadius: 10, padding: 3, marginVertical: 10, gap: 3 },
+  viewToggleBtn:        { paddingVertical: 6, paddingHorizontal: 22, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  viewToggleBtnActive:  { backgroundColor: theme.accentPress },
+  calendar:             { marginHorizontal: 8, marginTop: 4, borderRadius: 12, overflow: 'hidden' },
+  legend:               { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 12, paddingTop: 10 },
+  legendItem:           { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot:            { width: 8, height: 8, borderRadius: 4 },
+  legendText:           { fontSize: 12, color: theme.t2 },
+  agenda:               { marginTop: 8, paddingHorizontal: 12, paddingBottom: 24 },
+  agendaTitle:          { fontSize: 14, fontWeight: '700', color: theme.t1, marginBottom: 8, marginTop: 4 },
+  agendaEmpty:          { fontSize: 13, color: theme.t3, paddingVertical: 8 },
+  agendaCard:           { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: theme.hairline },
+  agendaIcon:           { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  agendaType:           { fontSize: 11, fontWeight: '600', color: theme.t3, textTransform: 'uppercase' },
+  agendaItemTitle:      { fontSize: 14, color: theme.t1, fontWeight: '500', marginTop: 1 },
+  intakeToggle:         { flexDirection: 'row', alignItems: 'center', gap: 5, paddingLeft: 6 },
+  intakeLabel:          { fontSize: 12, fontWeight: '600', color: theme.t3 },
   tabContent:           { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
   summaryRow:           { flexDirection: 'row', gap: 10, marginBottom: 16 },
   summaryCard:          { flex: 1, borderRadius: 12, padding: 14, alignItems: 'center' },
-  summaryNum:           { fontSize: 24, fontWeight: '700', color: '#1F2937' },
-  summaryLabel:         { fontSize: 11, color: '#6B7280', marginTop: 2, fontWeight: '500' },
-  alertBox:             { backgroundColor: '#FEF3C7', borderRadius: 12, padding: 14, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#F59E0B' },
-  alertTitle:           { fontSize: 14, fontWeight: '700', color: '#92400E', marginBottom: 8 },
+  summaryNum:           { fontSize: 24, fontWeight: '700', color: theme.t1 },
+  summaryLabel:         { fontSize: 11, color: theme.t3, marginTop: 2, fontWeight: '500' },
+  alertBox:             { backgroundColor: theme.warn + '14', borderRadius: 12, padding: 14, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: theme.warn },
+  alertTitle:           { fontSize: 14, fontWeight: '700', color: theme.t1, marginBottom: 8 },
   alertRow:             { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   alertRight:           { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  alertDate:            { fontSize: 12, color: '#6B7280' },
-  alertName:            { fontSize: 13, color: '#78350F', fontWeight: '500' },
+  alertDate:            { fontSize: 12, color: theme.t3 },
+  alertName:            { fontSize: 13, color: theme.t1, fontWeight: '500' },
   alertBadge:           { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   section:              { marginBottom: 16 },
-  sectionTitle:         { fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 8 },
-  overviewCard:         { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
-  overviewCardName:     { fontSize: 15, fontWeight: '600', color: '#1F2937' },
-  overviewCardSub:      { fontSize: 13, color: '#6B7280', marginTop: 3 },
-  overviewCardNote:     { fontSize: 13, color: '#9CA3AF', marginTop: 4 },
-  card:                 { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  sectionTitle:         { fontSize: 14, fontWeight: '700', color: theme.t2, marginBottom: 8 },
+  overviewCard:         { backgroundColor: theme.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: theme.hairline },
+  overviewCardName:     { fontSize: 15, fontWeight: '600', color: theme.t1 },
+  overviewCardSub:      { fontSize: 13, color: theme.t3, marginTop: 3 },
+  overviewCardNote:     { fontSize: 13, color: theme.t3, marginTop: 4 },
+  card:                 { backgroundColor: theme.surface, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: theme.hairline, shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
   cardHeader:           { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  cardTitle:            { fontSize: 16, fontWeight: '700', color: '#1F2937', flex: 1, marginRight: 8 },
-  cardMeta:             { fontSize: 13, color: '#6B7280', marginBottom: 3 },
-  cardNote:             { fontSize: 13, color: '#9CA3AF', marginTop: 4, fontStyle: 'italic' },
-  cardActions:          { flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  cardTitle:            { fontSize: 16, fontWeight: '700', color: theme.t1, flex: 1, marginRight: 8 },
+  cardMeta:             { fontSize: 13, color: theme.t3, marginBottom: 3 },
+  cardNote:             { fontSize: 13, color: theme.t3, marginTop: 4, fontStyle: 'italic' },
+  cardActions:          { flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.hairline },
   actionBtn:            { paddingVertical: 4, paddingHorizontal: 8 },
-  actionEdit:           { fontSize: 13, fontWeight: '600', color: '#6366F1' },
-  actionDelete:         { fontSize: 13, fontWeight: '600', color: '#EF4444' },
+  actionEdit:           { fontSize: 13, fontWeight: '600', color: theme.accentPress },
+  actionDelete:         { fontSize: 13, fontWeight: '600', color: theme.danger },
   statusBadge:          { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  statusText:           { fontSize: 11, fontWeight: '700' },
-  badgeRed:             { backgroundColor: '#FEE2E2' },
-  badgeYellow:          { backgroundColor: '#FEF3C7' },
-  badgeGreen:           { backgroundColor: '#D1FAE5' },
-  badgeGray:            { backgroundColor: '#F3F4F6' },
-  badgePurple:          { backgroundColor: '#EEF2FF' },
+  statusText:           { fontSize: 11, fontWeight: '700', color: theme.t1 },
+  badgeRed:             { backgroundColor: theme.danger + '22' },
+  badgeYellow:          { backgroundColor: theme.warn + '22' },
+  badgeGreen:           { backgroundColor: theme.ok + '22' },
+  ovAllergyBanner:      { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.danger + '14', borderRadius: 12, padding: 14, marginBottom: 16 },
+  ovAllergyTitle:       { fontSize: 14, fontWeight: '700', color: theme.danger },
+  ovAllergyList:        { fontSize: 13, color: theme.danger, marginTop: 2 },
+  ovApptCard:           { backgroundColor: theme.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: theme.hairline },
+  ovApptHead:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  ovStatusBadge:        { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
+  ovStatusText:         { fontSize: 11, fontWeight: '700' },
+  ovApptDate:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  ovApptDateText:       { fontSize: 13, color: theme.t3 },
+  ovApptNone:           { fontSize: 13, color: theme.t3 },
+  ovReminderRow:        { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surface, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: theme.hairline },
+  ovReminderDate:       { fontSize: 12, fontWeight: '700', color: theme.accentPress, minWidth: 84 },
+  ovReminderTitle:      { fontSize: 14, color: theme.t1, flex: 1 },
+  badgeGray:            { backgroundColor: theme.hairline },
+  badgePurple:          { backgroundColor: theme.accentTint },
   emptyState:           { alignItems: 'center', paddingVertical: 60 },
   emptyIcon:            { fontSize: 48, marginBottom: 12 },
-  emptyTitle:           { fontSize: 18, fontWeight: '700', color: '#1F2937', marginBottom: 6 },
-  emptySub:             { fontSize: 14, color: '#9CA3AF', textAlign: 'center', paddingHorizontal: 20 },
+  emptyTitle:           { fontSize: 18, fontWeight: '700', color: theme.t1, marginBottom: 6 },
+  emptySub:             { fontSize: 14, color: theme.t3, textAlign: 'center', paddingHorizontal: 20 },
 });
 
-const dpStyles = StyleSheet.create({
+const makeDpStyles = (theme) => StyleSheet.create({
   container:   { marginBottom: 12 },
-  field:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, gap: 8 },
+  field:       { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, gap: 8 },
   icon:        { marginRight: 2 },
-  text:        { flex: 1, fontSize: 15, color: '#1F2937' },
-  placeholder: { color: '#9CA3AF' },
+  text:        { flex: 1, fontSize: 15, color: theme.t1 },
+  placeholder: { color: theme.t4 },
 });
 
-const mStyles = StyleSheet.create({
-  overlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  sheet:       { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
-  title:       { fontSize: 20, fontWeight: '700', color: '#1F2937', marginBottom: 20, textAlign: 'center' },
-  label:       { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 4 },
-  input:       { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#1F2937', marginBottom: 12 },
+const makeMStyles = (theme) => StyleSheet.create({
+  overlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }, // theme-neutral scrim
+  sheet:       { backgroundColor: theme.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
+  title:       { fontSize: 20, fontWeight: '700', color: theme.t1, marginBottom: 20, textAlign: 'center' },
+  label:       { fontSize: 13, fontWeight: '600', color: theme.t2, marginBottom: 6, marginTop: 4 },
+  input:       { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: theme.t1, marginBottom: 12 },
   textArea:    { height: 80, textAlignVertical: 'top', paddingTop: 10 },
   row:         { flexDirection: 'row', gap: 12, marginTop: 8 },
   btn:         { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  btnCancel:   { backgroundColor: '#F3F4F6' },
-  btnSave:     { backgroundColor: '#6366F1' },
-  btnCancelText: { fontSize: 15, fontWeight: '600', color: '#6B7280' },
-  btnSaveText: { fontSize: 15, fontWeight: '600', color: '#fff' },
-  chip:        { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB', marginRight: 8 },
-  chipActive:  { backgroundColor: '#6366F1', borderColor: '#6366F1' },
-  chipText:    { fontSize: 13, fontWeight: '500', color: '#6B7280' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
+  btnCancel:   { backgroundColor: theme.hairline },
+  btnSave:     { backgroundColor: theme.accentPress },
+  btnCancelText: { fontSize: 15, fontWeight: '600', color: theme.t2 },
+  btnSaveText: { fontSize: 15, fontWeight: '600', color: theme.onAccent },
+  chip:        { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: theme.hairline, borderWidth: 1, borderColor: theme.hairline, marginRight: 8 },
+  chipActive:  { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
+  chipText:    { fontSize: 13, fontWeight: '500', color: theme.t2 },
+  chipTextActive: { color: theme.onAccent, fontWeight: '600' },
   toggleRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 4 },
   toggle:      { width: 48, height: 26, borderRadius: 13, justifyContent: 'center', paddingHorizontal: 3 },
-  toggleOn:    { backgroundColor: '#6366F1' },
-  toggleOff:   { backgroundColor: '#D1D5DB' },
-  toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2 },
+  toggleOn:    { backgroundColor: theme.accent },
+  toggleOff:   { backgroundColor: theme.hairline },
+  toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: theme.surface, shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2 },
   thumbOn:     { alignSelf: 'flex-end' },
   thumbOff:    { alignSelf: 'flex-start' },
 });

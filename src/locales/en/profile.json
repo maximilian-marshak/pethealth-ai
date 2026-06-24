@@ -1,16 +1,37 @@
 {
     "title": "Profile",
+    "history": "History",
     "editProfile": "Edit Profile",
     "name": "Name",
     "email": "Email",
     "phone": "Phone",
     "language": "Language",
     "notifications": "Notifications",
+    "notifPermDenied": { "title": "Notifications disabled", "message": "Allow notifications in your device settings to turn them on." },
     "logout": "Log Out",
     "deleteAccount": "Delete Account",
+    "deleteConfirm": {
+      "title": "Delete account?",
+      "message": "This will permanently delete all your pets, medical records, documents and data. This cannot be undone.",
+      "continue": "Continue",
+      "finalTitle": "Are you sure?",
+      "finalMessage": "This action is irreversible. Delete your account?",
+      "confirmFinal": "Delete forever",
+      "error": "Couldn't delete account"
+    },
     "settings": "Settings",
     "loyalty": "Loyalty Program",
     "totalDonated": "Total Donated",
-    "badges": "My Badges"
+    "badges": "My Badges",
+    "units": { "title": "Weight units", "kg": "kg", "lb": "lb" },
+    "rank": {
+      "title": "Rank",
+      "toNext": "{{remaining}} Paws to the next rank",
+      "max": "Max rank reached",
+      "showAll": "Show all ranks",
+      "hideAll": "Hide ranks",
+      "threshold": "≥ {{count}} Paws",
+      "league": { "bronze": "Bronze", "silver": "Silver", "gold": "Gold", "diamond": "Diamond" }
+    }
   }
   

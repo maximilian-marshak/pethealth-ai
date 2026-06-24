@@ -2,7 +2,7 @@
 // src/screens/AIAssistantChatScreen.js
 // ══════════════════════════════════════════════════
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,9 +18,25 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../theme/ThemeProvider';
+import Screen from '../components/Screen';
+import GlassCard from '../components/GlassCard';
+
+// Читаемый текст на цветной (category) подложке: по относительной яркости фона
+// выбираем тёмный (t1) на светлых категориях / onAccent на тёмных — контраст AA.
+const readableText = (hex, theme) => {
+  const h = (hex || '').replace('#', '');
+  if (h.length < 6) return theme.onAccent;
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return lum > 0.55 ? theme.t1 : theme.onAccent;
+};
 
 import { usePetContext } from '../context/PetContext';
 import { usePetHealth } from '../hooks/usePetHealth';
+import { useUnits } from '../hooks/useUnits';
 import { useAuth } from '../context/AuthContext';
 import { useConversation } from '../hooks/useConversation';
 import { sendMessageToOpenAI } from '../services/openAIService';
@@ -41,6 +57,12 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   const { getOrCreateConversation, loadMessages, addMessage, clearConversation } = useConversation();
   const { t } = useTranslation('ai');
   const health = usePetHealth(selectedPet?.id);
+  const { unit } = useUnits();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  // Цвет категории (из хаба, уже токен) + читаемый на нём текст/иконки.
+  const catColor = color || theme.accent;
+  const onCat = readableText(catColor, theme);
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -56,11 +78,11 @@ export default function AIAssistantChatScreen({ route, navigation }) {
       headerShown: true,
       headerTitle: title || t('chat.defaultTitle'),
       headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
-      headerStyle: { backgroundColor: color || '#6C63FF' },
-      headerTintColor: '#FFFFFF',
+      headerStyle: { backgroundColor: catColor },
+      headerTintColor: onCat,
       headerLeft: () => (
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 10 }}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          <Ionicons name="arrow-back" size={24} color={onCat} />
         </TouchableOpacity>
       ),
       headerRight: () => (
@@ -91,11 +113,11 @@ export default function AIAssistantChatScreen({ route, navigation }) {
           }
           style={{ marginRight: 10 }}
         >
-          <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
+          <Ionicons name="trash-outline" size={22} color={onCat} />
         </TouchableOpacity>
       ),
     });
-  }, [navigation, title, color, t]);
+  }, [navigation, title, color, t, catColor, onCat]);
 
   // ═══ ИНИЦИАЛИЗАЦИЯ: беседа + история ДО авто-действий ═══
   useEffect(() => {
@@ -254,7 +276,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     setIsLoading(true);
 
     try {
-      const response = await sendMessageToOpenAI(text.trim(), messages, { selectedPet, category, health });
+      const response = await sendMessageToOpenAI(text.trim(), messages, { selectedPet, category, health, unit });
 
       const assistantMessage = {
         id: (Date.now() + 1).toString(),
@@ -297,8 +319,8 @@ export default function AIAssistantChatScreen({ route, navigation }) {
 
     return (
       <View style={styles.emptyStateContainer}>
-        <View style={[styles.emptyStateIcon, { backgroundColor: color || '#6C63FF' }]}>
-          <Ionicons name={selectedPet ? 'paw' : 'chatbubbles'} size={48} color="#FFFFFF" />
+        <View style={[styles.emptyStateIcon, { backgroundColor: catColor }]}>
+          <Ionicons name={selectedPet ? 'paw' : 'chatbubbles'} size={48} color={onCat} />
         </View>
         <Text style={styles.emptyStateTitle}>
           {selectedPet
@@ -318,7 +340,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
               style={styles.suggestedQuestionButton}
               onPress={() => handleSendMessage(question, true)}
             >
-              <Ionicons name="help-circle-outline" size={20} color={color || '#6C63FF'} />
+              <Ionicons name="help-circle-outline" size={20} color={catColor} />
               <Text style={styles.suggestedQuestionText}>{question}</Text>
             </TouchableOpacity>
           ))}
@@ -350,7 +372,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
               placeholder={require('../../assets/icon.png')}
             />
             <View style={styles.imageOverlay}>
-              <Ionicons name="camera" size={16} color="#fff" />
+              <Ionicons name="camera" size={16} color={theme.onAccent} />
             </View>
           </View>
         )}
@@ -375,7 +397,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
 
         {item.isVisionAnalysis && item.visionResult?.success && (
           <View style={styles.visionBadge}>
-            <Ionicons name="eye" size={12} color="#6C63FF" />
+            <Ionicons name="eye" size={12} color={theme.accent} />
             <Text style={styles.visionBadgeText}>
               {t('chat.visionBadge')} • {item.visionResult.model?.split('/')[1] || 'AI'}
             </Text>
@@ -413,15 +435,16 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   };
 
   return (
+    <Screen edges={[]}>
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {selectedPet && (
-        <View style={[styles.petHeader, { backgroundColor: color || '#6C63FF' }]}>
-          <Ionicons name="paw" size={20} color="#FFFFFF" />
-          <Text style={styles.petHeaderText}>
+        <View style={[styles.petHeader, { backgroundColor: catColor }]}>
+          <Ionicons name="paw" size={20} color={onCat} />
+          <Text style={[styles.petHeaderText, { color: onCat }]}>
             {t('chat.petHeader', {
               name: selectedPet.name,
               breed: selectedPet.breed,
@@ -444,38 +467,42 @@ export default function AIAssistantChatScreen({ route, navigation }) {
 
       {isLoading && renderTypingIndicator()}
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={inputText}
-          onChangeText={setInputText}
-          placeholder={t('chat.inputPlaceholder')}
-          placeholderTextColor="#999"
-          multiline
-          maxLength={1000}
-          editable={!isLoading}
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
-          onPress={() => handleSendMessage()}
-          disabled={!inputText.trim() || isLoading}
-        >
-          <Ionicons name="send" size={22} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      {/* Инпут — glass pill (GlassCard decor) + accent-кнопка */}
+      <GlassCard variant="decor" style={styles.inputBar} radius={0} padding={12}>
+        <View style={styles.inputRow}>
+          <TextInput
+            style={styles.input}
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder={t('chat.inputPlaceholder')}
+            placeholderTextColor={theme.t4}
+            multiline
+            maxLength={1000}
+            editable={!isLoading}
+          />
+          <TouchableOpacity
+            style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
+            onPress={() => handleSendMessage()}
+            disabled={!inputText.trim() || isLoading}
+          >
+            <Ionicons name="send" size={22} color={theme.onAccent} />
+          </TouchableOpacity>
+        </View>
+      </GlassCard>
     </KeyboardAvoidingView>
+    </Screen>
   );
 }
 // ═══════════════════════════════════════════════════════════════
 // STYLES
 // ═══════════════════════════════════════════════════════════════
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'transparent',
   },
 
-  // Pet Header
+  // Pet Header (bg = category-цвет inline; текст onCat inline по контрасту)
   petHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -485,7 +512,7 @@ const styles = StyleSheet.create({
   },
   petHeaderText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: theme.onAccent,
     fontWeight: '600',
   },
 
@@ -515,13 +542,13 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.t1,
     marginBottom: 12,
     textAlign: 'center',
   },
   emptyStateSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: theme.t2,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 30,
@@ -532,18 +559,18 @@ const styles = StyleSheet.create({
   suggestedQuestionsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#999',
+    color: theme.t3,
     marginBottom: 12,
     textAlign: 'center',
   },
   suggestedQuestionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     padding: 14,
     borderRadius: 12,
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
@@ -552,7 +579,7 @@ const styles = StyleSheet.create({
   suggestedQuestionText: {
     flex: 1,
     fontSize: 14,
-    color: '#333',
+    color: theme.t1,
     marginLeft: 10,
   },
 
@@ -563,26 +590,33 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     maxWidth: '80%',
   },
+  // user-бабл — accentPress-заливка (белый на accent ≈2.4:1 не AA; accentPress лучше)
   userMessage: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.accentPress,
     alignSelf: 'flex-end',
     borderBottomRightRadius: 4,
   },
+  // bot-бабл — surface + свечение glow-accent (по §6.2); текст t1
   assistantMessage: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: theme.hairline,
+    shadowColor: theme.glowAccent.shadowColor,
+    shadowOpacity: theme.glowAccent.shadowOpacity,
+    shadowRadius: theme.glowAccent.shadowRadius,
+    shadowOffset: theme.glowAccent.shadowOffset,
+    elevation: theme.glowAccent.elevation,
   },
   emergencyMessage: {
-    backgroundColor: '#ffe0e0',
-    borderColor: '#ff4444',
+    backgroundColor: theme.danger + '22',
+    borderColor: theme.danger,
     borderWidth: 2,
   },
   errorMessage: {
-    backgroundColor: '#fff5f5',
-    borderColor: '#ffcccc',
+    backgroundColor: theme.danger + '14',
+    borderColor: theme.danger,
     borderWidth: 1,
   },
   
@@ -593,7 +627,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.hairline,
   },
   messageImage: {
     width: '100%',
@@ -604,7 +638,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // theme-neutral: бейдж-камера поверх фото
     borderRadius: 12,
     padding: 4,
   },
@@ -614,21 +648,21 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   userText: {
-    color: '#fff',
+    color: theme.onAccent,
   },
   assistantText: {
-    color: '#333',
+    color: theme.t1,
   },
   emergencyText: {
-    color: '#cc0000',
+    color: theme.danger,
     fontWeight: '600',
   },
   errorText: {
-    color: '#cc0000',
+    color: theme.danger,
   },
   timestamp: {
     fontSize: 11,
-    color: '#999',
+    color: theme.t3,
     marginTop: 6,
     alignSelf: 'flex-end',
   },
@@ -640,12 +674,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: theme.hairline,
     gap: 4,
   },
   visionBadgeText: {
     fontSize: 11,
-    color: '#6C63FF',
+    color: theme.accent,
     fontWeight: '500',
   },
 
@@ -658,57 +692,58 @@ const styles = StyleSheet.create({
   },
   typingBubble: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: theme.hairline,
     marginRight: 10,
   },
   typingDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.accent,
     marginHorizontal: 3,
   },
   typingText: {
     fontSize: 14,
-    color: '#666',
+    color: theme.t3,
     fontStyle: 'italic',
   },
 
-  // Input Bar
-  inputContainer: {
+  // Input Bar — glass pill (GlassCard decor), низ экрана
+  inputBar: {
+    marginHorizontal: 0,
+    borderTopWidth: 1,
+    borderTopColor: theme.hairline,
+  },
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: 12,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
   },
   input: {
     flex: 1,
     minHeight: 40,
     maxHeight: 100,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: theme.surface,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#333',
+    color: theme.t1,
     marginRight: 8,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.accentPress,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: theme.hairline,
   },
 });

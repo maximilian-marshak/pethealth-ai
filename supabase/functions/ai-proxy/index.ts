@@ -13,7 +13,8 @@ const MODEL_CHAINS: Record<string, string[]> = {
   ocr:    ["nvidia/nemotron-nano-12b-v2-vl:free", "openrouter/free"],
   vision: ["nvidia/nemotron-nano-12b-v2-vl:free", "openrouter/free"],
   // Быстрые non-reasoning free-модели (550B-reasoning примарь тормозил -> таймаут).
-  chat:   ["deepseek/deepseek-chat-v3.1:free", "meta-llama/llama-3.3-70b-instruct:free", "openrouter/free"],
+  // Последнее звено — платный надёжный фоллбэк (если все free не ответили/вернули пустое).
+  chat:   ["deepseek/deepseek-chat-v3.1:free", "meta-llama/llama-3.3-70b-instruct:free", "openrouter/free", "openai/gpt-4o-mini"],
 };
 
 // Дефолты, если параметры не переданы клиентом.

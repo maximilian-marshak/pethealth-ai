@@ -21,13 +21,6 @@ const _store = {
   fetchCount:  0,           // защита от race condition при fetch
 };
 
-// Сколько Paws начисляем за каждый тип награды.
-// addPoints принимает либо строковый reward-тип, либо число.
-const REWARD_POINTS = {
-  training: 10,
-};
-const DEFAULT_REWARD_POINTS = 10;
-
 // Уведомить все компоненты об изменении стора
 function _notify() {
   _store.listeners.forEach(fn => fn({ ..._store }));
@@ -46,10 +39,8 @@ async function _fetchPoints(userId, { silent = false } = {}) {
   }
 
   try {
-    const { data, error } = await supabase
-      .from('user_points')
-      .select('points')
-      .eq('user_id', userId);
+    // Баланс считает сервер (RPC по auth.uid()), а не клиент через SUM.
+    const { data, error } = await supabase.rpc('get_points_balance');
 
     // Устаревший запрос — игнорируем
     if (fetchId !== _store.fetchCount) {
@@ -59,9 +50,9 @@ async function _fetchPoints(userId, { silent = false } = {}) {
 
     if (error) throw error;
 
-    _store.points  = data?.reduce((sum, r) => sum + (r.points || 0), 0) ?? 0;
+    _store.points  = data ?? 0;
     _store.loading = false;
-    console.log(`✅ Points fetched: ${_store.points} (${data?.length ?? 0} rows)`);
+    console.log(`✅ Balance fetched: ${_store.points}`);
 
   } catch (err) {
     if (fetchId !== _store.fetchCount) return;
@@ -72,37 +63,6 @@ async function _fetchPoints(userId, { silent = false } = {}) {
   }
 
   _notify();
-}
-
-// ─── ADD POINTS ─────────────────────────────────────────────
-// Начисление: пишем строку в user_points и СРАЗУ обновляем стор — не
-// полагаемся на realtime (таблица может быть не в публикации
-// supabase_realtime). Оптимистичный инкремент даёт мгновенный отклик,
-// тихий refetch сверяет баланс с БД.
-async function _addPoints(userId, points) {
-  try {
-    const { error } = await supabase
-      .from('user_points')
-      .insert([{ user_id: userId, points }]);
-
-    if (error) throw error;
-
-    console.log(`➕ Awarded ${points} points to ${userId.slice(0, 8)}`);
-
-    // 1) Оптимистично — UI обновляется немедленно
-    _store.points += points;
-    _notify();
-
-    // 2) Авторитетно — сверяем сумму из БД (идемпотентно, без loading-флика)
-    _fetchPoints(userId, { silent: true });
-
-    return true;
-  } catch (err) {
-    console.error('❌ addPoints:', err.message);
-    _store.error = err.message;
-    _notify();
-    return false;
-  }
 }
 
 // ─── SUBSCRIPTION ────────────────────────────────────────────
@@ -133,7 +93,7 @@ function _ensureChannel(userId) {
       (payload) => {
         // Realtime-событие (в т.ч. из другой сессии/устройства того же юзера).
         // Делаем авторитетный тихий refetch — идемпотентно, не двоит с
-        // оптимистичным инкрементом из _addPoints.
+        // оптимистичным балансом из awardEvent.
         console.log('🔔 Realtime INSERT on user_points — refetch');
         _fetchPoints(userId, { silent: true });
       }
@@ -228,13 +188,29 @@ export function useLoyaltyPoints() {
     if (user?.id) _fetchPoints(user.id);
   }, [user?.id]);
 
-  // Принимает reward-тип (строка) или число очков; пишет в user_points.
-  const addPoints = useCallback(async (rewardType, _activityType) => {
-    if (!user?.id) return false;
-    const points = typeof rewardType === 'number'
-      ? rewardType
-      : (REWARD_POINTS[rewardType] ?? DEFAULT_REWARD_POINTS);
-    return _addPoints(user.id, points);
+  // Начисление только через сервер: RPC award_points идемпотентно по dedup_key,
+  // капы/потолок проверяет сервер. Клиент НЕ пишет в user_points напрямую.
+  const awardEvent = useCallback(async (eventKey, dedupKey, { sourceType = 'app' } = {}) => {
+    if (!user?.id) return null;
+    try {
+      const { data, error } = await supabase.rpc('award_points', {
+        p_user_id:     user.id,
+        p_event_key:   eventKey,
+        p_dedup_key:   dedupKey,
+        p_source_type: sourceType,
+      });
+      if (error) throw error;
+
+      // Начислено — оптимистично выставляем авторитетный баланс из ответа.
+      if (data?.awarded) {
+        _store.points = data.new_balance ?? _store.points;
+        _notify();
+      }
+      return data;
+    } catch (err) {
+      console.error('❌ awardEvent:', err.message);
+      return null;
+    }
   }, [user?.id]);
 
   return {
@@ -242,6 +218,6 @@ export function useLoyaltyPoints() {
     balance: state.points,   // алиас для потребителей, ожидающих `balance`
     refresh,
     refreshPoints: refresh,  // алиас для потребителей, ожидающих `refreshPoints`
-    addPoints,
+    awardEvent,
   };
 }

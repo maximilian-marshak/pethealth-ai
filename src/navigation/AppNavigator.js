@@ -7,6 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../theme/ThemeProvider';
 import { PetProvider } from '../context/PetContext';
 import { supabase } from '../utils/supabase';
 
@@ -20,10 +21,18 @@ import AddPetScreen from '../screens/AddPetScreen';
 import PetDetailScreen from '../screens/PetDetailScreen'; // ✅ НОВЫЙ ИМПОРТ
 import OCRReviewScreen from '../screens/OCRReviewScreen';
 import RecordDetailScreen from '../screens/RecordDetailScreen';
+import AppointmentsScreen from '../screens/AppointmentsScreen';
+import DocumentsScreen from '../screens/DocumentsScreen';
+import HowToEarnPawsScreen from '../screens/HowToEarnPawsScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import FAQScreen from '../screens/FAQScreen';
 
 // ═══ ИМПОРТ AI ASSISTANT ЭКРАНОВ ═══
 import AIAssistantHubScreen from '../screens/AIAssistantHubScreen';
 import AIAssistantChatScreen from '../screens/AIAssistantChatScreen';
+import KnowledgeBaseScreen from '../screens/KnowledgeBaseScreen';
+import KnowledgeArticleScreen from '../screens/KnowledgeArticleScreen';
+import RelocationScreen from '../screens/RelocationScreen';
 
 // ═══ ИМПОРТ CHARITY КОМПОНЕНТОВ ═══
 import CharityStoreScreen from '../components/charity/CharityStoreScreen';
@@ -51,12 +60,28 @@ function AssistantNavigator() {
         name="AIAssistantChat" 
         component={AIAssistantChatScreen} 
       />
+      <AssistantStack.Screen
+        name="KnowledgeBase"
+        component={KnowledgeBaseScreen}
+        options={{ headerShown: true, headerTitleStyle: { fontWeight: 'bold' } }}
+      />
+      <AssistantStack.Screen
+        name="KnowledgeArticle"
+        component={KnowledgeArticleScreen}
+        options={{ headerShown: true, headerTitleStyle: { fontWeight: 'bold' } }}
+      />
+      <AssistantStack.Screen
+        name="Relocation"
+        component={RelocationScreen}
+        options={{ headerShown: true, headerTitleStyle: { fontWeight: 'bold' } }}
+      />
     </AssistantStack.Navigator>
   );
 }
 
 // ═══ MAIN TABS NAVIGATOR (5 ТАБОВ) ═══
 function MainTabsNavigator() {
+  const { theme } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -86,14 +111,14 @@ function MainTabsNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#6C63FF',
-        tabBarInactiveTintColor: '#999',
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: theme.t3,
         tabBarStyle: {
           height: 70,
           paddingBottom: 10,
           paddingTop: 10,
           borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
+          borderTopColor: theme.hairline,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -204,6 +229,56 @@ export default function AppNavigator() {
             }}
           />
           
+          {/* ═══ APPOINTMENTS (вне PetProvider, по petId) ═══ */}
+          <Stack.Screen
+            name="Appointments"
+            component={AppointmentsScreen}
+            options={{
+              headerShown: true,
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
+            }}
+          />
+
+          {/* ═══ DOCUMENTS (вне PetProvider, по petId) ═══ */}
+          <Stack.Screen
+            name="Documents"
+            component={DocumentsScreen}
+            options={{
+              headerShown: true,
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
+            }}
+          />
+
+          {/* ═══ FAQ (статический, вход из профиля) ═══ */}
+          <Stack.Screen
+            name="FAQ"
+            component={FAQScreen}
+            options={{
+              headerShown: true,
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
+            }}
+          />
+
+          {/* ═══ NOTIFICATIONS (центр уведомлений, кросс-pet) ═══ */}
+          <Stack.Screen
+            name="Notifications"
+            component={NotificationsScreen}
+            options={{
+              headerShown: true,
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
+            }}
+          />
+
+          {/* ═══ HOW TO EARN PAWS (вне PetProvider) ═══ */}
+          <Stack.Screen
+            name="HowToEarnPaws"
+            component={HowToEarnPawsScreen}
+            options={{
+              headerShown: true,
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
+            }}
+          />
+
           {/* ═══ CHARITY ЭКРАНЫ ═══ */}
           <Stack.Screen 
             name="CharityStore" 
@@ -214,9 +289,7 @@ export default function AppNavigator() {
               headerTitleStyle: { 
                 fontWeight: 'bold',
                 fontSize: 20,
-              },
-              headerTintColor: '#6C63FF',
-              animation: 'slide_from_right',
+              },              animation: 'slide_from_right',
             }}
           />
           
@@ -229,9 +302,7 @@ export default function AppNavigator() {
               headerTitleStyle: { 
                 fontWeight: 'bold',
                 fontSize: 20,
-              },
-              headerTintColor: '#6C63FF',
-              animation: 'slide_from_right',
+              },              animation: 'slide_from_right',
             }}
           />
         </>
