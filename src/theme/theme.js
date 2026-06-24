@@ -60,7 +60,15 @@ const lightBase = {
   ...semantic,
   // поверхности (spec, кроме помеченного derived)
   bg: '#FBFEFD',                                 // derived: солид-фон ≈ светлый стоп градиента
-  bgGradient: ['#E0F2EC', '#FBFEFD'],            // spec: стопы bg-градиента
+  bgGradient: ['#CDEBE0', '#E8F4EF', '#FBFEFD'], // spec: 3-стоповый пастель (legacy/fallback; активный фон — bgBlobs)
+  // ─── Фон-блобы (вариант B): подложка + 3 мягких радиальных пастельных пятна.
+  // cx/cy/r — доли размера экрана (0..1); mint доминирует (бренд), peach/blue — деликатно.
+  bgBase: '#FBFEFD',                             // почти-белая подложка под блобами
+  bgBlobs: [
+    { color: '#56B89F', cx: 0.16, cy: 0.10, r: 0.72, opacity: 0.45 }, // мятное — верх-слева, плотнее
+    { color: '#EC8C69', cx: 0.92, cy: 0.04, r: 0.55, opacity: 0.32 }, // персиковое — верх-справа, деликатно
+    { color: '#4F8DF0', cx: 0.50, cy: 0.96, r: 0.66, opacity: 0.28 }, // голубое — низ, деликатно
+  ],
   surface: '#FFFFFF',                            // spec: solid-поверхность
   // decor-стекло (полупрозрачное) — поля доступны GlassCard (Фаза 3)
   surfaceGlass: { bg: 'rgba(255,255,255,0.30)', blur: 34, saturate: 1.9, border: 'rgba(255,255,255,0.65)' }, // spec
@@ -77,7 +85,14 @@ const darkBase = {
   scheme: 'dark',
   ...semantic,
   bg: '#0F1117',                                 // derived: солид-фон ≈ тёмный стоп градиента
-  bgGradient: ['#14141C', '#0F1117'],            // spec
+  bgGradient: ['#16201C', '#141A20', '#0F1117'], // spec: 3-стоповый глубокий (legacy/fallback; активный фон — bgBlobs)
+  // ─── Фон-блобы (вариант B): глубокая подложка + приглушённые пятна (dark-акценты).
+  bgBase: '#0F1117',                             // глубокая подложка под блобами
+  bgBlobs: [
+    { color: '#6FCBB2', cx: 0.16, cy: 0.10, r: 0.72, opacity: 0.22 }, // мятное — верх-слева
+    { color: '#F2A07B', cx: 0.92, cy: 0.04, r: 0.55, opacity: 0.16 }, // персиковое — верх-справа
+    { color: '#6BA1F5', cx: 0.50, cy: 0.96, r: 0.66, opacity: 0.18 }, // голубое — низ
+  ],
   surface: '#1E1E28',                            // spec
   surfaceGlass: { bg: 'rgba(38,42,56,0.34)', blur: 34, border: 'rgba(255,255,255,0.14)' }, // spec (saturate не задан каноном)
   surfaceGlassData: { bg: 'rgba(30,33,44,0.66)', blur: 24 }, // spec
