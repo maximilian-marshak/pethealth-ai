@@ -48,6 +48,13 @@
     }
   },
   "rank": { "title": "Ранг" },
+  "weightCard": {
+    "title": "Вес",
+    "today": "сегодня",
+    "ago": "{{count}} дн. назад",
+    "empty": "Пока нет данных о весе",
+    "addFirst": "+ Добавить вес"
+  },
   "health": {
     "sectionTitle": "Здоровье",
     "allergyBanner": { "title": "⚠️ Аллергии" },

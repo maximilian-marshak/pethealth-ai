@@ -48,6 +48,13 @@
     }
   },
   "rank": { "title": "Rank" },
+  "weightCard": {
+    "title": "Weight",
+    "today": "today",
+    "ago": "{{count}} days ago",
+    "empty": "No weight data yet",
+    "addFirst": "+ Add weight"
+  },
   "health": {
     "sectionTitle": "Health Overview",
     "allergyBanner": { "title": "⚠️ Allergies" },
