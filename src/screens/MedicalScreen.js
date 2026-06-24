@@ -34,6 +34,7 @@ import { buildMedicalExportHtml } from '../utils/medicalExportHtml';
 import { usePetHealth } from '../hooks/usePetHealth';
 import { useAppointments } from '../hooks/useAppointments';
 import { useTheme } from '../theme/ThemeProvider';
+import { buildTheme } from '../theme/theme';
 import Screen from '../components/Screen';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -785,7 +786,7 @@ const EVENT_TYPE_KEYS = ['record', 'prescription', 'vaccine', 'reminder', 'appoi
 export default function MedicalScreen() {
   const navigation = useNavigation();
   const { t, i18n } = useTranslation('medical');
-  const { theme } = useTheme();
+  const { theme, accent } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   // Семантика статусов записи (как StatusCards): requested→warn, confirmed→ok, cancelled→danger, completed→нейтраль.
   const apptStatusColor = { requested: theme.warn, confirmed: theme.ok, cancelled: theme.danger, completed: theme.t3 };
@@ -1180,7 +1181,14 @@ export default function MedicalScreen() {
     setExporting(true);
     try {
       const data = await collectMedicalExport(selectedPet.id);
-      const html = buildMedicalExportHtml(data, { unit, lang: i18n.language, t });
+      // PDF всегда светлый (печать на белом) — берём LIGHT-схему независимо от dark-режима
+      // приложения; акцент-пресет (mint/peach/blue) сохраняем.
+      const pdf = buildTheme('light', accent);
+      const pdfColors = {
+        accent: pdf.accent, text: pdf.t1, text2: pdf.t2, muted: pdf.t3,
+        faint: pdf.t4, line: pdf.hairline, danger: pdf.danger, dangerBg: pdf.danger + '14',
+      };
+      const html = buildMedicalExportHtml(data, { unit, lang: i18n.language, t, colors: pdfColors });
       const { uri } = await Print.printToFileAsync({ html });
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {

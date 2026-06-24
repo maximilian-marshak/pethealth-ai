@@ -2,12 +2,11 @@
 // src/utils/medicalExportHtml.js
 // Сборка HTML-строки медкарты для expo-print (MVP: только текст, без картинок).
 // Метки разделов/полей локализованы через t (ns medical); вес — через formatWeight
-// в выбранной единице. Акцент #6B4EFF, простой инлайн-CSS.
+// в выбранной единице. Цвета приходят параметром colors (light-токены темы),
+// т.к. это генератор HTML-строки (useTheme недоступен) — PDF всегда светлый.
 // ══════════════════════════════════════════════════════════════
 
 import { formatWeight } from './formatWeight';
-
-const ACCENT = '#6B4EFF';
 
 // Экранирование пользовательских значений в HTML.
 const esc = (v) =>
@@ -15,7 +14,9 @@ const esc = (v) =>
     ? ''
     : String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-export function buildMedicalExportHtml(data, { unit = 'kg', lang = 'en', t }) {
+export function buildMedicalExportHtml(data, { unit = 'kg', lang = 'en', t, colors = {} }) {
+  // Цвета PDF — light-токены темы, прокинутые вызывающей стороной (см. MedicalScreen).
+  const { accent, text, text2, muted, faint, line, danger, dangerBg } = colors;
   const isRu = (lang || 'en').startsWith('ru');
   const locale = isRu ? 'ru-RU' : 'en-US';
   const sec = (k) => esc(t(`export.sections.${k}`));
@@ -162,22 +163,22 @@ export function buildMedicalExportHtml(data, { unit = 'kg', lang = 'en', t }) {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, Roboto, Helvetica, Arial, sans-serif; color: #1F2937; margin: 24px; }
-  .petName { color: ${ACCENT}; font-size: 26px; margin: 0 0 2px; }
-  .subtitle { color: #6B7280; font-size: 14px; margin-bottom: 16px; }
-  h2 { font-size: 15px; color: ${ACCENT}; margin: 0 0 8px; border-bottom: 2px solid ${ACCENT}; padding-bottom: 4px; }
-  .card { border: 1px solid #E5E7EB; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
-  .card.alert { border-color: #DC2626; background: #FEF2F2; }
-  .card.alert h2 { color: #DC2626; border-bottom-color: #DC2626; }
+  body { font-family: -apple-system, Roboto, Helvetica, Arial, sans-serif; color: ${text}; margin: 24px; }
+  .petName { color: ${accent}; font-size: 26px; margin: 0 0 2px; }
+  .subtitle { color: ${muted}; font-size: 14px; margin-bottom: 16px; }
+  h2 { font-size: 15px; color: ${accent}; margin: 0 0 8px; border-bottom: 2px solid ${accent}; padding-bottom: 4px; }
+  .card { border: 1px solid ${line}; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+  .card.alert { border-color: ${danger}; background: ${dangerBg}; }
+  .card.alert h2 { color: ${danger}; border-bottom-color: ${danger}; }
   .row { font-size: 13px; padding: 3px 0; }
   .kv { font-size: 13px; padding: 2px 0; }
-  .kv .k { color: #6B7280; }
-  .record { padding: 8px 0; border-top: 1px solid #F1F1F4; }
+  .kv .k { color: ${muted}; }
+  .record { padding: 8px 0; border-top: 1px solid ${line}; }
   .record:first-of-type { border-top: none; }
   .rmeta { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
-  .child { font-size: 12px; color: #4B5563; margin-top: 3px; }
-  .child .ct { color: #6B7280; }
-  .footer { color: #9CA3AF; font-size: 11px; margin-top: 12px; text-align: right; }
+  .child { font-size: 12px; color: ${text2}; margin-top: 3px; }
+  .child .ct { color: ${muted}; }
+  .footer { color: ${faint}; font-size: 11px; margin-top: 12px; text-align: right; }
 </style>
 </head>
 <body>
