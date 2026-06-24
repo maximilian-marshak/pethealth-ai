@@ -7,6 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../theme/ThemeProvider';
 import { PetProvider } from '../context/PetContext';
 import { supabase } from '../utils/supabase';
 
@@ -62,17 +63,17 @@ function AssistantNavigator() {
       <AssistantStack.Screen
         name="KnowledgeBase"
         component={KnowledgeBaseScreen}
-        options={{ headerShown: true, headerTintColor: '#6B4EFF', headerTitleStyle: { fontWeight: 'bold' } }}
+        options={{ headerShown: true, headerTitleStyle: { fontWeight: 'bold' } }}
       />
       <AssistantStack.Screen
         name="KnowledgeArticle"
         component={KnowledgeArticleScreen}
-        options={{ headerShown: true, headerTintColor: '#6B4EFF', headerTitleStyle: { fontWeight: 'bold' } }}
+        options={{ headerShown: true, headerTitleStyle: { fontWeight: 'bold' } }}
       />
       <AssistantStack.Screen
         name="Relocation"
         component={RelocationScreen}
-        options={{ headerShown: true, headerTintColor: '#6B4EFF', headerTitleStyle: { fontWeight: 'bold' } }}
+        options={{ headerShown: true, headerTitleStyle: { fontWeight: 'bold' } }}
       />
     </AssistantStack.Navigator>
   );
@@ -80,6 +81,7 @@ function AssistantNavigator() {
 
 // ═══ MAIN TABS NAVIGATOR (5 ТАБОВ) ═══
 function MainTabsNavigator() {
+  const { theme } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -109,14 +111,14 @@ function MainTabsNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#6C63FF',
-        tabBarInactiveTintColor: '#999',
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: theme.t3,
         tabBarStyle: {
           height: 70,
           paddingBottom: 10,
           paddingTop: 10,
           borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
+          borderTopColor: theme.hairline,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -233,9 +235,7 @@ export default function AppNavigator() {
             component={AppointmentsScreen}
             options={{
               headerShown: true,
-              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
-              headerTintColor: '#6B4EFF',
-              animation: 'slide_from_right',
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
             }}
           />
 
@@ -245,9 +245,7 @@ export default function AppNavigator() {
             component={DocumentsScreen}
             options={{
               headerShown: true,
-              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
-              headerTintColor: '#6B4EFF',
-              animation: 'slide_from_right',
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
             }}
           />
 
@@ -257,9 +255,7 @@ export default function AppNavigator() {
             component={FAQScreen}
             options={{
               headerShown: true,
-              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
-              headerTintColor: '#6B4EFF',
-              animation: 'slide_from_right',
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
             }}
           />
 
@@ -269,9 +265,7 @@ export default function AppNavigator() {
             component={NotificationsScreen}
             options={{
               headerShown: true,
-              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
-              headerTintColor: '#6B4EFF',
-              animation: 'slide_from_right',
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
             }}
           />
 
@@ -281,9 +275,7 @@ export default function AppNavigator() {
             component={HowToEarnPawsScreen}
             options={{
               headerShown: true,
-              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
-              headerTintColor: '#6B4EFF',
-              animation: 'slide_from_right',
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
             }}
           />
 
@@ -297,9 +289,7 @@ export default function AppNavigator() {
               headerTitleStyle: { 
                 fontWeight: 'bold',
                 fontSize: 20,
-              },
-              headerTintColor: '#6C63FF',
-              animation: 'slide_from_right',
+              },              animation: 'slide_from_right',
             }}
           />
           
@@ -312,9 +302,7 @@ export default function AppNavigator() {
               headerTitleStyle: { 
                 fontWeight: 'bold',
                 fontSize: 20,
-              },
-              headerTintColor: '#6C63FF',
-              animation: 'slide_from_right',
+              },              animation: 'slide_from_right',
             }}
           />
         </>
