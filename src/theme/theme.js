@@ -87,6 +87,17 @@ const lightBase = {
     reminder:     '#E0A23E', // amber — напоминание
     appointment:  '#E06C9C', // rose — приём
   },
+  // Категориальная палитра AI-категорий хаба (§6.1) — отдельный домен, как eventTypes.
+  // 7 различимых пастельно-средних тонов; emergency — красно-оранжевый (срочность).
+  assistantCategories: {
+    health:     '#2FAFB5', // teal
+    nutrition:  '#6BB24F', // green
+    behavior:   '#E0A23E', // amber
+    grooming:   '#E07BA8', // rose
+    emergency:  '#E8654E', // red-orange (срочность)
+    relocation: '#4F8DF0', // blue
+    general:    '#8C7FD0', // violet
+  },
   // тень карточек (iOS shadow* + Android elevation) — derived
   shadow: { shadowColor: '#0B1F1A', shadowOpacity: 0.10, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 6 }, // derived
 };
@@ -115,6 +126,16 @@ const darkBase = {
     vaccine:      '#4FCFC0', // teal
     reminder:     '#ECB75C', // amber
     appointment:  '#EC88B2', // rose
+  },
+  // AI-категории хаба (dark — чуть ярче для контраста).
+  assistantCategories: {
+    health:     '#4FC9CE', // teal
+    nutrition:  '#84C96B', // green
+    behavior:   '#ECB75C', // amber
+    grooming:   '#EC93B8', // rose
+    emergency:  '#F0826E', // red-orange
+    relocation: '#6BA1F5', // blue
+    general:    '#A99CE6', // violet
   },
   shadow: { shadowColor: '#000000', shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 8 }, // derived
 };
