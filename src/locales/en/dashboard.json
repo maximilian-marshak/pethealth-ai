@@ -48,13 +48,6 @@
     }
   },
   "rank": { "title": "Rank" },
-  "weightCard": {
-    "title": "Weight",
-    "today": "today",
-    "ago": "{{count}} days ago",
-    "empty": "No weight data yet",
-    "addFirst": "+ Add weight"
-  },
   "recommendations": {
     "title": "Vet recommendations",
     "sinceVisit": "Since last visit: {{clinic}}, {{date}}",

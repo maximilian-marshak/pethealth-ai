@@ -48,13 +48,6 @@
     }
   },
   "rank": { "title": "Ранг" },
-  "weightCard": {
-    "title": "Вес",
-    "today": "сегодня",
-    "ago": "{{count}} дн. назад",
-    "empty": "Пока нет данных о весе",
-    "addFirst": "+ Добавить вес"
-  },
   "recommendations": {
     "title": "Рекомендации врача",
     "sinceVisit": "С последнего визита: {{clinic}}, {{date}}",

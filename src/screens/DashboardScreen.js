@@ -25,7 +25,6 @@ import { supabase } from '../utils/supabase';
 import Screen from '../components/Screen';
 import GlassCard from '../components/GlassCard';
 import IconChip from '../components/IconChip';
-import WeightSparkline from '../components/dashboard/WeightSparkline';
 import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useDashboardStatus } from '../hooks/useDashboardStatus';
 import { useCharity } from '../hooks/useCharity';
@@ -34,9 +33,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { requestNotificationPermission, scheduleNotificationsFromEvents, cancelAllScheduled } from '../utils/notificationsSetup';
 import { useNotificationPref } from '../hooks/useNotificationPref';
 import { useUnits } from '../hooks/useUnits';
-import { useWeightHistory } from '../hooks/useWeightHistory';
 import { useLatestRecommendations } from '../hooks/useLatestRecommendations';
-import { formatWeight, convertWeight } from '../utils/formatWeight';
 import { StatusCards } from '../components/dashboard/StatusCards';
 import ProgressBar from '../components/ProgressBar';
 
@@ -64,7 +61,6 @@ export default function DashboardScreen({ navigation }) {
   const { unit } = useUnits();
   const { unreadCount, upcoming } = useNotifications();
   const { enabled: notifEnabled } = useNotificationPref();
-  const { history: weightHistory, loading: weightLoading } = useWeightHistory(selectedPet?.id);
   const { recommendation } = useLatestRecommendations(selectedPet?.id);
 
   // ─── AI Insight (4.5): статичный совет дня, ротация по дню года ───
@@ -80,17 +76,6 @@ export default function DashboardScreen({ navigation }) {
   const _lang = i18n.language || 'en';
   const rankName = (r) => (_lang.startsWith('ru') ? r?.name_ru : r?.name_en) || r?.name_en || r?.name_ru || '';
   const rankAccent = leagueColor(currentRank?.league);
-
-  // ─── Вес (4.2): последнее измерение + точки sparkline (в единицах пользователя) ───
-  const _validWeights = weightHistory.filter((w) => Number.isFinite(Number(w.weight)));
-  const latestWeight = _validWeights[0] || null; // history desc → [0] = последнее
-  const weightDaysAgo = latestWeight
-    ? Math.max(0, Math.floor((Date.now() - new Date(latestWeight.measured_at).getTime()) / 86400000))
-    : null;
-  const weightPoints = [..._validWeights]
-    .reverse() // хронологический порядок для линии
-    .map((w) => convertWeight(Number(w.weight), unit))
-    .filter((v) => v != null);
 
   // ─── Рекомендации (4.4): локализ. дата визита + 1–3 пункта из текста ───
   const recLocale = (i18n.language || 'en').startsWith('ru') ? 'ru-RU' : 'en-US';
@@ -316,42 +301,6 @@ export default function DashboardScreen({ navigation }) {
               </ScrollView>
             </GlassCard>
 
-            {/* ── 4.2 WEIGHT TRACKING (solid data) ── */}
-            {selectedPet && (
-              <GlassCard variant="data" style={styles.weightCard}>
-                <Text style={styles.weightTitle}>{t('weightCard.title')}</Text>
-                {weightLoading ? (
-                  <ActivityIndicator size="small" color={theme.accent} style={{ marginVertical: 14 }} />
-                ) : !latestWeight ? (
-                  <View style={styles.weightEmpty}>
-                    <Ionicons name="scale-outline" size={28} color={theme.t3} />
-                    <Text style={styles.weightEmptyText}>{t('weightCard.empty')}</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('PetDetail', { petId: selectedPet.id })}>
-                      <Text style={styles.weightAddText}>{t('weightCard.addFirst')}</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <>
-                    <View style={styles.weightRow}>
-                      <Text style={styles.weightValue}>{formatWeight(latestWeight.weight, unit)}</Text>
-                      <Text style={styles.weightAgo}>
-                        {weightDaysAgo === 0 ? t('weightCard.today') : t('weightCard.ago', { count: weightDaysAgo })}
-                      </Text>
-                    </View>
-                    {weightPoints.length >= 2 && (
-                      <WeightSparkline
-                        data={weightPoints}
-                        color={theme.accent}
-                        fillColor={theme.accent + '22'}
-                        height={56}
-                        style={{ marginTop: 10 }}
-                      />
-                    )}
-                  </>
-                )}
-              </GlassCard>
-            )}
-
             {/* ── 4.3 STATUS CARDS (solid data) ───── */}
             {selectedPet && (
               <>
@@ -551,16 +500,6 @@ const makeStyles = (theme) => StyleSheet.create({
   petSelectorNameActive: { color: theme.onAccent },
   petSelectorAddBtn: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, flexDirection: 'row', gap: 6, borderWidth: 1.5, borderColor: theme.accent, borderStyle: 'dashed' },
   petSelectorAddText: { fontSize: 14, color: theme.accentPress, fontWeight: '600' },
-
-  // 4.2 Weight (glass data)
-  weightCard: { marginHorizontal: 16, marginTop: 8, marginBottom: 16 },
-  weightTitle: { fontSize: 16, fontWeight: '700', color: theme.t1 },
-  weightRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 6 },
-  weightValue: { fontSize: 26, fontWeight: 'bold', color: theme.t1 }, // метрика — t1
-  weightAgo: { fontSize: 13, color: theme.t2 },
-  weightEmpty: { alignItems: 'center', paddingVertical: 12, gap: 6 },
-  weightEmptyText: { fontSize: 14, color: theme.t2 },
-  weightAddText: { fontSize: 14, color: theme.accentPress, fontWeight: '600', marginTop: 2 },
 
   // 4.4 Vet recommendations (glass data)
   recCard: { marginHorizontal: 16, marginBottom: 16 },
