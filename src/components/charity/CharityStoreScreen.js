@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,13 @@ import { useTranslation } from 'react-i18next';
 import { useCharity } from '../../hooks/useCharity'; // ✅ ИСПРАВЛЕНО
 import { useLoyaltyPoints } from '../../hooks/useLoyaltyPoints'; // ✅ ДОБАВЛЕНО
 import ShelterCard from './ShelterCard'; // ✅ ДОБАВЛЕНО
+import Screen from '../../components/Screen';
+import { useTheme } from '../../theme/ThemeProvider';
 
 export default function CharityStoreScreen({ navigation }) {
   const { points, refreshPoints } = useLoyaltyPoints();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation('charity');
   const { shelters, loading, makeDonation, refetch } = useCharity();
   const [selectedDonation, setSelectedDonation] = useState(null);
@@ -67,26 +71,29 @@ export default function CharityStoreScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#8B5CF6" />
-        <Text style={styles.loadingText}>Загрузка приютов...</Text>
-      </View>
+      <Screen>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={theme.accent} />
+          <Text style={styles.loadingText}>Загрузка приютов...</Text>
+        </View>
+      </Screen>
     );
   }
 
   return (
+    <Screen>
     <View style={styles.container}>
       {/* Header с балансом */}
       <View style={styles.balanceHeader}>
         <View style={styles.balanceRow}>
-          <MaterialCommunityIcons name="paw" size={24} color="#8B5CF6" />
+          <MaterialCommunityIcons name="paw" size={24} color={theme.accent} />
           <Text style={styles.balanceText}>Ваш баланс: {points} Paws</Text>
         </View>
         <TouchableOpacity
           style={styles.historyButton}
           onPress={() => navigation.navigate('CharityHistory')}
         >
-          <MaterialCommunityIcons name="history" size={20} color="#8B5CF6" />
+          <MaterialCommunityIcons name="history" size={20} color={theme.accent} />
           <Text style={styles.historyButtonText}>История</Text>
         </TouchableOpacity>
       </View>
@@ -112,7 +119,7 @@ export default function CharityStoreScreen({ navigation }) {
 
         {shelters.length === 0 && (
           <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="paw-off" size={64} color="#D1D5DB" />
+            <MaterialCommunityIcons name="paw-off" size={64} color={theme.hairline} />
             <Text style={styles.emptyText}>Нет доступных приютов</Text>
           </View>
         )}
@@ -127,7 +134,7 @@ export default function CharityStoreScreen({ navigation }) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <MaterialCommunityIcons name="heart" size={48} color="#EF4444" />
+            <MaterialCommunityIcons name="heart" size={48} color={theme.accent} />
             
             <Text style={styles.modalTitle}>{t('confirmVoteTitle')}</Text>
             
@@ -170,7 +177,7 @@ export default function CharityStoreScreen({ navigation }) {
                 disabled={processing}
               >
                 {processing ? (
-                  <ActivityIndicator color="white" />
+                  <ActivityIndicator color={theme.onAccent} />
                 ) : (
                   <Text style={styles.modalButtonTextConfirm}>{t('confirm')}</Text>
                 )}
@@ -180,33 +187,34 @@ export default function CharityStoreScreen({ navigation }) {
         </View>
       </Modal>
     </View>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: 'transparent',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: 'transparent',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6B7280',
+    color: theme.t3,
   },
   balanceHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: theme.surface,
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: theme.hairline,
   },
   balanceRow: {
     flexDirection: 'row',
@@ -215,7 +223,7 @@ const styles = StyleSheet.create({
   balanceText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: theme.t1,
     marginLeft: 8,
   },
   historyButton: {
@@ -224,12 +232,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surface,
   },
   historyButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8B5CF6',
+    color: theme.accent,
     marginLeft: 6,
   },
   scrollView: {
@@ -241,12 +249,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: theme.t1,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6B7280',
+    color: theme.t3,
     marginBottom: 24,
     lineHeight: 22,
   },
@@ -257,18 +265,18 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#9CA3AF',
+    color: theme.t3,
     marginTop: 16,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // theme-neutral scrim
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: theme.surface,
     borderRadius: 20,
     padding: 24,
     width: '100%',
@@ -278,23 +286,23 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: theme.t1,
     marginTop: 16,
     marginBottom: 8,
   },
   modalShelter: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#4B5563',
+    color: theme.t2,
     textAlign: 'center',
   },
   modalCity: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.t3,
     marginBottom: 20,
   },
   modalAmountBox: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surface,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
@@ -303,7 +311,7 @@ const styles = StyleSheet.create({
   modalAmount: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#8B5CF6',
+    color: theme.accent,
   },
   modalBalanceInfo: {
     flexDirection: 'row',
@@ -312,13 +320,13 @@ const styles = StyleSheet.create({
   },
   modalBalanceLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.t3,
     marginRight: 8,
   },
   modalBalanceValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: theme.t1,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -332,19 +340,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonCancel: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.surface,
   },
   modalButtonConfirm: {
-    backgroundColor: '#8B5CF6',
+    backgroundColor: theme.accentPress,
   },
   modalButtonTextCancel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#4B5563',
+    color: theme.t2,
   },
   modalButtonTextConfirm: {
     fontSize: 16,
     fontWeight: '600',
-    color: 'white',
+    color: theme.onAccent,
   },
 });
