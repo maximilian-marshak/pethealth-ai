@@ -29,11 +29,15 @@ import ProgressBar from '../components/ProgressBar';
 import { supabase } from '../utils/supabase';
 import { useNotificationPref } from '../hooks/useNotificationPref';
 import { requestNotificationPermission, cancelAllScheduled } from '../utils/notificationsSetup';
+import { useTheme } from '../theme/ThemeProvider';
+import Screen from '../components/Screen';
 
 // ─── Language Switcher Component ──────────────────────────────────────────────
 const LanguageSwitcher = () => {
   const { currentLanguage, switchLanguage } = useLanguage();
   const { t } = useTranslation('common');
+  const { theme } = useTheme();
+  const switcherStyles = useMemo(() => makeSwitcherStyles(theme), [theme]);
   const [switching, setSwitching] = useState(false);
 
   const handleSwitch = async (lang) => {
@@ -50,7 +54,7 @@ const LanguageSwitcher = () => {
   return (
     <View style={switcherStyles.container}>
       <View style={switcherStyles.labelRow}>
-        <Ionicons name="language" size={20} color="#6C63FF" />
+        <Ionicons name="language" size={20} color={theme.accent} />
         <Text style={switcherStyles.label}>{t('language')}</Text>
       </View>
 
@@ -93,7 +97,7 @@ const LanguageSwitcher = () => {
       {switching && (
         <ActivityIndicator
           size="small"
-          color="#6C63FF"
+          color={theme.accent}
           style={switcherStyles.spinner}
         />
       )}
@@ -101,15 +105,15 @@ const LanguageSwitcher = () => {
   );
 };
 
-const switcherStyles = StyleSheet.create({
+const makeSwitcherStyles = (theme) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -123,12 +127,12 @@ const switcherStyles = StyleSheet.create({
   },
   label: {
     fontSize: 15,
-    color: '#1A1A2E',
+    color: theme.t1,
     fontWeight: '500',
   },
   toggle: {
     flexDirection: 'row',
-    backgroundColor: '#F3F0FF',
+    backgroundColor: theme.accentTint,
     borderRadius: 10,
     padding: 3,
     gap: 3,
@@ -139,8 +143,8 @@ const switcherStyles = StyleSheet.create({
     borderRadius: 8,
   },
   langBtnActive: {
-    backgroundColor: '#6C63FF',
-    shadowColor: '#6C63FF',
+    backgroundColor: theme.accentPress,
+    shadowColor: theme.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -149,10 +153,10 @@ const switcherStyles = StyleSheet.create({
   langText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6C63FF',
+    color: theme.t2,
   },
   langTextActive: {
-    color: '#fff',
+    color: theme.onAccent,
   },
   spinner: {
     marginLeft: 8,
@@ -163,11 +167,13 @@ const switcherStyles = StyleSheet.create({
 const UnitsSwitcher = () => {
   const { unit, setUnit } = useUnits();
   const { t } = useTranslation('profile');
+  const { theme } = useTheme();
+  const switcherStyles = useMemo(() => makeSwitcherStyles(theme), [theme]);
 
   return (
     <View style={switcherStyles.container}>
       <View style={switcherStyles.labelRow}>
-        <Ionicons name="barbell-outline" size={20} color="#6C63FF" />
+        <Ionicons name="barbell-outline" size={20} color={theme.accent} />
         <Text style={switcherStyles.label}>{t('units.title')}</Text>
       </View>
 
@@ -191,6 +197,8 @@ const UnitsSwitcher = () => {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen({ navigation }) {
   const { user, signOut } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { enabled: notificationsEnabled, setEnabled: setNotificationsEnabled } = useNotificationPref();
   const { t, i18n } = useTranslation(['profile', 'common', 'pets']);
 
@@ -386,11 +394,11 @@ export default function ProfileScreen({ navigation }) {
 
   // ─── Render ─────────────────────────────────────────────
   return (
-    <>
+    <Screen>
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C63FF" />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />
       }
     >
       {/* HEADER */}
@@ -403,8 +411,8 @@ export default function ProfileScreen({ navigation }) {
             disabled={uploadingAvatar}
           >
             {uploadingAvatar
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="camera" size={16} color="#fff" />
+              ? <ActivityIndicator size="small" color={theme.onAccent} />
+              : <Ionicons name="camera" size={16} color={theme.onAccent} />
             }
           </TouchableOpacity>
         </View>
@@ -415,24 +423,24 @@ export default function ProfileScreen({ navigation }) {
       {/* STATS ROW */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <View style={[styles.statIcon, { backgroundColor: '#F3F0FF' }]}>
-            <Ionicons name="paw" size={24} color="#6C63FF" />
+          <View style={[styles.statIcon, { backgroundColor: theme.accentTint }]}>
+            <Ionicons name="paw" size={24} color={theme.accent} />
           </View>
           <Text style={styles.statValue}>{loadingPoints ? '...' : currentBalance}</Text>
           <Text style={styles.statLabel}>{t('profile:loyalty')}</Text>
         </View>
 
         <View style={styles.statCard}>
-          <View style={[styles.statIcon, { backgroundColor: '#FFE8E8' }]}>
-            <Ionicons name="heart" size={24} color="#FF6B6B" />
+          <View style={[styles.statIcon, { backgroundColor: theme.accentTint }]}>
+            <Ionicons name="heart" size={24} color={theme.accent} />
           </View>
           <Text style={styles.statValue}>{loadingCharity ? '...' : totalDonated}</Text>
           <Text style={styles.statLabel}>{t('profile:totalDonated')}</Text>
         </View>
 
         <View style={styles.statCard}>
-          <View style={[styles.statIcon, { backgroundColor: '#E8FFE8' }]}>
-            <Ionicons name="home" size={24} color="#51CF66" />
+          <View style={[styles.statIcon, { backgroundColor: theme.accentTint }]}>
+            <Ionicons name="home" size={24} color={theme.accent} />
           </View>
           <Text style={styles.statValue}>{loadingCharity ? '...' : shelterCount}</Text>
           <Text style={styles.statLabel}>
@@ -450,7 +458,7 @@ export default function ProfileScreen({ navigation }) {
 
           {loadingRanks ? (
             <View style={styles.rankLoading}>
-              <ActivityIndicator size="small" color="#6B4EFF" />
+              <ActivityIndicator size="small" color={theme.accent} />
             </View>
           ) : (
             <>
@@ -480,7 +488,7 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.rankToggleText}>
               {ranksExpanded ? t('profile:rank.hideAll') : t('profile:rank.showAll')}
             </Text>
-            <Ionicons name={ranksExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#6B4EFF" />
+            <Ionicons name={ranksExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={theme.accent} />
           </TouchableOpacity>
 
           {ranksExpanded && ranks.map((r) => {
@@ -518,7 +526,7 @@ export default function ProfileScreen({ navigation }) {
 
         {loadingPets ? (
           <View style={styles.emptyCard}>
-            <ActivityIndicator size="large" color="#6C63FF" />
+            <ActivityIndicator size="large" color={theme.accent} />
             <Text style={styles.emptyText}>{t('common:loading')}</Text>
           </View>
         ) : pets.length === 0 ? (
@@ -591,23 +599,23 @@ export default function ProfileScreen({ navigation }) {
           style={styles.settingItem}
           onPress={openPhoneModal}
         >
-          <View style={[styles.settingIcon, { backgroundColor: '#E8F4FD' }]}>
-            <Ionicons name="call" size={20} color="#4ECDC4" />
+          <View style={[styles.settingIcon, { backgroundColor: theme.accentTint }]}>
+            <Ionicons name="call" size={20} color={theme.accent} />
           </View>
           <Text style={styles.settingText}>{t('profile:phone')}</Text>
           <Text style={styles.settingValue} numberOfLines={1}>{profile?.phone || '—'}</Text>
         </TouchableOpacity>
 
         <View style={styles.settingItem}>
-          <View style={[styles.settingIcon, { backgroundColor: '#E8F4FD' }]}>
-            <Ionicons name="notifications" size={20} color="#4ECDC4" />
+          <View style={[styles.settingIcon, { backgroundColor: theme.accentTint }]}>
+            <Ionicons name="notifications" size={20} color={theme.accent} />
           </View>
           <Text style={styles.settingText}>{t('profile:notifications')}</Text>
           <Switch
             value={notificationsEnabled}
             onValueChange={onToggleNotifications}
-            trackColor={{ true: '#6B4EFF', false: '#D1D5DB' }}
-            thumbColor="#fff"
+            trackColor={{ true: theme.accent, false: theme.hairline }}
+            thumbColor={theme.onAccent}
           />
         </View>
 
@@ -615,22 +623,22 @@ export default function ProfileScreen({ navigation }) {
           style={styles.settingItem}
           onPress={() => navigation.navigate('FAQ')}
         >
-          <View style={[styles.settingIcon, { backgroundColor: '#F3F0FF' }]}>
-            <Ionicons name="help-circle" size={20} color="#6C63FF" />
+          <View style={[styles.settingIcon, { backgroundColor: theme.accentTint }]}>
+            <Ionicons name="help-circle" size={20} color={theme.accent} />
           </View>
           <Text style={styles.settingText}>FAQ</Text>
-          <Ionicons name="chevron-forward" size={20} color="#CCC" />
+          <Ionicons name="chevron-forward" size={20} color={theme.t4} />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.settingItem, styles.logoutItem]}
           onPress={handleLogout}
         >
-          <View style={[styles.settingIcon, { backgroundColor: '#FFE8E8' }]}>
-            <Ionicons name="log-out" size={20} color="#FF6B6B" />
+          <View style={[styles.settingIcon, { backgroundColor: theme.hairline }]}>
+            <Ionicons name="log-out" size={20} color={theme.t2} />
           </View>
           <Text style={[styles.settingText, styles.logoutText]}>{t('profile:logout')}</Text>
-          <Ionicons name="chevron-forward" size={20} color="#CCC" />
+          <Ionicons name="chevron-forward" size={20} color={theme.t4} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -638,13 +646,13 @@ export default function ProfileScreen({ navigation }) {
           onPress={handleDeleteAccount}
           disabled={deleting}
         >
-          <View style={[styles.settingIcon, { backgroundColor: '#FEE2E2' }]}>
+          <View style={[styles.settingIcon, { backgroundColor: theme.danger + '22' }]}>
             {deleting
-              ? <ActivityIndicator size="small" color="#DC2626" />
-              : <Ionicons name="trash-outline" size={20} color="#DC2626" />}
+              ? <ActivityIndicator size="small" color={theme.danger} />
+              : <Ionicons name="trash-outline" size={20} color={theme.danger} />}
           </View>
           <Text style={[styles.settingText, styles.deleteAccountText]}>{t('profile:deleteAccount')}</Text>
-          {!deleting && <Ionicons name="chevron-forward" size={20} color="#CCC" />}
+          {!deleting && <Ionicons name="chevron-forward" size={20} color={theme.t4} />}
         </TouchableOpacity>
       </View>
 
@@ -667,7 +675,7 @@ export default function ProfileScreen({ navigation }) {
             onChangeText={setPhoneInput}
             keyboardType="phone-pad"
             placeholder={t('profile:phone')}
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={theme.t4}
             autoFocus
           />
           <View style={styles.phoneModalButtons}>
@@ -689,17 +697,17 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </View>
     </Modal>
-    </>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
+const makeStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: {
     alignItems: 'center',
     paddingTop: 60,
     paddingBottom: 24,
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
   },
   avatarContainer: { position: 'relative', marginBottom: 16 },
   avatar: {
@@ -707,44 +715,31 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 4,
-    borderColor: '#6C63FF',
+    borderColor: theme.accent,
   },
   avatarEditButton: {
     position: 'absolute',
     bottom: 0,
     left: 0,
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.accentPress,
     borderRadius: 15,
     width: 30,
     height: 30,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#fff',
-  },
-  premiumBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#FFD700',
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#fff',
+    borderColor: theme.surface,
   },
   premiumIcon: { fontSize: 14 },
-  userName: { fontSize: 24, fontWeight: 'bold', color: '#1A1A2E', marginBottom: 4 },
-  userEmail: { fontSize: 14, color: '#888', marginBottom: 12 },
+  userName: { fontSize: 24, fontWeight: 'bold', color: theme.t1, marginBottom: 4 },
+  userEmail: { fontSize: 14, color: theme.t3, marginBottom: 12 },
   subscriptionBadge: {
-    backgroundColor: '#F3F0FF',
+    backgroundColor: theme.accentTint,
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
   },
-  subscriptionText: { fontSize: 13, color: '#6C63FF', fontWeight: '600' },
+  subscriptionText: { fontSize: 13, color: theme.accent, fontWeight: '600' },
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -754,11 +749,11 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -772,8 +767,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  statValue: { fontSize: 22, fontWeight: 'bold', color: '#1A1A2E', marginBottom: 4 },
-  statLabel: { fontSize: 12, color: '#888', textAlign: 'center' },
+  statValue: { fontSize: 22, fontWeight: 'bold', color: theme.t1, marginBottom: 4 },
+  statLabel: { fontSize: 12, color: theme.t3, textAlign: 'center' },
   section: { paddingHorizontal: 20, marginTop: 24 },
   sectionHeader: {
     flexDirection: 'row',
@@ -781,60 +776,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1A2E' },
-  seeAll: { fontSize: 14, color: '#6C63FF', fontWeight: '600' },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: theme.t1 },
+  seeAll: { fontSize: 14, color: theme.accent, fontWeight: '600' },
   nextBadgeCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  nextBadgeLabel: { fontSize: 12, color: '#888', marginBottom: 4 },
-  nextBadgeName: { fontSize: 16, fontWeight: '600', color: '#1A1A2E', marginBottom: 12 },
+  nextBadgeLabel: { fontSize: 12, color: theme.t3, marginBottom: 4 },
+  nextBadgeName: { fontSize: 16, fontWeight: '600', color: theme.t1, marginBottom: 12 },
   progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' },
-  progressPercent: { fontSize: 12, fontWeight: '600', color: '#4CAF50', minWidth: 35, textAlign: 'right' },
-  rankCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, padding: 16, marginBottom: 12 },
+  progressPercent: { fontSize: 12, fontWeight: '600', color: theme.ok, minWidth: 35, textAlign: 'right' },
+  rankCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: theme.surface, borderRadius: 16, borderWidth: 1.5, padding: 16, marginBottom: 12 },
   rankLoading: { paddingVertical: 24, alignItems: 'center' },
   rankBadgeIcon: { fontSize: 38 },
-  rankName: { fontSize: 18, fontWeight: '700', color: '#1A1A2E' },
+  rankName: { fontSize: 18, fontWeight: '700', color: theme.t1 },
   rankLeague: { fontSize: 13, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
   rankProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rankProgressPct: { fontSize: 12, fontWeight: '600', color: '#6B4EFF', minWidth: 38, textAlign: 'right' },
-  rankToNext: { fontSize: 13, color: '#6B7280', marginTop: 6 },
+  rankProgressPct: { fontSize: 12, fontWeight: '600', color: theme.accent, minWidth: 38, textAlign: 'right' },
+  rankToNext: { fontSize: 13, color: theme.t3, marginTop: 6 },
   rankToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12, marginTop: 4 },
-  rankToggleText: { fontSize: 14, color: '#6B4EFF', fontWeight: '600' },
-  rankRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
+  rankToggleText: { fontSize: 14, color: theme.accent, fontWeight: '600' },
+  rankRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
   rankRowIcon: { fontSize: 22 },
-  rankRowName: { flex: 1, fontSize: 14, color: '#1A1A2E' },
+  rankRowName: { flex: 1, fontSize: 14, color: theme.t1 },
   rankRowNameCurrent: { fontWeight: '700' },
-  rankRowThreshold: { fontSize: 12, color: '#9CA3AF', fontWeight: '600' },
+  rankRowThreshold: { fontSize: 12, color: theme.t3, fontWeight: '600' },
   badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   petsScroll: { paddingRight: 20, gap: 12 },
   petCard: {
     width: 110,
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 12,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   petAvatar: { width: 70, height: 70, borderRadius: 35, marginBottom: 8 },
-  petName: { fontSize: 14, fontWeight: '600', color: '#1A1A2E', marginBottom: 2 },
-  petBreed: { fontSize: 12, color: '#888' },
+  petName: { fontSize: 14, fontWeight: '600', color: theme.t1, marginBottom: 2 },
+  petBreed: { fontSize: 12, color: theme.t3 },
   charityCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     padding: 20,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -846,17 +841,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  charityTitle: { fontSize: 14, color: '#666' },
-  charityGoal: { fontSize: 16, fontWeight: 'bold', color: '#6C63FF' },
-  charityHint: { fontSize: 12, color: '#999', textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
+  charityTitle: { fontSize: 14, color: theme.t2 },
+  charityGoal: { fontSize: 16, fontWeight: 'bold', color: theme.accent },
+  charityHint: { fontSize: 12, color: theme.t3, textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -870,36 +865,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  settingText: { flex: 1, fontSize: 15, color: '#1A1A2E', fontWeight: '500' },
-  settingValue: { fontSize: 14, color: '#888', maxWidth: 150, textAlign: 'right' },
-  phoneModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 24 },
-  phoneModalCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20 },
-  phoneModalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A2E', marginBottom: 16 },
-  phoneInput: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: '#1A1A2E', marginBottom: 16 },
+  settingText: { flex: 1, fontSize: 15, color: theme.t1, fontWeight: '500' },
+  settingValue: { fontSize: 14, color: theme.t3, maxWidth: 150, textAlign: 'right' },
+  phoneModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 24 }, // theme-neutral scrim
+  phoneModalCard: { backgroundColor: theme.surface, borderRadius: 16, padding: 20 },
+  phoneModalTitle: { fontSize: 18, fontWeight: '700', color: theme.t1, marginBottom: 16 },
+  phoneInput: { borderWidth: 1, borderColor: theme.hairline, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: theme.t1, marginBottom: 16 },
   phoneModalButtons: { flexDirection: 'row', gap: 12 },
   phoneBtn: { flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center' },
-  phoneBtnCancel: { backgroundColor: '#F1F1F4' },
-  phoneBtnSave: { backgroundColor: '#6C63FF' },
-  phoneBtnCancelText: { color: '#1A1A2E', fontWeight: '600', fontSize: 15 },
-  phoneBtnSaveText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  logoutItem: { borderWidth: 1, borderColor: '#FFE8E8' },
-  logoutText: { color: '#FF6B6B' },
-  deleteAccountItem: { borderWidth: 1, borderColor: '#FECACA' },
-  deleteAccountText: { color: '#DC2626', fontWeight: '600' },
+  phoneBtnCancel: { backgroundColor: theme.hairline },
+  phoneBtnSave: { backgroundColor: theme.accentPress },
+  phoneBtnCancelText: { color: theme.t1, fontWeight: '600', fontSize: 15 },
+  phoneBtnSaveText: { color: theme.onAccent, fontWeight: '600', fontSize: 15 },
+  logoutItem: { borderWidth: 1, borderColor: theme.hairline },
+  logoutText: { color: theme.t2 },
+  deleteAccountItem: { borderWidth: 1, borderColor: theme.danger },
+  deleteAccountText: { color: theme.danger, fontWeight: '600' },
   emptyCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   emptyEmoji: { fontSize: 40, marginBottom: 8 },
-  emptyText: { fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
-  emptySubtext: { fontSize: 13, color: '#888', marginTop: 4 },
-  versionText: { textAlign: 'center', fontSize: 12, color: '#999', marginTop: 32 },
+  emptyText: { fontSize: 15, fontWeight: '600', color: theme.t1 },
+  emptySubtext: { fontSize: 13, color: theme.t3, marginTop: 4 },
+  versionText: { textAlign: 'center', fontSize: 12, color: theme.t3, marginTop: 32 },
   bottomPadding: { height: 100 },
 });
