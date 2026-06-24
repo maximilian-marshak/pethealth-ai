@@ -7,20 +7,13 @@
 // Некритично: нет petId или ошибка запроса → пустые структуры, экран работает.
 // ══════════════════════════════════════════════════════════════
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../utils/supabase';
 
-const EMPTY = { itemsByDate: {}, markedDates: {} };
-
-// Цвета точек по типу события (на базе акцента #6B4EFF).
-const DOT_COLORS = {
-  record:       '#6B4EFF',
-  prescription: '#22C55E',
-  vaccine:      '#F59E0B',
-  reminder:     '#3B82F6',
-  appointment:  '#EC4899',
-};
+// Цвета точек — категориальная палитра типов; приходит параметром из темы
+// (theme.eventTypes), чтобы хук оставался без зависимости от UI-слоя.
+const EMPTY = { itemsByDate: {}, marksByDate: {} };
 
 // 'YYYY-MM-DD' из date/timestamp-строки БД.
 const ymd = (d) => (d ? String(d).slice(0, 10) : null);
@@ -48,7 +41,7 @@ function daysBetween(start, end, cap = 366) {
   return out;
 }
 
-export function useMedicalCalendar(petId) {
+export function useMedicalCalendar(petId, eventColors = {}) {
   const [data, setData] = useState(EMPTY);
   const [loading, setLoading] = useState(false);
 
@@ -142,14 +135,12 @@ export function useMedicalCalendar(petId) {
         pushMark(date, 'appointment');
       });
 
-      // markedDates для react-native-calendars (multi-dot).
-      const markedDates = {};
-      Object.keys(marks).forEach((date) => {
-        const dots = Array.from(marks[date]).map((type) => ({ key: type, color: DOT_COLORS[type] }));
-        markedDates[date] = { marked: true, dots };
-      });
+      // Сырые типы по датам (без цвета) — раскраска отдельным useMemo из палитры,
+      // чтобы смена темы не вызывала перезагрузку данных (fetch зависит только от petId).
+      const marksByDate = {};
+      Object.keys(marks).forEach((date) => { marksByDate[date] = Array.from(marks[date]); });
 
-      setData({ itemsByDate, markedDates });
+      setData({ itemsByDate, marksByDate });
     } catch (e) {
       console.warn('useMedicalCalendar: load failed (non-critical):', e?.message);
       setData(EMPTY);
@@ -160,5 +151,16 @@ export function useMedicalCalendar(petId) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  return { ...data, loading, refetch: load };
+  // markedDates (react-native-calendars, multi-dot) — раскраска точек из палитры.
+  // Пересчитывается на смене темы/данных, без обращения к сети.
+  const markedDates = useMemo(() => {
+    const md = {};
+    Object.keys(data.marksByDate || {}).forEach((date) => {
+      const dots = data.marksByDate[date].map((type) => ({ key: type, color: eventColors[type] }));
+      md[date] = { marked: true, dots };
+    });
+    return md;
+  }, [data.marksByDate, eventColors]);
+
+  return { itemsByDate: data.itemsByDate, markedDates, loading, refetch: load };
 }

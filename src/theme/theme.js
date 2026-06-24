@@ -77,6 +77,16 @@ const lightBase = {
   hairline: 'rgba(0,0,0,0.06)',                  // spec
   // текст t1 (основной) … t4 (плейсхолдер) + on-accent — spec (visual_foundation §2.3)
   t1: '#1A1A2E', t2: '#4A4A5C', t3: '#8A8A99', t4: '#B5B5C0', onAccent: '#FFFFFF', // spec
+  // Категориальная палитра типов событий (календарь Medical): отдельная от accent
+  // и семантики — легенда требует различимости. 5 пастельно-насыщенных тонов,
+  // равномерно по кругу; vaccine — бирюзовый (родственен мятному бренду).
+  eventTypes: {
+    record:       '#7B6EF0', // violet — запись/визит
+    prescription: '#4F8DF0', // blue — лекарство
+    vaccine:      '#2BB6A8', // teal (brand-adjacent) — вакцина
+    reminder:     '#E0A23E', // amber — напоминание
+    appointment:  '#E06C9C', // rose — приём
+  },
   // тень карточек (iOS shadow* + Android elevation) — derived
   shadow: { shadowColor: '#0B1F1A', shadowOpacity: 0.10, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 6 }, // derived
 };
@@ -98,6 +108,14 @@ const darkBase = {
   surfaceGlassData: { bg: 'rgba(30,33,44,0.66)', blur: 24 }, // spec
   hairline: 'rgba(255,255,255,0.08)',            // spec
   t1: '#F2F2F7', t2: '#B0B0BC', t3: '#7A7A88', t4: '#55555F', onAccent: '#FFFFFF', // spec
+  // Категориальная палитра типов событий (dark — чуть ярче для контраста на тёмном).
+  eventTypes: {
+    record:       '#9A8FF5', // violet
+    prescription: '#6BA1F5', // blue
+    vaccine:      '#4FCFC0', // teal
+    reminder:     '#ECB75C', // amber
+    appointment:  '#EC88B2', // rose
+  },
   shadow: { shadowColor: '#000000', shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 8 }, // derived
 };
 

@@ -771,13 +771,16 @@ const ProcedureModal = ({ visible, onClose, onSave }) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const AGENDA_TYPE = {
-  record:       { icon: 'document-text-outline', color: '#6B4EFF' },
-  prescription: { icon: 'medical-outline',       color: '#22C55E' },
-  vaccine:      { icon: 'medkit-outline',        color: '#F59E0B' },
-  reminder:     { icon: 'notifications-outline', color: '#3B82F6' },
-  appointment:  { icon: 'today-outline',         color: '#EC4899' },
+// Иконки типов (цвет — из theme.eventTypes в компоненте; палитра категориальная).
+const AGENDA_ICONS = {
+  record:       'document-text-outline',
+  prescription: 'medical-outline',
+  vaccine:      'medkit-outline',
+  reminder:     'notifications-outline',
+  appointment:  'today-outline',
 };
+// Порядок типов для легенды календаря.
+const EVENT_TYPE_KEYS = ['record', 'prescription', 'vaccine', 'reminder', 'appointment'];
 
 export default function MedicalScreen() {
   const navigation = useNavigation();
@@ -793,7 +796,7 @@ export default function MedicalScreen() {
 
   const { pets, selectedPet, selectPet, loading: petsLoading } = usePetContext();
   const { awardEvent } = useLoyaltyPoints();
-  const { markedDates, itemsByDate } = useMedicalCalendar(selectedPet?.id);
+  const { markedDates, itemsByDate } = useMedicalCalendar(selectedPet?.id, theme.eventTypes);
   const { isTaken, markTaken, unmark } = useMedicationIntakes(selectedPet?.id);
   const { unit } = useUnits();
   const { allergies } = usePetHealth(selectedPet?.id);
@@ -1789,16 +1792,32 @@ export default function MedicalScreen() {
             markingType="multi-dot"
             onDayPress={(d) => setSelectedDate(d.dateString)}
             markedDates={selectedDate
-              ? { ...markedDates, [selectedDate]: { ...(markedDates[selectedDate] || {}), selected: true, selectedColor: '#6B4EFF' } }
+              ? { ...markedDates, [selectedDate]: { ...(markedDates[selectedDate] || {}), selected: true, selectedColor: theme.accentPress } }
               : markedDates}
             theme={{
-              todayTextColor: '#6B4EFF',
-              selectedDayBackgroundColor: '#6B4EFF',
-              arrowColor: '#6B4EFF',
-              dotColor: '#6B4EFF',
+              calendarBackground: 'transparent',
+              monthTextColor: theme.t1,
+              dayTextColor: theme.t1,
+              textSectionTitleColor: theme.t3,
+              textDisabledColor: theme.t4,
+              todayTextColor: theme.accent,
+              selectedDayBackgroundColor: theme.accentPress,
+              selectedDayTextColor: theme.onAccent,
+              arrowColor: theme.accent,
+              dotColor: theme.accent,
             }}
             style={styles.calendar}
           />
+
+          {/* Легенда типов событий (категориальная палитра) */}
+          <View style={styles.legend}>
+            {EVENT_TYPE_KEYS.map((type) => (
+              <View key={type} style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: theme.eventTypes[type] }]} />
+                <Text style={styles.legendText}>{t(`calendar.types.${type}`)}</Text>
+              </View>
+            ))}
+          </View>
           {selectedDate ? (
             <View style={styles.agenda}>
               <Text style={styles.agendaTitle}>{t('calendar.agendaTitle')}</Text>
@@ -1806,7 +1825,8 @@ export default function MedicalScreen() {
                 <Text style={styles.agendaEmpty}>{t('calendar.empty')}</Text>
               ) : (
                 itemsByDate[selectedDate].map((ev, i) => {
-                  const meta = AGENDA_TYPE[ev.type] || AGENDA_TYPE.record;
+                  const evIcon = AGENDA_ICONS[ev.type] || AGENDA_ICONS.record;
+                  const evColor = theme.eventTypes[ev.type] || theme.eventTypes.record;
                   const isRecord = ev.type === 'record';
                   const isAppointment = ev.type === 'appointment';
                   const tappable = isRecord || isAppointment;
@@ -1826,14 +1846,14 @@ export default function MedicalScreen() {
                       disabled={!tappable}
                       onPress={onPress}
                     >
-                      <View style={[styles.agendaIcon, { backgroundColor: meta.color + '22' }]}>
-                        <Ionicons name={meta.icon} size={18} color={meta.color} />
+                      <View style={[styles.agendaIcon, { backgroundColor: evColor + '22' }]}>
+                        <Ionicons name={evIcon} size={18} color={evColor} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.agendaType}>{t(`calendar.types.${ev.type}`)}</Text>
                         {ev.title ? <Text style={styles.agendaItemTitle} numberOfLines={1}>{ev.title}</Text> : null}
                       </View>
-                      {tappable && <Ionicons name="chevron-forward" size={18} color="#CCC" />}
+                      {tappable && <Ionicons name="chevron-forward" size={18} color={theme.t4} />}
                       {canToggle && (
                         <TouchableOpacity
                           style={styles.intakeToggle}
@@ -1854,9 +1874,9 @@ export default function MedicalScreen() {
                           <Ionicons
                             name={taken ? 'checkmark-circle' : 'ellipse-outline'}
                             size={22}
-                            color={taken ? '#22C55E' : '#9CA3AF'}
+                            color={taken ? theme.ok : theme.t3}
                           />
-                          <Text style={[styles.intakeLabel, taken && { color: '#22C55E' }]}>
+                          <Text style={[styles.intakeLabel, taken && { color: theme.ok }]}>
                             {taken ? t('calendar.intake.taken') : t('calendar.intake.give')}
                           </Text>
                         </TouchableOpacity>
@@ -1943,6 +1963,10 @@ const makeStyles = (theme) => StyleSheet.create({
   viewToggleBtn:        { paddingVertical: 6, paddingHorizontal: 22, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   viewToggleBtnActive:  { backgroundColor: theme.accentPress },
   calendar:             { marginHorizontal: 8, marginTop: 4, borderRadius: 12, overflow: 'hidden' },
+  legend:               { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 12, paddingTop: 10 },
+  legendItem:           { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot:            { width: 8, height: 8, borderRadius: 4 },
+  legendText:           { fontSize: 12, color: theme.t2 },
   agenda:               { marginTop: 8, paddingHorizontal: 12, paddingBottom: 24 },
   agendaTitle:          { fontSize: 14, fontWeight: '700', color: theme.t1, marginBottom: 8, marginTop: 4 },
   agendaEmpty:          { fontSize: 13, color: theme.t3, paddingVertical: 8 },
