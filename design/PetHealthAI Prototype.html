@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PetHealthAI — Прототип</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+    background: #e7e9ee;
+    background-image: radial-gradient(circle at 20% 15%, #eef1f5, #dfe2e9 70%);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; overflow: hidden;
+  }
+  #root { display: flex; align-items: center; justify-content: center; }
+  .scaler { transform-origin: center center; }
+  ion-icon { pointer-events: none; }
+  svg.ionicon { fill: currentColor; stroke: none; }
+  svg .ionicon-fill-none { fill: none !important; }
+  svg .ionicon-stroke-width { stroke: currentColor; stroke-width: 32px; }
+  .screen-scroll::-webkit-scrollbar, .hscroll::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  .screen-scroll, .hscroll { scrollbar-width: none; -ms-overflow-style: none; }
+  button { -webkit-tap-highlight-color: transparent; }
+  input::placeholder { color: #B5B5C0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="#E0F2EC"/>
+  <circle cx="50" cy="42" r="22" fill="#56B89F"/>
+  <text x="50" y="50" font-size="22" text-anchor="middle" fill="#fff">🐾</text>
+  <text x="50" y="82" font-size="11" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#1A1A2E">PetHealthAI</text>
+</svg>
+</template>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="core.jsx"></script>
+<script type="text/babel" src="screens-auth.jsx"></script>
+<script type="text/babel" src="screens-dashboard.jsx"></script>
+<script type="text/babel" src="screens-health.jsx"></script>
+<script type="text/babel" src="screens-assistant.jsx"></script>
+<script type="text/babel" src="screens-activity.jsx"></script>
+<script type="text/babel" src="screens-profile.jsx"></script>
+<script type="text/babel" src="screens-extra.jsx"></script>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+const PETS = [
+  { name: 'Луна', emoji: '🐕', breedRu: 'Лабрадор-ретривер', breedEn: 'Labrador Retriever' },
+  { name: 'Барсик', emoji: '🐈', breedRu: 'Британская кошка', breedEn: 'British Shorthair' },
+  { name: 'Кеша', emoji: '🐦', breedRu: 'Волнистый попугай', breedEn: 'Budgerigar' },
+];
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "#4F8DF0",
+  "scheme": "light",
+  "lang": "ru",
+  "dash": "focus"
+}/*EDITMODE-END*/;
+
+const ACCENT_BY_HEX = { '#56B89F': 'mint', '#EC8C69': 'peach', '#4F8DF0': 'blue' };
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const accentName = ACCENT_BY_HEX[t.accent] || 'mint';
+  const theme = useMemo(() => ({ ...buildTheme(t.scheme, accentName), lang: t.lang }), [t.scheme, accentName, t.lang]);
+
+  const scalerRef = React.useRef(null);
+  React.useEffect(() => {
+    const fit = () => {
+      if (!scalerRef.current) return;
+      const s = Math.min(1, (window.innerHeight - 24) / 844, (window.innerWidth - 24) / 390);
+      scalerRef.current.style.transform = `scale(${s})`;
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
+
+  const [authed, setAuthed] = useState(false);
+  const [tab, setTab] = useState('home');
+  const [pet, setPet] = useState(PETS[0]);
+  const [overlay, setOverlay] = useState(null);
+
+  const TAB_KEYS = ['home', 'health', 'assistant', 'activity', 'profile'];
+  const go = (target) => {
+    if (TAB_KEYS.includes(target)) { setOverlay(null); setTab(target); return; }
+    if (target === 'knowledge' || target === 'relocation') { setOverlay(null); setTab('assistant'); return; }
+    if (target === 'editpet') { setOverlay('petdetail'); return; }
+    setOverlay(target);
+  };
+
+  const L = (ru, en) => (t.lang === 'ru' ? ru : en);
+
+  return (
+    <ThemeCtx.Provider value={{ theme, scheme: t.scheme }}>
+      <LangCtx.Provider value={t.lang}>
+        <div className="scaler" ref={scalerRef}>
+        <PhoneFrame>
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: bgString(theme), position: 'relative' }}>
+            {!authed ? (
+              <AuthScreen onEnter={() => setAuthed(true)} />
+            ) : (
+              <>
+                <StatusBar />
+                {tab === 'home' && <DashboardScreen pet={pet} pets={PETS} onSelect={setPet} variant={t.dash} go={go} />}
+                {tab === 'health' && <HealthScreen pet={pet} pets={PETS} onSelect={setPet} go={go} />}
+                {tab === 'assistant' && <AssistantScreen pet={pet} go={go} />}
+                {tab === 'activity' && <ActivityScreen go={go} />}
+                {tab === 'profile' && <ProfileScreen pets={PETS} go={go}
+                  lang={t.lang} onSetLang={(v) => setTweak('lang', v)}
+                  scheme={t.scheme} onSetScheme={(v) => setTweak('scheme', v)} />}
+
+                <TabBar active={tab} onChange={(k) => { setOverlay(null); setTab(k); }} />
+
+                {overlay === 'notifications' && <NotificationsOverlay onBack={() => setOverlay(null)} />}
+                {overlay === 'record' && <RecordDetailOverlay onBack={() => setOverlay(null)} />}
+                {overlay === 'appointments' && <AppointmentsOverlay onBack={() => setOverlay(null)} />}
+                {overlay === 'addpet' && <AddPetOverlay onBack={() => setOverlay(null)} />}
+                {overlay === 'ocr' && <OCROverlay onBack={() => setOverlay(null)} />}
+                {overlay === 'petdetail' && <PetDetailOverlay pet={pet} onBack={() => setOverlay(null)} go={go} />}
+                {overlay === 'charity' && <CharityStoreOverlay onBack={() => setOverlay(null)} />}
+                {overlay === 'earnpaws' && <HowToEarnPawsOverlay onBack={() => setOverlay(null)} />}
+                {overlay === 'documents' && <DocumentsOverlay onBack={() => setOverlay(null)} />}
+                {overlay === 'addrecord' && <AddRecordSheet onBack={() => setOverlay(null)} go={go} />}
+              </>
+            )}
+          </div>
+        </PhoneFrame>
+        </div>
+
+        <TweaksPanel title="Tweaks">
+          <TweakSection label={L('Бренд-акцент', 'Brand accent')} />
+          <TweakColor label={L('Акцент', 'Accent')} value={t.accent}
+            options={['#56B89F', '#EC8C69', '#4F8DF0']}
+            onChange={(v) => setTweak('accent', v)} />
+          <TweakSection label={L('Тема и язык', 'Theme & language')} />
+          <TweakRadio label={L('Тема', 'Theme')} value={t.scheme}
+            options={[{ value: 'light', label: L('Светлая', 'Light') }, { value: 'dark', label: L('Тёмная', 'Dark') }]}
+            onChange={(v) => setTweak('scheme', v)} />
+          <TweakRadio label={L('Язык', 'Language')} value={t.lang}
+            options={[{ value: 'ru', label: 'Русский' }, { value: 'en', label: 'English' }]}
+            onChange={(v) => setTweak('lang', v)} />
+          <TweakSection label={L('Макет «Главной»', 'Dashboard layout')} />
+          <TweakRadio label={L('Вариант', 'Variant')} value={t.dash}
+            options={[
+              { value: 'cards', label: L('Карточки', 'Cards') },
+              { value: 'focus', label: L('Фокус', 'Focus') },
+              { value: 'timeline', label: L('Лента', 'Timeline') },
+            ]}
+            onChange={(v) => { setTweak('dash', v); setTab('home'); setOverlay(null); }} />
+        </TweaksPanel>
+      </LangCtx.Provider>
+    </ThemeCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
