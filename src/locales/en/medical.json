@@ -16,6 +16,7 @@
       "create": "New appointment",
       "untitled": "Appointment",
       "sections": { "upcoming": "Upcoming", "past": "Past" },
+      "segment": { "upcoming": "Upcoming", "past": "Past" },
       "empty": { "upcoming": "No upcoming appointments", "past": "No past appointments" },
       "status": { "requested": "Requested", "confirmed": "Confirmed", "cancelled": "Cancelled", "completed": "Completed" },
       "actions": { "cancel": "Cancel", "delete": "Delete" },

@@ -41,6 +41,7 @@ import { formatWeight, formatWeightValue, unitLabel, convertWeight } from '../ut
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../utils/supabase';
 import { pickAndUpload } from '../services/imageUploadService';
+import IconChip from './IconChip';
 import { useTheme } from '../theme/ThemeProvider';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -502,17 +503,11 @@ export default function PassportView({ pet: petProp, refreshSignal, renderStatsS
 
   return (
     <>
-      {/* ─── PHOTO SECTION ────────────────── */}
-      <View style={styles.photoSection}>
-        <TouchableOpacity
-          style={styles.avatarContainer}
-          onPress={handleUpdatePhoto}
-          disabled={uploading}
-        >
+      {/* ─── HERO (эталонный ряд): аватар 72 (тап=upload) + имя/порода + Изменить ─── */}
+      <View style={styles.heroCard}>
+        <TouchableOpacity onPress={handleUpdatePhoto} disabled={uploading} style={styles.heroAvatarWrap} activeOpacity={0.8}>
           {uploading ? (
-            <View style={styles.uploadingOverlay}>
-              <ActivityIndicator size="large" color={theme.onAccent} />
-            </View>
+            <View style={styles.heroAvatar}><ActivityIndicator color={theme.onAccent} /></View>
           ) : (
             <>
               <Image
@@ -521,32 +516,50 @@ export default function PassportView({ pet: petProp, refreshSignal, renderStatsS
                     pet.avatar_url ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(pet.name)}&size=400&background=6C63FF&color=fff`,
                 }}
-                style={styles.avatar}
+                style={styles.heroAvatar}
               />
-              <View style={styles.cameraIcon}>
-                <Ionicons name="camera" size={18} color={theme.onAccent} />
+              <View style={styles.heroCamera}>
+                <Ionicons name="camera" size={12} color={theme.onAccent} />
               </View>
             </>
           )}
         </TouchableOpacity>
 
-        <Text style={styles.petName}>{pet.name}</Text>
-        <Text style={styles.petBreed}>{pet.breed || pet.species}</Text>
-        <Text style={styles.petMeta}>
-          {calculateAge(pet.birth_date)}
-          {pet.weight ? ` • ${formatWeight(pet.weight, unit)}` : ''}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.heroName} numberOfLines={1}>{pet.name}</Text>
+          <Text style={styles.heroBreed} numberOfLines={1}>
+            {[pet.breed || pet.species, calculateAge(pet.birth_date), pet.weight ? formatWeight(pet.weight, unit) : null].filter(Boolean).join(' · ')}
+          </Text>
+          <View style={styles.heroBtns}>
+            <TouchableOpacity style={styles.heroBtnTint} onPress={openPassportEdit} activeOpacity={0.8}>
+              <Ionicons name="create-outline" size={15} color={theme.accentPress} />
+              <Text style={styles.heroBtnTintText}>{t('common:edit')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
-      {/* ─── ⚠️ ALLERGY ALERT (safety-critical, над плитками) ─── */}
+      {/* ─── ⚠️ ALLERGY ALERT (danger-box, эталон): построчно имя + severity-бейдж ─── */}
       {allergies.length > 0 && (
-        <View style={styles.allergyBanner}>
-          <Ionicons name="warning" size={22} color={theme.danger} />
-          <View style={styles.allergyBannerText}>
-            <Text style={styles.allergyBannerTitle}>{t('detail.stats.allergies')}</Text>
-            <Text style={styles.allergyBannerList}>
-              {allergies.map((a) => a.substance).filter(Boolean).join(', ')}
-            </Text>
+        <View style={styles.allergyBox}>
+          <View style={styles.allergyBoxHeader}>
+            <Ionicons name="warning" size={19} color={theme.danger} />
+            <Text style={styles.allergyBoxTitle}>{t('detail.stats.allergies')}</Text>
+          </View>
+          <View style={styles.allergyBoxList}>
+            {allergies.map((a) => {
+              const sevColor = severityColorFor(theme, a.severity);
+              return (
+                <View key={a.id} style={styles.allergyBoxRow}>
+                  <Text style={styles.allergyBoxName} numberOfLines={1}>{a.substance}</Text>
+                  {a.severity ? (
+                    <View style={[styles.sevBadge, { backgroundColor: sevColor + '1f' }]}>
+                      <Text style={[styles.sevBadgeText, { color: sevColor }]}>{t('detail.severity.' + a.severity)}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
           </View>
         </View>
       )}
@@ -751,28 +764,29 @@ export default function PassportView({ pet: petProp, refreshSignal, renderStatsS
             if (c.since_date) sub.push(t('detail.condition.since', { date: formatDate(c.since_date) }));
             if (c.notes) sub.push(c.notes);
             return (
-              <View key={c.id} style={styles.passportRow}>
-                <View style={styles.passportHeadRow}>
-                  <Text style={styles.passportName}>
+              <View key={c.id} style={styles.chronicCard}>
+                <IconChip name="pulse-outline" size={20} color={theme.accent} />
+                <View style={styles.chronicContent}>
+                  <Text style={styles.chronicTitle} numberOfLines={1}>
                     {c.condition}{c.code ? ` (${c.code})` : ''}
                   </Text>
-                  <View style={styles.passportHeadRight}>
-                    <View style={[styles.condBadge, c.active ? styles.condBadgeActive : styles.condBadgeRemission]}>
-                      <Text style={[styles.condBadgeText, c.active ? styles.condBadgeTextActive : styles.condBadgeTextRemission]}>
-                        {c.active ? t('detail.condition.active') : t('detail.condition.remission')}
-                      </Text>
-                    </View>
-                    <TouchableOpacity onPress={() => openEditCondition(c)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons name="create-outline" size={18} color={theme.accent} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => deleteCondition(c)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons name="trash-outline" size={18} color={theme.danger} />
-                    </TouchableOpacity>
-                  </View>
+                  {sub.length > 0 && (
+                    <Text style={styles.chronicSub} numberOfLines={1}>{sub.join(' · ')}</Text>
+                  )}
                 </View>
-                {sub.length > 0 && (
-                  <Text style={styles.passportSub}>{sub.join(' · ')}</Text>
-                )}
+                <View style={styles.passportHeadRight}>
+                  <View style={[styles.condBadge, c.active ? styles.condBadgeActive : styles.condBadgeRemission]}>
+                    <Text style={[styles.condBadgeText, c.active ? styles.condBadgeTextActive : styles.condBadgeTextRemission]}>
+                      {c.active ? t('detail.condition.active') : t('detail.condition.remission')}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => openEditCondition(c)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="create-outline" size={18} color={theme.accent} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => deleteCondition(c)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="trash-outline" size={18} color={theme.danger} />
+                  </TouchableOpacity>
+                </View>
               </View>
             );
           })
@@ -1035,13 +1049,9 @@ function InfoRow({ icon, label, value, isLast }) {
   const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
     <View style={[styles.infoRow, isLast && { borderBottomWidth: 0 }]}>
-      <View style={styles.infoIconWrap}>
-        <Ionicons name={icon} size={18} color={theme.accent} />
-      </View>
-      <View style={styles.infoContent}>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value}</Text>
-      </View>
+      <Ionicons name={icon} size={20} color={theme.accent} />
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
     </View>
   );
 }
@@ -1051,33 +1061,34 @@ function InfoRow({ icon, label, value, isLast }) {
 // ══════════════════════════════════════════════════
 const makeStyles = (theme) => StyleSheet.create({
   // ─── Photo section ────────────────────────────
-  photoSection: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    backgroundColor: theme.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.hairline,
+  // ─── Hero (эталонный ряд) ───────────────────
+  heroCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 16,
+    backgroundColor: theme.surface, borderRadius: theme.radii.lg24,
+    borderWidth: 1, borderColor: theme.hairline, padding: 20,
+    marginHorizontal: 20, marginTop: 16, marginBottom: 14, ...theme.shadow,
   },
-  avatarContainer: { position: 'relative', marginBottom: 16 },
-  avatar: {
-    width: 130, height: 130, borderRadius: theme.radii.pill999,
-    borderWidth: 4, borderColor: theme.accent,
-  },
-  uploadingOverlay: {
-    width: 130, height: 130, borderRadius: theme.radii.pill999,
-    backgroundColor: theme.accent + 'CC',
+  heroAvatarWrap: { position: 'relative' },
+  heroAvatar: {
+    width: 72, height: 72, borderRadius: theme.radii.pill999,
+    borderWidth: 2, borderColor: theme.accent, backgroundColor: theme.accentTint,
     justifyContent: 'center', alignItems: 'center',
   },
-  cameraIcon: {
-    position: 'absolute', bottom: 0, right: 0,
-    backgroundColor: theme.accentPress,
-    borderRadius: theme.radii.r18, width: 36, height: 36,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 3, borderColor: theme.surface,
+  heroCamera: {
+    position: 'absolute', bottom: -2, right: -2,
+    backgroundColor: theme.accentPress, borderRadius: theme.radii.pill999,
+    width: 24, height: 24, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: theme.surface,
   },
-  petName: { fontSize: 26, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 4 },
-  petBreed: { fontSize: 15, color: theme.t2, marginBottom: 6 },
-  petMeta:  { fontSize: 13, color: theme.t3 },
+  heroName: { fontSize: 22, fontFamily: theme.font.bold, color: theme.t1 },
+  heroBreed: { fontSize: 14, color: theme.t2, marginTop: 2 },
+  heroBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  heroBtnTint: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: theme.radii.pill999, backgroundColor: theme.accentTint,
+  },
+  heroBtnTintText: { fontSize: 13, fontFamily: theme.font.semibold, color: theme.accentPress },
 
   // ─── Sections (shared) ────────────────────────
   section: { paddingHorizontal: 20, marginTop: 20 },
@@ -1169,10 +1180,15 @@ const makeStyles = (theme) => StyleSheet.create({
   emptyText: { fontSize: 14, color: theme.t3 },
 
   // ─── Allergy alert + passport rows ────────────
-  allergyBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 20, marginTop: 16, padding: 14, backgroundColor: theme.danger + '14', borderWidth: 1, borderColor: theme.danger, borderRadius: theme.radii.sm12 },
-  allergyBannerText: { flex: 1 },
-  allergyBannerTitle: { fontSize: 14, fontFamily: theme.font.bold, color: theme.danger },
-  allergyBannerList: { fontSize: 13, color: theme.danger, marginTop: 2 },
+  // ─── Аллергии: danger-box (эталон) ──────────
+  allergyBox: { marginHorizontal: 20, marginTop: 16, padding: 16, backgroundColor: theme.danger + '14', borderWidth: 1, borderColor: theme.danger + '40', borderRadius: theme.radii.lg24 },
+  allergyBoxHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  allergyBoxTitle: { fontSize: 15, fontFamily: theme.font.bold, color: theme.danger },
+  allergyBoxList: { gap: 8 },
+  allergyBoxRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  allergyBoxName: { flexShrink: 1, fontSize: 14.5, fontFamily: theme.font.bold, color: theme.t1 },
+  sevBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.radii.pill999 },
+  sevBadgeText: { fontSize: 12, fontFamily: theme.font.bold },
   passportRow: { backgroundColor: theme.surface, borderRadius: theme.radii.sm12, padding: 14, marginTop: 8, borderWidth: 1, borderColor: theme.hairline },
   passportHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   passportName: { fontSize: 15, fontFamily: theme.font.bold, color: theme.t1, flexShrink: 1 },
@@ -1180,12 +1196,17 @@ const makeStyles = (theme) => StyleSheet.create({
   passportInfoLabel: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.t3 },
   passportInfoValue: { fontSize: 15, color: theme.t1, marginTop: 3 },
   passportInfoEmpty: { color: theme.t4, fontStyle: 'italic' },
-  condBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: theme.radii.r10 },
-  condBadgeActive: { backgroundColor: theme.danger + '22' },
+  condBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.radii.pill999 },
+  condBadgeActive: { backgroundColor: theme.warn + '1f' },
   condBadgeRemission: { backgroundColor: theme.hairline },
-  condBadgeText: { fontSize: 11, fontFamily: theme.font.bold },
-  condBadgeTextActive: { color: theme.danger },
+  condBadgeText: { fontSize: 11.5, fontFamily: theme.font.bold },
+  condBadgeTextActive: { color: theme.warn },
   condBadgeTextRemission: { color: theme.t3 },
+  // ─── Хроники (эталонная карточка: IconChip + контент + бейдж) ──
+  chronicCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surface, borderRadius: theme.radii.md16, padding: 14, marginTop: 8, borderWidth: 1, borderColor: theme.hairline },
+  chronicContent: { flex: 1, minWidth: 0 },
+  chronicTitle: { fontSize: 14.5, fontFamily: theme.font.bold, color: theme.t1 },
+  chronicSub: { fontSize: 12.5, color: theme.t2, marginTop: 1 },
   passportActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   passportHeadRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   passportDateField: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -1202,19 +1223,14 @@ const makeStyles = (theme) => StyleSheet.create({
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
+  // ─── Инфо-ряд (эталон): иконка(accent) + label + value одной строкой ──
   infoRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 13,
+    paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: theme.hairline,
   },
-  infoIconWrap: {
-    width: 34, height: 34, borderRadius: theme.radii.r10,
-    backgroundColor: theme.accentTint,
-    justifyContent: 'center', alignItems: 'center', marginRight: 12,
-  },
-  infoContent: { flex: 1 },
-  infoLabel:   { fontSize: 12, color: theme.t3, marginBottom: 2 },
-  infoValue:   { fontSize: 14, fontFamily: theme.font.medium, color: theme.t1 },
+  infoLabel:   { flex: 1, fontSize: 13.5, fontFamily: theme.font.semibold, color: theme.t2 },
+  infoValue:   { fontSize: 14, fontFamily: theme.font.bold, color: theme.t1 },
 
   // ─── Modal ────────────────────────────────────
   modalOverlay: {
