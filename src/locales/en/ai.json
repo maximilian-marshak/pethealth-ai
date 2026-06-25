@@ -353,6 +353,8 @@
   },
   "chat": {
     "defaultTitle": "AI Assistant",
+    "statusOnline": "online",
+    "statusOnlineWithPet": "online · {{name}}",
     "historyError": "Couldn't load chat history.",
     "clearError": "Couldn't clear the conversation.",
     "petHeader": "{{name}} • {{breed}} • {{age}}",

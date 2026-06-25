@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
 import GlassCard from '../components/GlassCard';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Читаемый текст на цветной (category) подложке: по относительной яркости фона
 // выбираем тёмный (t1) на светлых категориях / onAccent на тёмных — контраст AA.
@@ -59,6 +60,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   const health = usePetHealth(selectedPet?.id);
   const { unit } = useUnits();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   // Цвет категории (из хаба, уже токен) + читаемый на нём текст/иконки.
   const catColor = color || theme.accent;
@@ -72,52 +74,32 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   const conversationIdRef = useRef(null);
   const didAutoActRef = useRef(false);
 
-  // ═══ ЗАГОЛОВОК ═══
+  // ═══ ЗАГОЛОВОК: нативный скрыт — кастомная glass-шапка в теле (эталон) ═══
   useEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      headerTitle: title || t('chat.defaultTitle'),
-      headerTitleStyle: { fontFamily: theme.font.bold, fontSize: 18 },
-      headerStyle: { backgroundColor: catColor },
-      headerTintColor: onCat,
-      headerLeft: () => (
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 10 }}>
-          <Ionicons name="arrow-back" size={24} color={onCat} />
-        </TouchableOpacity>
-      ),
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert(
-              t('chat.clearChat'),
-              t('chat.clearChatMessage'),
-              [
-                { text: t('hub.cancel'), style: 'cancel' },
-                {
-                  text: t('chat.clear'),
-                  style: 'destructive',
-                  onPress: async () => {
-                    try {
-                      if (conversationIdRef.current) {
-                        await clearConversation(conversationIdRef.current);
-                      }
-                    } catch (e) {
-                      console.error('❌ clearConversation failed:', e);
-                      Alert.alert(t('chat.clearError'));
-                    }
-                    setMessages([]);
-                  },
-                },
-              ]
-            )
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
+  // Очистка чата (была в нативном headerRight → теперь ellipsis кастомной шапки). Логика та же.
+  const handleClearChat = () => {
+    Alert.alert(t('chat.clearChat'), t('chat.clearChatMessage'), [
+      { text: t('hub.cancel'), style: 'cancel' },
+      {
+        text: t('chat.clear'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            if (conversationIdRef.current) {
+              await clearConversation(conversationIdRef.current);
+            }
+          } catch (e) {
+            console.error('❌ clearConversation failed:', e);
+            Alert.alert(t('chat.clearError'));
           }
-          style={{ marginRight: 10 }}
-        >
-          <Ionicons name="trash-outline" size={22} color={onCat} />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation, title, color, t, catColor, onCat]);
+          setMessages([]);
+        },
+      },
+    ]);
+  };
 
   // ═══ ИНИЦИАЛИЗАЦИЯ: беседа + история ДО авто-действий ═══
   useEffect(() => {
@@ -441,18 +423,29 @@ export default function AIAssistantChatScreen({ route, navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      {selectedPet && (
-        <View style={[styles.petHeader, { backgroundColor: catColor }]}>
-          <Ionicons name="paw" size={20} color={onCat} />
-          <Text style={[styles.petHeaderText, { color: onCat }]}>
-            {t('chat.petHeader', {
-              name: selectedPet.name,
-              breed: selectedPet.breed,
-              age: selectedPet.age || t('chat.unknownAge'),
-            })}
-          </Text>
+      {/* Custom glass-шапка (эталон): back + аватар(catColor)+online + title/статус + ellipsis */}
+      <GlassCard variant="decor" radius={0} padding={0}>
+        <View style={[styles.chatHeaderRow, { paddingTop: insets.top + 6 }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-back" size={26} color={theme.accent} />
+          </TouchableOpacity>
+          <View style={styles.chatAvatarWrap}>
+            <View style={[styles.chatAvatar, { backgroundColor: catColor + '22' }]}>
+              <Ionicons name="sparkles" size={20} color={catColor} />
+            </View>
+            <View style={styles.chatOnlineDot} />
+          </View>
+          <View style={styles.chatHeaderText}>
+            <Text style={styles.chatHeaderTitle} numberOfLines={1}>{title || t('chat.defaultTitle')}</Text>
+            <Text style={styles.chatHeaderStatus} numberOfLines={1}>
+              {selectedPet ? t('chat.statusOnlineWithPet', { name: selectedPet.name }) : t('chat.statusOnline')}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={handleClearChat} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="ellipsis-horizontal" size={22} color={theme.t3} />
+          </TouchableOpacity>
         </View>
-      )}
+      </GlassCard>
 
       <FlatList
         ref={flatListRef}
@@ -502,19 +495,24 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: 'transparent',
   },
 
-  // Pet Header (bg = category-цвет inline; текст onCat inline по контрасту)
-  petHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
+  // Custom glass-шапка чата (эталон): аватар(catColor inline) + online(ok) + title/статус
+  chatHeaderRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 16, paddingBottom: 12,
   },
-  petHeaderText: {
-    fontSize: 14,
-    color: theme.onAccent,
-    fontFamily: theme.font.semibold,
+  chatAvatarWrap: { position: 'relative' },
+  chatAvatar: {
+    width: 42, height: 42, borderRadius: theme.radii.pill999,
+    alignItems: 'center', justifyContent: 'center',
   },
+  chatOnlineDot: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 11, height: 11, borderRadius: theme.radii.pill999,
+    backgroundColor: theme.ok, borderWidth: 2, borderColor: theme.bgBase,
+  },
+  chatHeaderText: { flex: 1 },
+  chatHeaderTitle: { fontSize: 15.5, fontFamily: theme.font.bold, color: theme.t1 },
+  chatHeaderStatus: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.ok, marginTop: 1 },
 
   messagesList: {
     paddingHorizontal: 16,

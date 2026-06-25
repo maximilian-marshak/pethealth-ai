@@ -353,6 +353,8 @@
   },
   "chat": {
     "defaultTitle": "ИИ Помощник",
+    "statusOnline": "онлайн",
+    "statusOnlineWithPet": "онлайн · {{name}}",
     "historyError": "Не удалось загрузить историю чата.",
     "clearError": "Не удалось очистить беседу.",
     "petHeader": "{{name}} • {{breed}} • {{age}}",
