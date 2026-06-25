@@ -12,8 +12,14 @@
 //              ⚠️ Свериться с visual_foundation при появлении файла в репо.
 // ══════════════════════════════════════════════════════════════════════════════
 
-// ─── Радиусы (spec) ───────────────────────────────────────────────────────────
-export const radii = { sm12: 12, md16: 16, lg24: 24, xl28: 28, pill999: 999 };
+// ─── Радиусы ──────────────────────────────────────────────────────────────────
+// spec-ступени sm12/md16/lg24/xl28/pill999 (НЕ переименовывать — на них завязаны
+// ui/-примитивы). Доп. чётные ступени (P-EVEN) покрывают ad-hoc-радиусы кода с
+// нулевым визуальным сдвигом на частых значениях.
+export const radii = {
+  xs4: 4, sm8: 8, r10: 10, sm12: 12, r14: 14, md16: 16,
+  r18: 18, r20: 20, lg24: 24, r26: 26, xl28: 28, pill999: 999,
+};
 
 // ─── Шрифт (Nunito, Фаза 1b) ──────────────────────────────────────────────────
 // Значения = семейства, зарегистрированные в useFonts (App.js). Веса по
@@ -98,6 +104,14 @@ const lightBase = {
     relocation: '#4F8DF0', // blue
     general:    '#8C7FD0', // violet
   },
+  // Категориальная палитра лиг ранг-системы (charity-ранги) — медальные металлики,
+  // отдельный домен (не accent/семантика); рендерится в rank-картах Profile/Dashboard.
+  leagueColors: {
+    bronze:  '#CD7F32',
+    silver:  '#9CA3AF',
+    gold:    '#F59E0B',
+    diamond: '#22D3EE',
+  },
   // тень карточек (iOS shadow* + Android elevation) — derived
   shadow: { shadowColor: '#0B1F1A', shadowOpacity: 0.10, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 6 }, // derived
 };
@@ -136,6 +150,13 @@ const darkBase = {
     emergency:  '#F0826E', // red-orange
     relocation: '#6BA1F5', // blue
     general:    '#A99CE6', // violet
+  },
+  // Лиги (dark — металлики чуть ярче/насыщеннее для тёмного фона).
+  leagueColors: {
+    bronze:  '#DDA15E',
+    silver:  '#C4CAD6',
+    gold:    '#FFC44D',
+    diamond: '#5BE0F5',
   },
   shadow: { shadowColor: '#000000', shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 8 }, // derived
 };

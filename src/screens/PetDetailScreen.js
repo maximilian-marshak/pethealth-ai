@@ -1386,7 +1386,7 @@ export default function PetDetailScreen({ route, navigation }) {
                       style={[styles.sevChip, active && { backgroundColor: sevColor + '22', borderColor: sevColor }]}
                       onPress={() => setASeverity(opt.value)}
                     >
-                      <Text style={[styles.sevChipText, active && { color: sevColor, fontWeight: '600' }]}>{t('detail.severity.' + opt.key)}</Text>
+                      <Text style={[styles.sevChipText, active && { color: sevColor, fontFamily: theme.font.semibold }]}>{t('detail.severity.' + opt.key)}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -1490,9 +1490,9 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     backgroundColor: theme.accentTint,
-    borderRadius: 10,
+    borderRadius: theme.radii.r10,
   },
-  backBtnText: { color: theme.accentPress, fontWeight: '600' },
+  backBtnText: { color: theme.accentPress, fontFamily: theme.font.semibold },
 
   // ─── Header ───────────────────────────────────
   header: {
@@ -1505,14 +1505,14 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.surface,
   },
   backButton: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 40, height: 40, borderRadius: theme.radii.r20,
     backgroundColor: theme.surface,
     justifyContent: 'center', alignItems: 'center',
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: theme.t1 },
+  headerTitle: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
   headerActions: { flexDirection: 'row', gap: 10 },
   headerButton: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 40, height: 40, borderRadius: theme.radii.r20,
     backgroundColor: theme.accentTint,
     justifyContent: 'center', alignItems: 'center',
   },
@@ -1528,22 +1528,22 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   avatarContainer: { position: 'relative', marginBottom: 16 },
   avatar: {
-    width: 130, height: 130, borderRadius: 65,
+    width: 130, height: 130, borderRadius: theme.radii.pill999,
     borderWidth: 4, borderColor: theme.accent,
   },
   uploadingOverlay: {
-    width: 130, height: 130, borderRadius: 65,
+    width: 130, height: 130, borderRadius: theme.radii.pill999,
     backgroundColor: theme.accent + 'CC',
     justifyContent: 'center', alignItems: 'center',
   },
   cameraIcon: {
     position: 'absolute', bottom: 0, right: 0,
     backgroundColor: theme.accentPress,
-    borderRadius: 18, width: 36, height: 36,
+    borderRadius: theme.radii.r18, width: 36, height: 36,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 3, borderColor: theme.surface,
   },
-  petName: { fontSize: 26, fontWeight: 'bold', color: theme.t1, marginBottom: 4 },
+  petName: { fontSize: 26, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 4 },
   petBreed: { fontSize: 15, color: theme.t2, marginBottom: 6 },
   petMeta:  { fontSize: 13, color: theme.t3 },
 
@@ -1555,12 +1555,12 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 12,
   },
   statCard: {
-    flex: 1, backgroundColor: theme.surface, borderRadius: 16,
+    flex: 1, backgroundColor: theme.surface, borderRadius: theme.radii.md16,
     paddingVertical: 16, alignItems: 'center', gap: 6,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
-  statValue: { fontSize: 22, fontWeight: 'bold', color: theme.t1 },
+  statValue: { fontSize: 22, fontFamily: theme.font.bold, color: theme.t1 },
   statLabel: { fontSize: 11, color: theme.t3, textAlign: 'center' },
 
   // ─── Sections ─────────────────────────────────
@@ -1572,25 +1572,25 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 17, fontWeight: '700', color: theme.t1, marginBottom: 12,
+    fontSize: 17, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 12,
   },
-  seeAll: { fontSize: 14, color: theme.accentPress, fontWeight: '600' },
+  seeAll: { fontSize: 14, color: theme.accentPress, fontFamily: theme.font.semibold },
 
   // ─── Weight ───────────────────────────────────
   addWeightBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: theme.accentTint,
     paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: theme.radii.r20,
   },
-  addWeightBtnText: { fontSize: 13, color: theme.accentPress, fontWeight: '600' },
+  addWeightBtnText: { fontSize: 13, color: theme.accentPress, fontFamily: theme.font.semibold },
 
   weightLoadingBox: {
-    backgroundColor: theme.surface, borderRadius: 16, padding: 32,
+    backgroundColor: theme.surface, borderRadius: theme.radii.md16, padding: 32,
     alignItems: 'center',
   },
   weightCard: {
-    backgroundColor: theme.surface, borderRadius: 16, overflow: 'hidden',
+    backgroundColor: theme.surface, borderRadius: theme.radii.md16, overflow: 'hidden',
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
   },
@@ -1602,23 +1602,23 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingBottom: 8,
   },
   weightCurrentLabel: { fontSize: 12, color: theme.t3, marginBottom: 4 },
-  weightCurrentValue: { fontSize: 28, fontWeight: 'bold', color: theme.t1 },
-  weightUnit:         { fontSize: 16, color: theme.t3, fontWeight: '400' },
+  weightCurrentValue: { fontSize: 28, fontFamily: theme.font.bold, color: theme.t1 },
+  weightUnit:         { fontSize: 16, color: theme.t3, fontFamily: theme.font.regular },
   trendBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.radii.r20,
   },
-  trendText: { fontSize: 13, fontWeight: '700' },
+  trendText: { fontSize: 13, fontFamily: theme.font.bold },
 
   chartWrapper: { paddingHorizontal: 12, paddingVertical: 4 },
-  chart: { borderRadius: 10 },
+  chart: { borderRadius: theme.radii.r10 },
 
   weightHistoryList: {
     borderTopWidth: 1, borderTopColor: theme.hairline,
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4,
   },
   weightHistoryTitle: {
-    fontSize: 12, fontWeight: '600', color: theme.t3,
+    fontSize: 12, fontFamily: theme.font.semibold, color: theme.t3,
     marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5,
   },
   weightHistoryRow: {
@@ -1631,10 +1631,10 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   weightHistoryLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   weightHistoryDot: {
-    width: 8, height: 8, borderRadius: 4,
+    width: 8, height: 8, borderRadius: theme.radii.xs4,
     backgroundColor: theme.accent,
   },
-  weightHistoryValue: { fontSize: 14, fontWeight: '600', color: theme.t1 },
+  weightHistoryValue: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t1 },
   weightHistoryNote:  { fontSize: 11, color: theme.t3, marginTop: 1 },
   weightHistoryDate:  { fontSize: 12, color: theme.t3 },
 
@@ -1642,69 +1642,69 @@ const makeStyles = (theme) => StyleSheet.create({
     marginTop: 10,
     backgroundColor: theme.accentTint,
     paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: theme.radii.r20,
   },
-  emptyAddBtnText: { color: theme.accentPress, fontWeight: '600', fontSize: 13 },
+  emptyAddBtnText: { color: theme.accentPress, fontFamily: theme.font.semibold, fontSize: 13 },
 
   // ─── Events ───────────────────────────────────
   eventCard: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: theme.surface, padding: 14,
-    borderRadius: 14, marginBottom: 8,
+    borderRadius: theme.radii.r14, marginBottom: 8,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
   },
   eventIconWrap: {
-    width: 40, height: 40, borderRadius: 12,
+    width: 40, height: 40, borderRadius: theme.radii.sm12,
     justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   eventContent: { flex: 1 },
-  eventTitle:   { fontSize: 14, fontWeight: '600', color: theme.t1, marginBottom: 3 },
+  eventTitle:   { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 3 },
   eventDate:    { fontSize: 12, color: theme.t3 },
   eventBadge: {
     backgroundColor: theme.accentTint,
     paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 10, fontSize: 11, fontWeight: '600', color: theme.accentPress,
+    borderRadius: theme.radii.r10, fontSize: 11, fontFamily: theme.font.semibold, color: theme.accentPress,
   },
 
   // ─── Records ──────────────────────────────────
   recordCard: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: theme.surface, padding: 14,
-    borderRadius: 14, marginBottom: 8,
+    borderRadius: theme.radii.r14, marginBottom: 8,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
   },
   recordIconWrap: {
-    width: 40, height: 40, borderRadius: 12,
+    width: 40, height: 40, borderRadius: theme.radii.sm12,
     justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   recordContent: { flex: 1 },
-  recordTitle:   { fontSize: 14, fontWeight: '600', color: theme.t1, marginBottom: 3 },
+  recordTitle:   { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 3 },
   recordDate:    { fontSize: 12, color: theme.t3, marginBottom: 2 },
   recordDescription: { fontSize: 12, color: theme.t2 },
 
   // ─── Empty card ───────────────────────────────
   emptyCard: {
-    backgroundColor: theme.surface, borderRadius: 14,
+    backgroundColor: theme.surface, borderRadius: theme.radii.r14,
     padding: 24, alignItems: 'center', gap: 8,
   },
   emptyText: { fontSize: 14, color: theme.t3 },
-  allergyBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 20, marginTop: 16, padding: 14, backgroundColor: theme.danger + '14', borderWidth: 1, borderColor: theme.danger, borderRadius: 12 },
+  allergyBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 20, marginTop: 16, padding: 14, backgroundColor: theme.danger + '14', borderWidth: 1, borderColor: theme.danger, borderRadius: theme.radii.sm12 },
   allergyBannerText: { flex: 1 },
-  allergyBannerTitle: { fontSize: 14, fontWeight: '700', color: theme.danger },
+  allergyBannerTitle: { fontSize: 14, fontFamily: theme.font.bold, color: theme.danger },
   allergyBannerList: { fontSize: 13, color: theme.danger, marginTop: 2 },
-  passportRow: { backgroundColor: theme.surface, borderRadius: 12, padding: 14, marginTop: 8, borderWidth: 1, borderColor: theme.hairline },
+  passportRow: { backgroundColor: theme.surface, borderRadius: theme.radii.sm12, padding: 14, marginTop: 8, borderWidth: 1, borderColor: theme.hairline },
   passportHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  passportName: { fontSize: 15, fontWeight: '700', color: theme.t1, flexShrink: 1 },
+  passportName: { fontSize: 15, fontFamily: theme.font.bold, color: theme.t1, flexShrink: 1 },
   passportSub: { fontSize: 13, color: theme.t3, marginTop: 4 },
-  passportInfoLabel: { fontSize: 12, fontWeight: '600', color: theme.t3 },
+  passportInfoLabel: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.t3 },
   passportInfoValue: { fontSize: 15, color: theme.t1, marginTop: 3 },
   passportInfoEmpty: { color: theme.t4, fontStyle: 'italic' },
-  condBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
+  condBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: theme.radii.r10 },
   condBadgeActive: { backgroundColor: theme.danger + '22' },
   condBadgeRemission: { backgroundColor: theme.hairline },
-  condBadgeText: { fontSize: 11, fontWeight: '700' },
+  condBadgeText: { fontSize: 11, fontFamily: theme.font.bold },
   condBadgeTextActive: { color: theme.danger },
   condBadgeTextRemission: { color: theme.t3 },
   passportActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -1713,23 +1713,23 @@ const makeStyles = (theme) => StyleSheet.create({
   passportDateText: { flex: 1, fontSize: 15, color: theme.t1 },
   sevRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   // Базовый чип — нейтраль; активный (семантика уровня) задаётся inline в render.
-  sevChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline },
-  sevChipText: { fontSize: 13, color: theme.t3, fontWeight: '500' },
+  sevChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: theme.radii.r18, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline },
+  sevChipText: { fontSize: 13, color: theme.t3, fontFamily: theme.font.medium },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 8 },
 
   // ─── Actions ──────────────────────────────────
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   actionButton: {
-    width: '47%', aspectRatio: 1.6, borderRadius: 16,
+    width: '47%', aspectRatio: 1.6, borderRadius: theme.radii.md16,
     justifyContent: 'center', alignItems: 'center', gap: 6,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
   },
-  actionText: { fontSize: 13, fontWeight: '600', color: theme.t1 },
+  actionText: { fontSize: 13, fontFamily: theme.font.semibold, color: theme.t1 },
 
   // ─── Info ─────────────────────────────────────
   infoCard: {
-    backgroundColor: theme.surface, borderRadius: 16, paddingHorizontal: 16,
+    backgroundColor: theme.surface, borderRadius: theme.radii.md16, paddingHorizontal: 16,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
@@ -1739,13 +1739,13 @@ const makeStyles = (theme) => StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: theme.hairline,
   },
   infoIconWrap: {
-    width: 34, height: 34, borderRadius: 10,
+    width: 34, height: 34, borderRadius: theme.radii.r10,
     backgroundColor: theme.accentTint,
     justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   infoContent: { flex: 1 },
   infoLabel:   { fontSize: 12, color: theme.t3, marginBottom: 2 },
-  infoValue:   { fontSize: 14, fontWeight: '500', color: theme.t1 },
+  infoValue:   { fontSize: 14, fontFamily: theme.font.medium, color: theme.t1 },
 
   // ─── Modal ────────────────────────────────────
   modalOverlay: {
@@ -1755,7 +1755,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: theme.surface,
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    borderTopLeftRadius: theme.radii.xl28, borderTopRightRadius: theme.radii.xl28,
     paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40,
   },
   modalHeader: {
@@ -1764,44 +1764,44 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  modalTitle:   { fontSize: 20, fontWeight: '700', color: theme.t1 },
+  modalTitle:   { fontSize: 20, fontFamily: theme.font.bold, color: theme.t1 },
   modalCloseBtn: {
-    width: 34, height: 34, borderRadius: 17,
+    width: 34, height: 34, borderRadius: theme.radii.md16,
     backgroundColor: theme.hairline,
     justifyContent: 'center', alignItems: 'center',
   },
   modalSubtitle: { fontSize: 14, color: theme.t3, marginBottom: 24 },
 
   modalInputGroup: { marginBottom: 16 },
-  modalInputLabel: { fontSize: 13, fontWeight: '600', color: theme.t2, marginBottom: 8 },
+  modalInputLabel: { fontSize: 13, fontFamily: theme.font.semibold, color: theme.t2, marginBottom: 8 },
   modalInputRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   modalInput: {
     flex: 1,
-    backgroundColor: theme.surface, borderRadius: 14,
+    backgroundColor: theme.surface, borderRadius: theme.radii.r14,
     paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 18, fontWeight: '600', color: theme.t1,
+    fontSize: 18, fontFamily: theme.font.semibold, color: theme.t1,
     borderWidth: 1.5, borderColor: theme.hairline,
   },
   modalInputNote: {
-    fontSize: 14, fontWeight: '400',
+    fontSize: 14, fontFamily: theme.font.regular,
     height: 80, textAlignVertical: 'top',
     paddingTop: 12,
   },
   modalUnitBadge: {
-    backgroundColor: theme.accentTint, borderRadius: 12,
+    backgroundColor: theme.accentTint, borderRadius: theme.radii.sm12,
     paddingHorizontal: 14, paddingVertical: 14,
   },
-  modalUnitText: { fontSize: 16, fontWeight: '700', color: theme.accentPress },
+  modalUnitText: { fontSize: 16, fontFamily: theme.font.bold, color: theme.accentPress },
 
   modalSaveBtn: {
-    backgroundColor: theme.accentPress, borderRadius: 16,
+    backgroundColor: theme.accentPress, borderRadius: theme.radii.md16,
     paddingVertical: 16, alignItems: 'center',
     marginTop: 8,
     shadowColor: theme.accent, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
   },
   modalSaveBtnDisabled: { opacity: 0.6 },
-  modalSaveBtnText: { color: theme.onAccent, fontSize: 16, fontWeight: '700' },
+  modalSaveBtnText: { color: theme.onAccent, fontSize: 16, fontFamily: theme.font.bold },
 
   bottomPadding: { height: 40 },
 });

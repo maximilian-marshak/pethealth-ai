@@ -478,14 +478,14 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   pickerSheet: {
     backgroundColor: theme.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: theme.radii.r20,
+    borderTopRightRadius: theme.radii.r20,
     padding: 20,
     maxHeight: '60%',
   },
   pickerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 16,
   },
@@ -494,7 +494,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     marginBottom: 8,
     backgroundColor: theme.surface,
     gap: 12,
@@ -509,7 +509,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   pickerRowName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t1,
   },
   pickerRowDetails: {
@@ -523,8 +523,8 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingBottom: 30,
     paddingHorizontal: 20,
     alignItems: 'center',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: theme.radii.xl28,
+    borderBottomRightRadius: theme.radii.xl28,
   },
   headerTop: {
     width: '100%',
@@ -537,8 +537,8 @@ const makeStyles = (theme) => StyleSheet.create({
   headerIcon: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: theme.radii.pill999,
+    backgroundColor: theme.onAccent + '33',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -547,22 +547,22 @@ const makeStyles = (theme) => StyleSheet.create({
     right: 0,
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: theme.radii.lg24,
+    backgroundColor: theme.onAccent + '33',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: theme.onAccent + '4D',
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.onAccent,
     marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: theme.onAccent + 'E6',
     textAlign: 'center',
   },
   petInfoCard: {
@@ -572,7 +572,7 @@ const makeStyles = (theme) => StyleSheet.create({
     marginHorizontal: 20,
     marginTop: -20,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -585,7 +585,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   petName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
   },
   petDetails: {
@@ -596,7 +596,7 @@ const makeStyles = (theme) => StyleSheet.create({
   freeChatCard: {
     marginHorizontal: 20,
     marginTop: 20,
-    borderRadius: 20,
+    borderRadius: theme.radii.r20,
   },
   freeChatInner: {
     flexDirection: 'row',
@@ -606,8 +606,8 @@ const makeStyles = (theme) => StyleSheet.create({
   freeChatIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: theme.radii.xl28,
+    backgroundColor: theme.onAccent + '33',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -617,7 +617,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   freeChatTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 4,
   },
@@ -628,7 +628,7 @@ const makeStyles = (theme) => StyleSheet.create({
   photoAnalysisCard: {
     marginHorizontal: 20,
     marginTop: 12,
-    borderRadius: 20,
+    borderRadius: theme.radii.r20,
   },
   photoAnalysisInner: {
     flexDirection: 'row',
@@ -638,8 +638,8 @@ const makeStyles = (theme) => StyleSheet.create({
   photoAnalysisIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: theme.radii.xl28,
+    backgroundColor: theme.onAccent + '33',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -649,7 +649,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   photoAnalysisTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 4,
   },
@@ -659,7 +659,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginHorizontal: 20,
     marginTop: 30,
@@ -673,7 +673,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.surface,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     marginBottom: 12,
     borderLeftWidth: 4,
     shadowColor: theme.shadow.shadowColor,
@@ -685,7 +685,7 @@ const makeStyles = (theme) => StyleSheet.create({
   categoryIcon: {
     width: 56,
     height: 56,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -695,7 +695,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   categoryTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t1,
     marginBottom: 4,
   },
@@ -709,7 +709,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   quickQuestionsHeader: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     marginBottom: 12,
   },
   quickQuestionCard: {
@@ -717,7 +717,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.surface,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     marginBottom: 8,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
@@ -740,7 +740,7 @@ const makeStyles = (theme) => StyleSheet.create({
     right: 20,
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: theme.radii.pill999,
     backgroundColor: theme.accent,
     justifyContent: 'center',
     alignItems: 'center',

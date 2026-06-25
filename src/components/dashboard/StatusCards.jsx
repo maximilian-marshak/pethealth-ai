@@ -3,10 +3,10 @@
 // ══════════════════════════════════════════════════
 
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { formatWeightValue, unitLabel } from '../../utils/formatWeight';
+import StatusCard from '../ui/StatusCard';
 
 // ─── Хелпер форматирования даты ─────────────────
 const formatCardDate = (date) => {
@@ -17,35 +17,7 @@ const formatCardDate = (date) => {
   });
 };
 
-// ─── Одна карточка ───────────────────────────────
-const StatusCard = ({ icon, statusColor, title, value, subtitle, onPress }) => {
-  const { theme } = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
-  return (
-  <TouchableOpacity
-    style={[styles.card, { borderLeftColor: statusColor }]}
-    onPress={onPress}
-    activeOpacity={0.75}
-  >
-    <View style={styles.cardHeader}>
-      <View style={[styles.iconWrap, { backgroundColor: statusColor + '20' }]}>
-        <Ionicons name={icon} size={18} color={statusColor} />
-      </View>
-      <Text style={styles.cardTitle} numberOfLines={1}>
-        {title}
-      </Text>
-    </View>
-    <Text style={styles.cardValue} numberOfLines={1}>
-      {value}
-    </Text>
-    {subtitle ? (
-      <Text style={styles.cardSubtitle} numberOfLines={2}>
-        {subtitle}
-      </Text>
-    ) : null}
-  </TouchableOpacity>
-  );
-};
+// Одна health-плитка вынесена в src/components/ui/StatusCard.jsx (рендер 1:1).
 
 // ─── Главный компонент ───────────────────────────
 export const StatusCards = ({ status, onNavigate, petId, unit = 'kg' }) => {
@@ -167,6 +139,7 @@ export const StatusCards = ({ status, onNavigate, petId, unit = 'kg' }) => {
   );
 };
 
+// Только grid-раскладка; плитка (card/icon/title/value/subtitle) — в ui/StatusCard.
 const makeStyles = (theme) => StyleSheet.create({
   container: {
     gap: 10,
@@ -176,49 +149,5 @@ const makeStyles = (theme) => StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 10,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: theme.surface,
-    borderRadius: 14,
-    padding: 13,
-    borderLeftWidth: 4,
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  iconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardTitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: theme.t3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    flex: 1,
-  },
-  cardValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.t1,
-    marginBottom: 3,
-  },
-  cardSubtitle: {
-    fontSize: 11,
-    color: theme.t3,
-    lineHeight: 15,
   },
 });

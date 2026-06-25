@@ -8,6 +8,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeProvider';
+import { font } from '../theme/theme';
 import { PetProvider } from '../context/PetContext';
 import { supabase } from '../utils/supabase';
 
@@ -63,17 +64,17 @@ function AssistantNavigator() {
       <AssistantStack.Screen
         name="KnowledgeBase"
         component={KnowledgeBaseScreen}
-        options={{ headerShown: true, headerTitleStyle: { fontWeight: 'bold' } }}
+        options={{ headerShown: true, headerTitleStyle: { fontFamily: font.bold } }}
       />
       <AssistantStack.Screen
         name="KnowledgeArticle"
         component={KnowledgeArticleScreen}
-        options={{ headerShown: true, headerTitleStyle: { fontWeight: 'bold' } }}
+        options={{ headerShown: true, headerTitleStyle: { fontFamily: font.bold } }}
       />
       <AssistantStack.Screen
         name="Relocation"
         component={RelocationScreen}
-        options={{ headerShown: true, headerTitleStyle: { fontWeight: 'bold' } }}
+        options={{ headerShown: true, headerTitleStyle: { fontFamily: font.bold } }}
       />
     </AssistantStack.Navigator>
   );
@@ -122,7 +123,7 @@ function MainTabsNavigator() {
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
+          fontFamily: font.semibold,
         },
       })}
     >
@@ -195,7 +196,7 @@ export default function AppNavigator() {
               presentation: 'modal',
               headerShown: true,
               headerTitle: 'Add New Pet',
-              headerTitleStyle: { fontWeight: 'bold' },
+              headerTitleStyle: { fontFamily: font.bold },
             }}
           />
           
@@ -235,7 +236,7 @@ export default function AppNavigator() {
             component={AppointmentsScreen}
             options={{
               headerShown: true,
-              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
+              headerTitleStyle: { fontFamily: font.bold, fontSize: 20 },              animation: 'slide_from_right',
             }}
           />
 
@@ -245,7 +246,7 @@ export default function AppNavigator() {
             component={DocumentsScreen}
             options={{
               headerShown: true,
-              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
+              headerTitleStyle: { fontFamily: font.bold, fontSize: 20 },              animation: 'slide_from_right',
             }}
           />
 
@@ -255,7 +256,7 @@ export default function AppNavigator() {
             component={FAQScreen}
             options={{
               headerShown: true,
-              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
+              headerTitleStyle: { fontFamily: font.bold, fontSize: 20 },              animation: 'slide_from_right',
             }}
           />
 
@@ -265,7 +266,7 @@ export default function AppNavigator() {
             component={NotificationsScreen}
             options={{
               headerShown: true,
-              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
+              headerTitleStyle: { fontFamily: font.bold, fontSize: 20 },              animation: 'slide_from_right',
             }}
           />
 
@@ -275,7 +276,7 @@ export default function AppNavigator() {
             component={HowToEarnPawsScreen}
             options={{
               headerShown: true,
-              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },              animation: 'slide_from_right',
+              headerTitleStyle: { fontFamily: font.bold, fontSize: 20 },              animation: 'slide_from_right',
             }}
           />
 
@@ -287,7 +288,7 @@ export default function AppNavigator() {
               headerShown: true,
               headerTitle: 'Help a Shelter',
               headerTitleStyle: { 
-                fontWeight: 'bold',
+                fontFamily: font.bold,
                 fontSize: 20,
               },              animation: 'slide_from_right',
             }}
@@ -300,7 +301,7 @@ export default function AppNavigator() {
               headerShown: true,
               headerTitle: 'Donation History',
               headerTitleStyle: { 
-                fontWeight: 'bold',
+                fontFamily: font.bold,
                 fontSize: 20,
               },              animation: 'slide_from_right',
             }}

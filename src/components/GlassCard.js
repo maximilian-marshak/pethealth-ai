@@ -19,7 +19,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeProvider';
 
-export default function GlassCard({ variant = 'data', style, children, padding = 16, radius }) {
+export default function GlassCard({ variant = 'data', style, children, padding = 16, radius, glow = false }) {
   const { theme, scheme } = useTheme();
   const s = useMemo(() => makeStyles(theme), [theme]);
 
@@ -27,9 +27,24 @@ export default function GlassCard({ variant = 'data', style, children, padding =
   // decor несёт собственный светлый бордер-токен; data — hairline-разделитель.
   const borderColor = variant === 'decor' ? (glass.border || theme.hairline) : theme.hairline;
   const r = radius ?? theme.radii.lg24;
+  // glow=true → мятное свечение accent (glowAccent) вместо мягкой тени; дефолт — тень.
+  const sh = glow ? theme.glowAccent : theme.shadow;
 
   return (
-    <View style={[s.shadow, { borderRadius: r }, style]}>
+    <View
+      style={[
+        {
+          backgroundColor: 'transparent',
+          borderRadius: r,
+          shadowColor: sh.shadowColor,
+          shadowOpacity: sh.shadowOpacity,
+          shadowRadius: sh.shadowRadius,
+          shadowOffset: sh.shadowOffset,
+          elevation: sh.elevation,
+        },
+        style,
+      ]}
+    >
       <View style={[s.clip, { borderRadius: r, borderColor }]}>
         <BlurView
           intensity={glass.blur}
@@ -46,15 +61,7 @@ export default function GlassCard({ variant = 'data', style, children, padding =
 }
 
 const makeStyles = (theme) => StyleSheet.create({
-  // Мягкая тень — на внешнем слое (overflow видим), форма по borderRadius.
-  shadow: {
-    backgroundColor: 'transparent',
-    shadowColor: theme.shadow.shadowColor,
-    shadowOpacity: theme.shadow.shadowOpacity,
-    shadowRadius: theme.shadow.shadowRadius,
-    shadowOffset: theme.shadow.shadowOffset,
-    elevation: theme.shadow.elevation,
-  },
   // Клиппинг-слой: скругление + обрезка блюра/оверлея под радиус + бордер.
+  // (Тень/glow задаётся инлайн на внешнем слое — зависит от пропа glow.)
   clip: { overflow: 'hidden', borderWidth: 1 },
 });

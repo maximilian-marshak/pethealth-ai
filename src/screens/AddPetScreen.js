@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,9 +13,13 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../utils/supabase';
+import { useTheme } from '../theme/ThemeProvider';
+import Screen from '../components/Screen';
 
 export default function AddPetScreen({ navigation }) {
   const { t } = useTranslation('pets');
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   // ─── Динамические опции из переводов ───────────────────
   const SPECIES_OPTIONS = [
@@ -195,6 +199,7 @@ export default function AddPetScreen({ navigation }) {
 
   // ─── Render ─────────────────────────────────────────────
   return (
+    <Screen edges={[]}>
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -236,7 +241,7 @@ export default function AddPetScreen({ navigation }) {
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.t4}
             />
           </View>
 
@@ -301,7 +306,7 @@ export default function AddPetScreen({ navigation }) {
               value={breed}
               onChangeText={setBreed}
               autoCapitalize="words"
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.t4}
             />
           </View>
 
@@ -315,7 +320,7 @@ export default function AddPetScreen({ navigation }) {
                 value={age}
                 onChangeText={setAge}
                 keyboardType="decimal-pad"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.t4}
               />
             </View>
             <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
@@ -326,7 +331,7 @@ export default function AddPetScreen({ navigation }) {
                 value={weight}
                 onChangeText={setWeight}
                 keyboardType="decimal-pad"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.t4}
               />
             </View>
           </View>
@@ -340,7 +345,7 @@ export default function AddPetScreen({ navigation }) {
               value={microchipId}
               onChangeText={setMicrochipId}
               keyboardType="numeric"
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.t4}
             />
           </View>
 
@@ -352,7 +357,7 @@ export default function AddPetScreen({ navigation }) {
           >
             {loading ? (
               <View style={styles.loadingRow}>
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={theme.onAccent} size="small" />
                 <Text style={styles.saveButtonText}>  {t('saving')}</Text>
               </View>
             ) : (
@@ -372,19 +377,21 @@ export default function AddPetScreen({ navigation }) {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingBottom: 40,
   },
+  // Hero-шапка — accentPress fill (белый текст ≈AA-крупный); текст onAccent + alpha.
   header: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: theme.accentPress,
     paddingTop: 60,
     paddingBottom: 30,
     paddingHorizontal: 20,
@@ -393,22 +400,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   backButtonText: {
-    color: 'rgba(255,255,255,0.85)',
+    color: theme.onAccent + 'D9',
     fontSize: 16,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontFamily: theme.font.bold,
+    color: theme.onAccent,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
+    color: theme.onAccent + 'CC',
   },
   debugText: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
+    color: theme.onAccent + 'B3',
     marginTop: 8,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
@@ -420,20 +427,20 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
+    fontFamily: theme.font.semibold,
+    color: theme.t2,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
+    borderColor: theme.hairline,
+    borderRadius: theme.radii.sm12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#333',
-    shadowColor: '#000',
+    color: theme.t1,
+    shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -451,57 +458,57 @@ const styles = StyleSheet.create({
   optionButton: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: theme.radii.r20,
     borderWidth: 1.5,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#fff',
+    borderColor: theme.hairline,
+    backgroundColor: theme.surface,
   },
   genderButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     borderWidth: 1.5,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#fff',
+    borderColor: theme.hairline,
+    backgroundColor: theme.surface,
     alignItems: 'center',
   },
   optionButtonSelected: {
-    borderColor: '#4A90E2',
-    backgroundColor: '#EBF4FF',
+    borderColor: theme.accent,
+    backgroundColor: theme.accentTint,
   },
   optionText: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    color: theme.t3,
+    fontFamily: theme.font.medium,
   },
   optionTextSelected: {
-    color: '#4A90E2',
-    fontWeight: '700',
+    color: theme.accentPress,
+    fontFamily: theme.font.bold,
   },
   rowInputs: {
     flexDirection: 'row',
   },
   saveButton: {
-    backgroundColor: '#4A90E2',
-    borderRadius: 14,
+    backgroundColor: theme.accentPress,
+    borderRadius: theme.radii.r14,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 10,
-    shadowColor: '#4A90E2',
+    shadowColor: theme.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   saveButtonDisabled: {
-    backgroundColor: '#93C5FD',
+    backgroundColor: theme.hairline,
     shadowOpacity: 0,
     elevation: 0,
   },
   saveButtonText: {
-    color: '#fff',
+    color: theme.onAccent,
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: theme.font.bold,
   },
   loadingRow: {
     flexDirection: 'row',
@@ -513,8 +520,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   cancelButtonText: {
-    color: '#999',
+    color: theme.t3,
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: theme.font.medium,
   },
 });

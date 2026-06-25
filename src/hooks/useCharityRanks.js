@@ -9,14 +9,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import i18n from '../utils/i18n';
 import { supabase } from '../utils/supabase';
 
-// Цвет по лиге (рамка/акцент в UI Шага 3). Дефолт — акцент приложения.
-export const LEAGUE_COLORS = {
-  bronze:  '#CD7F32',
-  silver:  '#9CA3AF',
-  gold:    '#F59E0B',
-  diamond: '#22D3EE',
-};
-export const leagueColor = (league) => LEAGUE_COLORS[league] || '#6B4EFF';
+// Цвета лиг вынесены в theme-токен `leagueColors` (light/dark) — UI берёт
+// theme.leagueColors[league] || theme.accent. Здесь — только данные ранг-системы.
 
 export function useCharityRanks(lifetimeDonated = 0) {
   const [ranks, setRanks] = useState([]);

@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useCharity } from '../hooks/useCharity';
-import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
+import { useCharityRanks } from '../hooks/useCharityRanks';
 import { usePets } from '../hooks/usePets';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useLanguage } from '../hooks/useLanguage';
@@ -111,7 +111,7 @@ const makeSwitcherStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.surface,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     marginBottom: 8,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
@@ -128,19 +128,19 @@ const makeSwitcherStyles = (theme) => StyleSheet.create({
   label: {
     fontSize: 15,
     color: theme.t1,
-    fontWeight: '500',
+    fontFamily: theme.font.medium,
   },
   toggle: {
     flexDirection: 'row',
     backgroundColor: theme.accentTint,
-    borderRadius: 10,
+    borderRadius: theme.radii.r10,
     padding: 3,
     gap: 3,
   },
   langBtn: {
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: theme.radii.sm8,
   },
   langBtnActive: {
     backgroundColor: theme.accentPress,
@@ -152,7 +152,7 @@ const makeSwitcherStyles = (theme) => StyleSheet.create({
   },
   langText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t2,
   },
   langTextActive: {
@@ -233,7 +233,7 @@ export default function ProfileScreen({ navigation }) {
   // ─── Ранг: имя реактивно по языку (из raw name_ru/name_en, не из memo) ───
   const _lang = i18n.language || 'en';
   const rankName = (r) => (_lang.startsWith('ru') ? r?.name_ru : r?.name_en) || r?.name_en || r?.name_ru || '';
-  const rankAccent = leagueColor(currentRank?.league);
+  const rankAccent = theme.leagueColors[currentRank?.league] || theme.accent;
   const rankPct = nextRank ? rankProgress : 100;
   // ─── Рефетч ─────────────────────────────────────────────
   const onRefresh = async () => {
@@ -492,7 +492,7 @@ export default function ProfileScreen({ navigation }) {
           </TouchableOpacity>
 
           {ranksExpanded && ranks.map((r) => {
-            const accent = leagueColor(r.league);
+            const accent = theme.leagueColors[r.league] || theme.accent;
             const isCurrent = currentRank && r.rank_no === currentRank.rank_no;
             return (
               <View
@@ -713,7 +713,7 @@ const makeStyles = (theme) => StyleSheet.create({
   avatar: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: theme.radii.pill999,
     borderWidth: 4,
     borderColor: theme.accent,
   },
@@ -722,7 +722,7 @@ const makeStyles = (theme) => StyleSheet.create({
     bottom: 0,
     left: 0,
     backgroundColor: theme.accentPress,
-    borderRadius: 15,
+    borderRadius: theme.radii.r14,
     width: 30,
     height: 30,
     alignItems: 'center',
@@ -731,15 +731,15 @@ const makeStyles = (theme) => StyleSheet.create({
     borderColor: theme.surface,
   },
   premiumIcon: { fontSize: 14 },
-  userName: { fontSize: 24, fontWeight: 'bold', color: theme.t1, marginBottom: 4 },
+  userName: { fontSize: 24, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 4 },
   userEmail: { fontSize: 14, color: theme.t3, marginBottom: 12 },
   subscriptionBadge: {
     backgroundColor: theme.accentTint,
     paddingHorizontal: 16,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: theme.radii.r20,
   },
-  subscriptionText: { fontSize: 13, color: theme.accent, fontWeight: '600' },
+  subscriptionText: { fontSize: 13, color: theme.accent, fontFamily: theme.font.semibold },
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -750,7 +750,7 @@ const makeStyles = (theme) => StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: theme.surface,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     padding: 16,
     alignItems: 'center',
     shadowColor: theme.shadow.shadowColor,
@@ -762,12 +762,12 @@ const makeStyles = (theme) => StyleSheet.create({
   statIcon: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
-  statValue: { fontSize: 22, fontWeight: 'bold', color: theme.t1, marginBottom: 4 },
+  statValue: { fontSize: 22, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 4 },
   statLabel: { fontSize: 12, color: theme.t3, textAlign: 'center' },
   section: { paddingHorizontal: 20, marginTop: 24 },
   sectionHeader: {
@@ -776,12 +776,12 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: theme.t1 },
-  seeAll: { fontSize: 14, color: theme.accent, fontWeight: '600' },
+  sectionTitle: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
+  seeAll: { fontSize: 14, color: theme.accent, fontFamily: theme.font.semibold },
   nextBadgeCard: {
     backgroundColor: theme.surface,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     marginBottom: 12,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
@@ -790,30 +790,30 @@ const makeStyles = (theme) => StyleSheet.create({
     elevation: 2,
   },
   nextBadgeLabel: { fontSize: 12, color: theme.t3, marginBottom: 4 },
-  nextBadgeName: { fontSize: 16, fontWeight: '600', color: theme.t1, marginBottom: 12 },
+  nextBadgeName: { fontSize: 16, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 12 },
   progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' },
-  progressPercent: { fontSize: 12, fontWeight: '600', color: theme.ok, minWidth: 35, textAlign: 'right' },
-  rankCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: theme.surface, borderRadius: 16, borderWidth: 1.5, padding: 16, marginBottom: 12 },
+  progressPercent: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.ok, minWidth: 35, textAlign: 'right' },
+  rankCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: theme.surface, borderRadius: theme.radii.md16, borderWidth: 1.5, padding: 16, marginBottom: 12 },
   rankLoading: { paddingVertical: 24, alignItems: 'center' },
   rankBadgeIcon: { fontSize: 38 },
-  rankName: { fontSize: 18, fontWeight: '700', color: theme.t1 },
-  rankLeague: { fontSize: 13, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
+  rankName: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
+  rankLeague: { fontSize: 13, fontFamily: theme.font.bold, marginTop: 2, textTransform: 'uppercase' },
   rankProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rankProgressPct: { fontSize: 12, fontWeight: '600', color: theme.accent, minWidth: 38, textAlign: 'right' },
+  rankProgressPct: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.accent, minWidth: 38, textAlign: 'right' },
   rankToNext: { fontSize: 13, color: theme.t3, marginTop: 6 },
   rankToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12, marginTop: 4 },
-  rankToggleText: { fontSize: 14, color: theme.accent, fontWeight: '600' },
-  rankRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
+  rankToggleText: { fontSize: 14, color: theme.accent, fontFamily: theme.font.semibold },
+  rankRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surface, borderRadius: theme.radii.sm12, borderWidth: 1, padding: 12, marginBottom: 8 },
   rankRowIcon: { fontSize: 22 },
   rankRowName: { flex: 1, fontSize: 14, color: theme.t1 },
-  rankRowNameCurrent: { fontWeight: '700' },
-  rankRowThreshold: { fontSize: 12, color: theme.t3, fontWeight: '600' },
+  rankRowNameCurrent: { fontFamily: theme.font.bold },
+  rankRowThreshold: { fontSize: 12, color: theme.t3, fontFamily: theme.font.semibold },
   badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   petsScroll: { paddingRight: 20, gap: 12 },
   petCard: {
     width: 110,
     backgroundColor: theme.surface,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     padding: 12,
     alignItems: 'center',
     shadowColor: theme.shadow.shadowColor,
@@ -822,13 +822,13 @@ const makeStyles = (theme) => StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  petAvatar: { width: 70, height: 70, borderRadius: 35, marginBottom: 8 },
-  petName: { fontSize: 14, fontWeight: '600', color: theme.t1, marginBottom: 2 },
+  petAvatar: { width: 70, height: 70, borderRadius: theme.radii.pill999, marginBottom: 8 },
+  petName: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 2 },
   petBreed: { fontSize: 12, color: theme.t3 },
   charityCard: {
     backgroundColor: theme.surface,
     padding: 20,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -842,14 +842,14 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 12,
   },
   charityTitle: { fontSize: 14, color: theme.t2 },
-  charityGoal: { fontSize: 16, fontWeight: 'bold', color: theme.accent },
+  charityGoal: { fontSize: 16, fontFamily: theme.font.bold, color: theme.accent },
   charityHint: { fontSize: 12, color: theme.t3, textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.surface,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     marginBottom: 8,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
@@ -860,30 +860,30 @@ const makeStyles = (theme) => StyleSheet.create({
   settingIcon: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: theme.radii.r10,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  settingText: { flex: 1, fontSize: 15, color: theme.t1, fontWeight: '500' },
+  settingText: { flex: 1, fontSize: 15, color: theme.t1, fontFamily: theme.font.medium },
   settingValue: { fontSize: 14, color: theme.t3, maxWidth: 150, textAlign: 'right' },
   phoneModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 24 }, // theme-neutral scrim
-  phoneModalCard: { backgroundColor: theme.surface, borderRadius: 16, padding: 20 },
-  phoneModalTitle: { fontSize: 18, fontWeight: '700', color: theme.t1, marginBottom: 16 },
-  phoneInput: { borderWidth: 1, borderColor: theme.hairline, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: theme.t1, marginBottom: 16 },
+  phoneModalCard: { backgroundColor: theme.surface, borderRadius: theme.radii.md16, padding: 20 },
+  phoneModalTitle: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 16 },
+  phoneInput: { borderWidth: 1, borderColor: theme.hairline, borderRadius: theme.radii.r10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: theme.t1, marginBottom: 16 },
   phoneModalButtons: { flexDirection: 'row', gap: 12 },
-  phoneBtn: { flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center' },
+  phoneBtn: { flex: 1, paddingVertical: 13, borderRadius: theme.radii.r10, alignItems: 'center' },
   phoneBtnCancel: { backgroundColor: theme.hairline },
   phoneBtnSave: { backgroundColor: theme.accentPress },
-  phoneBtnCancelText: { color: theme.t1, fontWeight: '600', fontSize: 15 },
-  phoneBtnSaveText: { color: theme.onAccent, fontWeight: '600', fontSize: 15 },
+  phoneBtnCancelText: { color: theme.t1, fontFamily: theme.font.semibold, fontSize: 15 },
+  phoneBtnSaveText: { color: theme.onAccent, fontFamily: theme.font.semibold, fontSize: 15 },
   logoutItem: { borderWidth: 1, borderColor: theme.hairline },
   logoutText: { color: theme.t2 },
   deleteAccountItem: { borderWidth: 1, borderColor: theme.danger },
-  deleteAccountText: { color: theme.danger, fontWeight: '600' },
+  deleteAccountText: { color: theme.danger, fontFamily: theme.font.semibold },
   emptyCard: {
     backgroundColor: theme.surface,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     padding: 24,
     alignItems: 'center',
     shadowColor: theme.shadow.shadowColor,
@@ -893,7 +893,7 @@ const makeStyles = (theme) => StyleSheet.create({
     elevation: 2,
   },
   emptyEmoji: { fontSize: 40, marginBottom: 8 },
-  emptyText: { fontSize: 15, fontWeight: '600', color: theme.t1 },
+  emptyText: { fontSize: 15, fontFamily: theme.font.semibold, color: theme.t1 },
   emptySubtext: { fontSize: 13, color: theme.t3, marginTop: 4 },
   versionText: { textAlign: 'center', fontSize: 12, color: theme.t3, marginTop: 32 },
   bottomPadding: { height: 100 },

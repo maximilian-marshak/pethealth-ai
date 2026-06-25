@@ -77,7 +77,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     navigation.setOptions({
       headerShown: true,
       headerTitle: title || t('chat.defaultTitle'),
-      headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
+      headerTitleStyle: { fontFamily: theme.font.bold, fontSize: 18 },
       headerStyle: { backgroundColor: catColor },
       headerTintColor: onCat,
       headerLeft: () => (
@@ -513,7 +513,7 @@ const makeStyles = (theme) => StyleSheet.create({
   petHeaderText: {
     fontSize: 14,
     color: theme.onAccent,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
   },
 
   messagesList: {
@@ -534,14 +534,14 @@ const makeStyles = (theme) => StyleSheet.create({
   emptyStateIcon: {
     width: 96,
     height: 96,
-    borderRadius: 48,
+    borderRadius: theme.radii.pill999,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
   },
   emptyStateTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 12,
     textAlign: 'center',
@@ -558,7 +558,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   suggestedQuestionsTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t3,
     marginBottom: 12,
     textAlign: 'center',
@@ -568,7 +568,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.surface,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     marginBottom: 10,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
@@ -587,20 +587,20 @@ const makeStyles = (theme) => StyleSheet.create({
   messageContainer: {
     marginBottom: 16,
     padding: 12,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     maxWidth: '80%',
   },
   // user-бабл — accentPress-заливка (белый на accent ≈2.4:1 не AA; accentPress лучше)
   userMessage: {
     backgroundColor: theme.accentPress,
     alignSelf: 'flex-end',
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: theme.radii.xs4,
   },
   // bot-бабл — surface + свечение glow-accent (по §6.2); текст t1
   assistantMessage: {
     backgroundColor: theme.surface,
     alignSelf: 'flex-start',
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: theme.radii.xs4,
     borderWidth: 1,
     borderColor: theme.hairline,
     shadowColor: theme.glowAccent.shadowColor,
@@ -625,21 +625,21 @@ const makeStyles = (theme) => StyleSheet.create({
     position: 'relative',
     width: '100%',
     marginBottom: 8,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     overflow: 'hidden',
     backgroundColor: theme.hairline,
   },
   messageImage: {
     width: '100%',
     height: 200,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
   },
   imageOverlay: {
     position: 'absolute',
     top: 8,
     right: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.5)', // theme-neutral: бейдж-камера поверх фото
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     padding: 4,
   },
   
@@ -655,7 +655,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   emergencyText: {
     color: theme.danger,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
   },
   errorText: {
     color: theme.danger,
@@ -680,7 +680,7 @@ const makeStyles = (theme) => StyleSheet.create({
   visionBadgeText: {
     fontSize: 11,
     color: theme.accent,
-    fontWeight: '500',
+    fontFamily: theme.font.medium,
   },
 
   // Typing Indicator
@@ -695,7 +695,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.surface,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     borderWidth: 1,
     borderColor: theme.hairline,
     marginRight: 10,
@@ -703,7 +703,7 @@ const makeStyles = (theme) => StyleSheet.create({
   typingDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: theme.radii.xs4,
     backgroundColor: theme.accent,
     marginHorizontal: 3,
   },
@@ -728,7 +728,7 @@ const makeStyles = (theme) => StyleSheet.create({
     minHeight: 40,
     maxHeight: 100,
     backgroundColor: theme.surface,
-    borderRadius: 20,
+    borderRadius: theme.radii.r20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 15,
@@ -738,7 +738,7 @@ const makeStyles = (theme) => StyleSheet.create({
   sendButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: theme.radii.r20,
     backgroundColor: theme.accentPress,
     justifyContent: 'center',
     alignItems: 'center',

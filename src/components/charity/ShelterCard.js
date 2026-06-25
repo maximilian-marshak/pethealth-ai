@@ -79,7 +79,7 @@ export default function ShelterCard({ shelter, onDonate, userPoints }) {
 const makeStyles = (theme) => StyleSheet.create({
   card: {
     backgroundColor: theme.surface,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     padding: 16,
     marginBottom: 16,
     shadowColor: theme.shadow.shadowColor,
@@ -99,7 +99,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   name: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 4,
   },
@@ -140,7 +140,7 @@ const makeStyles = (theme) => StyleSheet.create({
   statsText: {
     fontSize: 14,
     color: theme.t2,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     marginLeft: 6,
   },
   donationButtons: {
@@ -153,7 +153,7 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.accentPress,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     alignItems: 'center',
   },
   donateButtonDisabled: {
@@ -162,7 +162,7 @@ const makeStyles = (theme) => StyleSheet.create({
   donateButtonText: {
     color: theme.onAccent,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
   },
   donateButtonTextDisabled: {
     color: theme.t4,
