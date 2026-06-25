@@ -3,22 +3,28 @@ import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeProvider';
 
-export default function ProgressBar({ current = 0, goal = 1000, height = 12 }) {
+export default function ProgressBar({ current = 0, goal = 1000, height = 12, percent, color }) {
   const { theme } = useTheme();
-  const percentage = Math.min((current / goal) * 100, 100);
+  // percent (0–100) имеет приоритет над current/goal; иначе считаем из current/goal.
+  const raw = percent != null ? percent : (current / goal) * 100;
+  const percentage = Math.min(Math.max(raw, 0), 100);
 
   // Цвета — из активных токенов (light/dark + mint/peach/blue):
-  // трек — accentTint (лёгкий бренд-тон, читается как дорожка показателя),
-  // заливка — тональный градиент бренд-акцента (accent → accentPress).
+  // трек — accentTint; заливка — solid color (если задан) либо тональный
+  // градиент бренд-акцента (accent → accentPress).
   return (
     <View style={[styles.container, { height }]}>
       <View style={[styles.background, { backgroundColor: theme.accentTint }]}>
-        <LinearGradient
-          colors={[theme.accent, theme.accentPress]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.fill, { width: `${percentage}%` }]}
-        />
+        {color ? (
+          <View style={[styles.fill, { width: `${percentage}%`, backgroundColor: color }]} />
+        ) : (
+          <LinearGradient
+            colors={[theme.accent, theme.accentPress]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.fill, { width: `${percentage}%` }]}
+          />
+        )}
       </View>
     </View>
   );
