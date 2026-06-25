@@ -38,6 +38,7 @@ import { buildTheme } from '../theme/theme';
 import Screen from '../components/Screen';
 import Segmented from '../components/Segmented';
 import PassportView from '../components/PassportView';
+import IconChip from '../components/IconChip';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1220,441 +1221,106 @@ export default function MedicalScreen() {
     );
   };
 
-  // ─── Render Overview ────────────────────────────────────────────────────
+  // ─── Timeline (единый поток событий для Списка, по эталону MedTimeline) ───
+  // record_type → ключ палитры eventTypes (цвет/иконка). Большинство → record.
+  const RECORD_EVENT_TYPE = { visit: 'record', procedure: 'record', lab_test: 'record', parasite_treatment: 'prescription', other: 'record' };
 
-  const renderOverview = () => {
-    const activeMeds   = medications.filter(m => m.active);
-    const visits       = records.filter(r => r.record_type === 'visit');
-    const recentRecord = visits[0];
-    const petAllergies = allergies || [];
-    const futureAppts  = (future || []).filter(a => a.status !== 'cancelled');
-    const fmtDT = (ts) =>
-      ts
-        ? new Date(ts).toLocaleString(locale, {
-            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-          })
-        : '';
-    // Ближайшие напоминания: type 'reminder' c датой [сегодня .. +30 дней], по возрастанию.
-    const _end = new Date();
-    _end.setDate(_end.getDate() + 30);
-    const in30Ymd = `${_end.getFullYear()}-${String(_end.getMonth() + 1).padStart(2, '0')}-${String(_end.getDate()).padStart(2, '0')}`;
-    const upcomingReminders = Object.entries(itemsByDate || {})
-      .filter(([d]) => d >= todayYmd && d <= in30Ymd)
-      .flatMap(([, evs]) => evs.filter((e) => e.type === 'reminder'))
-      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-    const isEmpty =
-      vaccines.length === 0 &&
-      medications.length === 0 &&
-      records.length === 0 &&
-      petAllergies.length === 0 &&
-      futureAppts.length === 0;
+  // Сливаем УЖЕ загруженные источники в один поток (presentation-only, без новых запросов).
+  const timelineEvents = useMemo(() => {
+    const items = [
+      ...vaccines.map((v) => ({ kind: 'vaccine', type: 'vaccine', date: v.date_given || v.next_due_date, raw: v })),
+      ...medications.map((m) => ({ kind: 'medication', type: 'prescription', date: m.start_date, raw: m })),
+      ...records.map((r) => ({ kind: 'record', type: RECORD_EVENT_TYPE[r.record_type] || 'record', date: r.occurred_at || r.date, raw: r })),
+      ...(future || []).filter((a) => a.status !== 'cancelled').map((a) => ({ kind: 'appointment', type: 'appointment', date: a.requested_at, raw: a })),
+    ];
+    return items.filter((e) => e.date).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  }, [vaccines, medications, records, future]);
 
-    if (isEmpty) {
-      return (
-        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🏥</Text>
-            <Text style={styles.emptyTitle}>{t('empty.overview.title')}</Text>
-            <Text style={styles.emptySub}>{t('empty.overview.subtitle')}</Text>
-          </View>
-        </ScrollView>
-      );
+  // Чип-фильтр: Обзор=все; иначе по kind.
+  const FILTER_KIND = { vaccines: 'vaccine', medications: 'medication', records: 'record' };
+  const filteredTimeline = timelineEvents.filter((e) => activeTab === 'overview' || e.kind === FILTER_KIND[activeTab]);
+
+  // Карточка: дата-колонка │ разделитель │ IconChip(цвет типа) │ title/sub │ chevron, + edit/delete (по типу).
+  const renderTimelineCard = (ev) => {
+    const { kind, type, date, raw } = ev;
+    const evColor = theme.eventTypes[type] || theme.eventTypes.record;
+    const icon = AGENDA_ICONS[type] || AGENDA_ICONS.record;
+    const d = new Date(date);
+    const day = d.getDate();
+    const mo = d.toLocaleDateString(locale, { month: 'short' });
+
+    let title = '';
+    let sub = '';
+    let badge = null;
+    let onPress;
+    let onEdit;
+    let onDelete;
+
+    if (kind === 'vaccine') {
+      const v = raw;
+      title = v.vaccine_name;
+      sub = [v.date_given && t('card.given', { date: fmt(v.date_given) }), v.next_due_date && t('card.nextDue', { date: fmt(v.next_due_date) })].filter(Boolean).join(' · ');
+      const statusKey = getVaccineStatus(v.next_due_date);
+      const days = getDaysUntil(v.next_due_date);
+      const cls = statusKey === 'overdue' ? 'badgeRed' : statusKey === 'due_soon' ? 'badgeYellow' : (statusKey === 'up_to_date' || statusKey === 'completed') ? 'badgeGreen' : null;
+      badge = { text: getStatusBadgeText(statusKey, days), cls };
+      onPress = v.record_id ? () => navigation.navigate('RecordDetail', { recordId: v.record_id, petId: selectedPet.id }) : undefined;
+      onEdit = () => { setEditVaccine(v); setVaccineModal(true); };
+      onDelete = () => deleteVaccine(v.id);
+    } else if (kind === 'medication') {
+      const m = raw;
+      title = m.name;
+      sub = [m.dose && t('card.dosage', { value: m.dose }), m.frequency && t('card.frequency', { value: m.frequency })].filter(Boolean).join(' · ');
+      badge = { text: m.active ? t('status.active') : t('status.inactive'), cls: m.active ? 'badgeGreen' : 'badgeGray' };
+      onPress = m.record_id ? () => navigation.navigate('RecordDetail', { recordId: m.record_id, petId: selectedPet.id }) : undefined;
+      onEdit = () => { setEditMed(m); setMedModal(true); };
+      onDelete = () => deleteMedication(m.id);
+    } else if (kind === 'record') {
+      const r = raw;
+      title = r.title || (r.record_type ? t(`recordTypes.${r.record_type}`, { defaultValue: r.record_type }) : t('status.visit'));
+      sub = [r.vet_name && t('card.vet', { name: r.vet_name }), r.clinic_name && t('card.clinic', { name: r.clinic_name })].filter(Boolean).join(' · ');
+      badge = { text: r.record_type ? t(`recordTypes.${r.record_type}`, { defaultValue: r.record_type }) : t('status.visit'), cls: 'badgePurple' };
+      onPress = () => navigation.navigate('RecordDetail', { record: r, recordId: r.id, petId: selectedPet.id });
+      onEdit = () => { setEditRecord(r); setRecordModal(true); };
+      onDelete = () => deleteRecord(r.id);
+    } else {
+      const a = raw;
+      title = a.clinic_name || t('appointments.untitled');
+      sub = a.reason || '';
+      onPress = () => navigation.navigate('Appointments', { petId: selectedPet.id });
     }
 
     return (
-      <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-        {/* Allergy banner */}
-        {petAllergies.length > 0 && (
-          <View style={styles.ovAllergyBanner}>
-            <Ionicons name="alert-circle" size={20} color={theme.danger} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.ovAllergyTitle}>{t('overview.allergyBanner.title')}</Text>
-              <Text style={styles.ovAllergyList}>
-                {petAllergies.map((a) => (a.severity ? `${a.substance} (${a.severity})` : a.substance)).join(', ')}
-              </Text>
-            </View>
+      <View key={`${kind}-${raw.id}`} style={styles.tlCard}>
+        <TouchableOpacity style={styles.tlRow} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress} onPress={onPress}>
+          <View style={styles.tlDateCol}>
+            <Text style={styles.tlDay}>{day}</Text>
+            <Text style={styles.tlMo}>{mo}</Text>
           </View>
-        )}
-
-        {/* Summary Cards */}
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, { backgroundColor: theme.accentTint }]}>
-            <Text style={styles.summaryNum}>{vaccines.length}</Text>
-            <Text style={styles.summaryLabel}>{t('overview.summary.vaccines')}</Text>
-          </View>
-          <View style={[styles.summaryCard, { backgroundColor: theme.ok + '1A' }]}>
-            <Text style={styles.summaryNum}>{activeMeds.length}</Text>
-            <Text style={styles.summaryLabel}>{t('overview.summary.activeMeds')}</Text>
-          </View>
-          <View style={[styles.summaryCard, { backgroundColor: theme.warn + '1A' }]}>
-            <Text style={styles.summaryNum}>{visits.length}</Text>
-            <Text style={styles.summaryLabel}>{t('overview.summary.vetVisits')}</Text>
-          </View>
-        </View>
-
-        {/* Next Appointment */}
-        <TouchableOpacity
-          style={styles.section}
-          activeOpacity={0.7}
-          onPress={() => navigation.navigate('Appointments', { petId: selectedPet.id })}
-        >
-          <Text style={styles.sectionTitle}>{t('overview.nextAppointment.title')}</Text>
-          {futureAppts[0] ? (
-            <View style={styles.ovApptCard}>
-              <View style={styles.ovApptHead}>
-                <Text style={styles.overviewCardName} numberOfLines={1}>
-                  {futureAppts[0].clinic_name || t('appointments.untitled')}
-                </Text>
-                <View style={[styles.ovStatusBadge, { backgroundColor: (apptStatusColor[futureAppts[0].status] || theme.t3) + '22' }]}>
-                  <Text style={[styles.ovStatusText, { color: apptStatusColor[futureAppts[0].status] || theme.t3 }]}>
-                    {t(`appointments.status.${futureAppts[0].status}`, { defaultValue: futureAppts[0].status })}
-                  </Text>
+          <View style={styles.tlDivider} />
+          <IconChip name={icon} size={20} color={evColor} bg={evColor + '1f'} />
+          <View style={styles.tlContent}>
+            <View style={styles.tlTitleRow}>
+              <Text style={styles.tlTitle} numberOfLines={1}>{title}</Text>
+              {badge?.text ? (
+                <View style={[styles.statusBadge, badge.cls && styles[badge.cls]]}>
+                  <Text style={styles.statusText}>{badge.text}</Text>
                 </View>
-              </View>
-              {futureAppts[0].reason ? (
-                <Text style={styles.overviewCardSub}>{futureAppts[0].reason}</Text>
               ) : null}
-              <View style={styles.ovApptDate}>
-                <Ionicons name="time-outline" size={14} color={theme.accent} />
-                <Text style={styles.ovApptDateText}>{fmtDT(futureAppts[0].requested_at)}</Text>
-              </View>
             </View>
-          ) : (
-            <View style={styles.ovApptCard}>
-              <Text style={styles.ovApptNone}>{t('overview.nextAppointment.none')}</Text>
-            </View>
-          )}
+            {sub ? <Text style={styles.tlSub} numberOfLines={1}>{sub}</Text> : null}
+          </View>
+          {onPress ? <Ionicons name="chevron-forward" size={18} color={theme.t4} /> : null}
         </TouchableOpacity>
-
-        {/* Upcoming Vaccines */}
-        {vaccines.length > 0 && (
-          <View style={styles.alertBox}>
-            <Text style={styles.alertTitle}>{t('overview.upcomingVaccines')}</Text>
-            {vaccines.map(v => {
-              const statusKey = getVaccineStatus(v.next_due_date);
-              const days      = getDaysUntil(v.next_due_date);
-              return (
-                <View key={v.id} style={styles.alertRow}>
-                  <Text style={styles.alertName}>{v.vaccine_name}</Text>
-                  <View style={styles.alertRight}>
-                    <Text style={styles.alertDate}>{fmt(v.next_due_date)}</Text>
-                    <Text style={[
-                      styles.alertBadge,
-                      statusKey === 'overdue'   ? styles.badgeRed    :
-                      statusKey === 'due_soon'  ? styles.badgeYellow :
-                      styles.badgeGreen,
-                    ]}>
-                      {getStatusBadgeText(statusKey, days)}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
+        {(onEdit || onDelete) ? (
+          <View style={styles.cardActions}>
+            {onEdit ? <TouchableOpacity style={styles.actionBtn} onPress={onEdit}><Text style={styles.actionEdit}>{t('card.edit')}</Text></TouchableOpacity> : null}
+            {onDelete ? <TouchableOpacity style={styles.actionBtn} onPress={onDelete}><Text style={styles.actionDelete}>{t('card.delete')}</Text></TouchableOpacity> : null}
           </View>
-        )}
-
-        {/* Upcoming Reminders */}
-        {upcomingReminders.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('overview.upcomingReminders.title')}</Text>
-            {upcomingReminders.map((r, i) => (
-              <View key={`${r.refId || i}-${r.date}`} style={styles.ovReminderRow}>
-                <Text style={styles.ovReminderDate}>{fmt(r.date)}</Text>
-                <Text style={styles.ovReminderTitle} numberOfLines={1}>{r.title}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Active Medications */}
-        {activeMeds.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('overview.activeMedications')}</Text>
-            {activeMeds.map(m => (
-              <View key={m.id} style={styles.overviewCard}>
-                <Text style={styles.overviewCardName}>{m.name}</Text>
-                <Text style={styles.overviewCardSub}>
-                  {[m.dose, m.frequency].filter(Boolean).join(' · ')}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Last Visit */}
-        {recentRecord && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('overview.lastVisit')}</Text>
-            <View style={styles.overviewCard}>
-              <Text style={styles.overviewCardName}>
-                {fmt(recentRecord.occurred_at ?? recentRecord.date)}
-              </Text>
-              {recentRecord.vet_name && (
-                <Text style={styles.overviewCardSub}>
-                  {t('card.vet', { name: recentRecord.vet_name })}
-                  {recentRecord.clinic_name
-                    ? ` · ${recentRecord.clinic_name}`
-                    : ''}
-                </Text>
-              )}
-              {recentRecord.diagnosis && (
-                <Text style={styles.overviewCardNote}>
-                  {recentRecord.diagnosis}
-                </Text>
-              )}
-            </View>
-          </View>
-        )}
-      </ScrollView>
+        ) : null}
+      </View>
     );
   };
-
-  // ─── Render Vaccines ────────────────────────────────────────────────────
-
-  const renderVaccines = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-      {vaccines.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>{t('empty.vaccines.icon')}</Text>
-          <Text style={styles.emptyTitle}>{t('empty.vaccines.title')}</Text>
-          <Text style={styles.emptySub}>{t('empty.vaccines.subtitle')}</Text>
-        </View>
-      ) : (
-        vaccines.map(v => {
-          const statusKey = getVaccineStatus(v.next_due_date);
-          const days      = getDaysUntil(v.next_due_date);
-          return (
-            <TouchableOpacity
-              key={v.id}
-              style={styles.card}
-              activeOpacity={0.7}
-              disabled={!v.record_id}
-              onPress={v.record_id ? () => navigation.navigate('RecordDetail', { recordId: v.record_id, petId: selectedPet.id }) : undefined}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{v.vaccine_name}</Text>
-                <View style={[
-                  styles.statusBadge,
-                  statusKey === 'overdue'    && styles.badgeRed,
-                  statusKey === 'due_soon'   && styles.badgeYellow,
-                  (statusKey === 'up_to_date' ||
-                   statusKey === 'completed') && styles.badgeGreen,
-                ]}>
-                  <Text style={styles.statusText}>
-                    {getStatusBadgeText(statusKey, days)}
-                  </Text>
-                </View>
-              </View>
-
-              {v.date_given && (
-                <Text style={styles.cardMeta}>
-                  {t('card.given', { date: fmt(v.date_given) })}
-                </Text>
-              )}
-              {v.next_due_date && (
-                <Text style={styles.cardMeta}>
-                  {t('card.nextDue', { date: fmt(v.next_due_date) })}
-                </Text>
-              )}
-              {v.vaccine_type && (
-                <Text style={styles.cardMeta}>
-                  {t('card.vaccineType', { value: t(`vaccineTypes.${v.vaccine_type}`, { defaultValue: v.vaccine_type }) })}
-                </Text>
-              )}
-
-              <View style={styles.cardActions}>
-                <TouchableOpacity
-                  style={styles.actionBtn}
-                  onPress={() => { setEditVaccine(v); setVaccineModal(true); }}
-                >
-                  <Text style={styles.actionEdit}>{t('card.edit')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionBtn}
-                  onPress={() => deleteVaccine(v.id)}
-                >
-                  <Text style={styles.actionDelete}>{t('card.delete')}</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          );
-        })
-      )}
-    </ScrollView>
-  );
-
-  // ─── Render Medications ─────────────────────────────────────────────────
-
-  const renderMedications = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-      {medications.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>{t('empty.medications.icon')}</Text>
-          <Text style={styles.emptyTitle}>{t('empty.medications.title')}</Text>
-          <Text style={styles.emptySub}>{t('empty.medications.subtitle')}</Text>
-        </View>
-      ) : (
-        medications.map(m => (
-          <TouchableOpacity
-            key={m.id}
-            style={styles.card}
-            activeOpacity={0.7}
-            disabled={!m.record_id}
-            onPress={m.record_id ? () => navigation.navigate('RecordDetail', { recordId: m.record_id, petId: selectedPet.id }) : undefined}
-          >
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{m.name}</Text>
-              <View style={[
-                styles.statusBadge,
-                m.active ? styles.badgeGreen : styles.badgeGray,
-              ]}>
-                <Text style={styles.statusText}>
-                  {m.active ? t('status.active') : t('status.inactive')}
-                </Text>
-              </View>
-            </View>
-
-            {m.dose && (
-              <Text style={styles.cardMeta}>
-                {t('card.dosage', { value: m.dose })}
-              </Text>
-            )}
-            {m.frequency && (
-              <Text style={styles.cardMeta}>
-                {t('card.frequency', { value: m.frequency })}
-              </Text>
-            )}
-            {m.start_date && (
-              <Text style={styles.cardMeta}>
-                {t('card.started', { date: fmt(m.start_date) })}
-              </Text>
-            )}
-            {m.end_date && (
-              <Text style={styles.cardMeta}>
-                {t('card.ends', { date: fmt(m.end_date) })}
-              </Text>
-            )}
-            {m.instruction && (
-              <Text style={styles.cardNote}>{m.instruction}</Text>
-            )}
-
-            <View style={styles.cardActions}>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => { setEditMed(m); setMedModal(true); }}
-              >
-                <Text style={styles.actionEdit}>{t('card.edit')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => deleteMedication(m.id)}
-              >
-                <Text style={styles.actionDelete}>{t('card.delete')}</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        ))
-      )}
-    </ScrollView>
-  );
-
-  // ─── Render Records ─────────────────────────────────────────────────────
-
-  const renderRecords = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-      {records.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>{t('empty.records.icon')}</Text>
-          <Text style={styles.emptyTitle}>{t('empty.records.title')}</Text>
-          <Text style={styles.emptySub}>{t('empty.records.subtitle')}</Text>
-        </View>
-      ) : (
-        records.map(r => (
-          <TouchableOpacity
-            key={r.id}
-            style={styles.card}
-            activeOpacity={0.7}
-            onPress={() => navigation.navigate('RecordDetail', { record: r, recordId: r.id, petId: selectedPet.id })}
-          >
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{fmt(r.occurred_at ?? r.date)}</Text>
-              <View style={[styles.statusBadge, styles.badgePurple]}>
-                <Text style={styles.statusText}>
-                  {r.record_type
-                    ? t(`recordTypes.${r.record_type}`, {
-                        defaultValue:
-                          r.record_type.charAt(0).toUpperCase() + r.record_type.slice(1),
-                      })
-                    : t('status.visit')}
-                </Text>
-              </View>
-            </View>
-
-            {r.vet_name && (
-              <Text style={styles.cardMeta}>
-                {t('card.vet', { name: r.vet_name })}
-              </Text>
-            )}
-            {r.clinic_name && (
-              <Text style={styles.cardMeta}>
-                {t('card.clinic', { name: r.clinic_name })}
-              </Text>
-            )}
-            {r.diagnosis && (
-              <Text style={styles.cardMeta}>
-                {t('card.diagnosis', { value: r.diagnosis })}
-              </Text>
-            )}
-            {r.diagnosis_code && (
-              <Text style={styles.cardMeta}>
-                {t('card.diagnosisCode', { value: r.diagnosis_code })}
-              </Text>
-            )}
-            {r.symptoms && (
-              <Text style={styles.cardMeta}>
-                {t('card.symptoms', { value: r.symptoms })}
-              </Text>
-            )}
-            {r.weight != null && r.weight !== '' && (
-              <Text style={styles.cardMeta}>
-                {t('card.weight', { value: r.weight })}
-              </Text>
-            )}
-            {r.temperature != null && r.temperature !== '' && (
-              <Text style={styles.cardMeta}>
-                {t('card.temperature', { value: r.temperature })}
-              </Text>
-            )}
-            {r.follow_up_date && (
-              <Text style={styles.cardMeta}>
-                {t('card.followUp', { date: fmt(r.follow_up_date) })}
-              </Text>
-            )}
-            {r.recommendations && (
-              <Text style={styles.cardNote}>
-                {t('card.recommendations', { value: r.recommendations })}
-              </Text>
-            )}
-
-            <View style={styles.cardActions}>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => { setEditRecord(r); setRecordModal(true); }}
-              >
-                <Text style={styles.actionEdit}>{t('card.edit')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => deleteRecord(r.id)}
-              >
-                <Text style={styles.actionDelete}>{t('card.delete')}</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        ))
-      )}
-    </ScrollView>
-  );
 
   // ─── JSX Return ─────────────────────────────────────────────────────────
 
@@ -1760,24 +1426,26 @@ export default function MedicalScreen() {
         />
       </View>
 
-      {/* Tabs (только в режиме списка) */}
+      {/* Фильтр-чипы (только в режиме списка) */}
       {viewMode === 'list' && (
-      <View style={styles.tabs}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsRow}
+        contentContainerStyle={styles.chipsRowContent}
+      >
         {TABS.map(tab => (
           <TouchableOpacity
             key={tab}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
+            style={[styles.chip, activeTab === tab && styles.chipActive]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[
-              styles.tabText,
-              activeTab === tab && styles.tabTextActive,
-            ]}>
+            <Text style={[styles.chipText, activeTab === tab && styles.chipTextActive]}>
               {t(`tabs.${tab}`)}
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
       )}
 
       {/* Content */}
@@ -1892,12 +1560,19 @@ export default function MedicalScreen() {
       ) : loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} size="large" color={theme.accent} />
       ) : (
-        <>
-          {activeTab === 'overview'    && renderOverview()}
-          {activeTab === 'vaccines'    && renderVaccines()}
-          {activeTab === 'medications' && renderMedications()}
-          {activeTab === 'records'     && renderRecords()}
-        </>
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          {filteredTimeline.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>🏥</Text>
+              <Text style={styles.emptyTitle}>{t('empty.overview.title')}</Text>
+              <Text style={styles.emptySub}>{t('empty.overview.subtitle')}</Text>
+            </View>
+          ) : (
+            <View style={styles.timelineList}>
+              {filteredTimeline.map(renderTimelineCard)}
+            </View>
+          )}
+        </ScrollView>
       )}
 
       {/* Modals */}
@@ -1953,11 +1628,20 @@ const makeStyles = (theme) => StyleSheet.create({
   petChipActive:        { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
   petChipText:          { fontSize: 14, fontFamily: theme.font.medium, color: theme.t2 },
   petChipTextActive:    { color: theme.onAccent, fontFamily: theme.font.semibold },
-  tabs:                 { flexDirection: 'row', backgroundColor: 'transparent', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.hairline },
-  tab:                  { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive:            { borderBottomColor: theme.accent },
-  tabText:              { fontSize: 12, fontFamily: theme.font.medium, color: theme.t3 },
-  tabTextActive:        { color: theme.accentPress, fontFamily: theme.font.bold },
+  chipsRow:             { maxHeight: 50, backgroundColor: 'transparent' },
+  chipsRowContent:      { paddingHorizontal: 16, paddingVertical: 10 },
+  chipTextActive:       { color: theme.onAccent, fontFamily: theme.font.semibold },
+  timelineList:         { gap: 10 },
+  tlCard:               { backgroundColor: theme.surface, borderRadius: theme.radii.md16, borderWidth: 1, borderColor: theme.hairline, shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  tlRow:                { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14 },
+  tlDateCol:            { minWidth: 38, alignItems: 'center' },
+  tlDay:                { fontSize: 19, fontFamily: theme.font.bold, color: theme.t1, lineHeight: 21 },
+  tlMo:                 { fontSize: 11, fontFamily: theme.font.bold, color: theme.t3, textTransform: 'uppercase' },
+  tlDivider:            { width: 1, alignSelf: 'stretch', backgroundColor: theme.hairline },
+  tlContent:            { flex: 1, minWidth: 0 },
+  tlTitleRow:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  tlTitle:              { flex: 1, fontSize: 14.5, fontFamily: theme.font.bold, color: theme.t1 },
+  tlSub:                { fontSize: 12.5, color: theme.t2, marginTop: 1 },
   segmentWrap:          { paddingHorizontal: 16, marginVertical: 10 },
   calendar:             { marginHorizontal: 8, marginTop: 4, borderRadius: theme.radii.sm12, overflow: 'hidden' },
   legend:               { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 12, paddingTop: 10 },
