@@ -1,0 +1,32 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Optional Accents" subtitle="Peach & blue — opt-in theme variants; mint is canon" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px 20px; background: var(--bg-base); }
+  .row { display: flex; gap: 14px; }
+  .grp { flex: 1; display: flex; gap: 8px; }
+  .sw { flex: 1; border-radius: var(--r-md); padding: 12px; min-height: 86px; color: #fff;
+        display: flex; flex-direction: column; justify-content: space-between; }
+  .name { font-weight: 700; font-size: 12px; }
+  .hex { font-size: 11px; font-weight: 600; opacity: 0.92; font-variant-numeric: tabular-nums; }
+  .tint { color: #6b5b50 !important; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="grp">
+      <div class="sw" style="background: var(--accent-peach);"><span class="name">Peach</span><span class="hex">#EC8C69</span></div>
+      <div class="sw" style="background: var(--accent-peach-press);"><span class="name">Press</span><span class="hex">#D2734F</span></div>
+      <div class="sw tint" style="background: var(--accent-peach-tint);"><span class="name">Tint</span><span class="hex">#FBE6DC</span></div>
+    </div>
+    <div class="grp">
+      <div class="sw" style="background: var(--accent-blue);"><span class="name">Blue</span><span class="hex">#4F8DF0</span></div>
+      <div class="sw" style="background: var(--accent-blue-press);"><span class="name">Press</span><span class="hex">#3A74D1</span></div>
+      <div class="sw" style="background: var(--accent-blue-tint); color: #3A74D1 !important;"><span class="name">Tint</span><span class="hex">#E2ECFC</span></div>
+    </div>
+  </div>
+</body>
+</html>

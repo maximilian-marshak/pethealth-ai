@@ -1,0 +1,37 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Health Semantics" subtitle="ok / warn / danger — status only, never the brand accent" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px 20px; background: var(--bg-base); }
+  .row { display: flex; gap: 14px; }
+  .sw { flex: 1; border-radius: var(--r-md); padding: 12px 14px; min-height: 86px; color: #fff;
+        display: flex; flex-direction: column; justify-content: space-between; }
+  .name { font-weight: 700; font-size: 13px; }
+  .hex { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tok { font-size: 11px; opacity: 0.85; }
+  .meaning { font-size: 11px; opacity: 0.92; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw" style="background: var(--ok);">
+      <span class="name">OK</span>
+      <span class="meaning">protected / in range</span>
+      <div><div class="hex">#2EA567</div><div class="tok">--ok</div></div>
+    </div>
+    <div class="sw" style="background: var(--warn);">
+      <span class="name">Warn</span>
+      <span class="meaning">due soon / renew</span>
+      <div><div class="hex">#E8A93C</div><div class="tok">--warn</div></div>
+    </div>
+    <div class="sw" style="background: var(--danger);">
+      <span class="name">Danger</span>
+      <span class="meaning">overdue / alarm</span>
+      <div><div class="hex">#E2574C</div><div class="tok">--danger</div></div>
+    </div>
+  </div>
+</body>
+</html>

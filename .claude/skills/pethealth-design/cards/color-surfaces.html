@@ -1,0 +1,33 @@
+<!-- @dsCard group="Colors" viewport="700x170" name="Surfaces & Glass" subtitle="Solid for data · two-tier frosted glass for decor" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px 20px; }
+  .stage { border-radius: var(--r-lg); padding: 16px; display: flex; gap: 12px; }
+  .sw { flex: 1; border-radius: var(--r-md); padding: 12px 14px; min-height: 96px;
+        display: flex; flex-direction: column; justify-content: space-between; color: var(--t1); }
+  .name { font-weight: 700; font-size: 13px; }
+  .tok { font-size: 11px; color: var(--t2); }
+  .solid { background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--shadow-1); }
+</style>
+</head>
+<body>
+  <div class="stage ph-bg">
+    <div class="sw solid">
+      <span class="name">Surface</span>
+      <div><div class="tok">solid · data cards</div><div class="tok">--surface</div></div>
+    </div>
+    <div class="sw ph-glass-data">
+      <span class="name">Glass · Data</span>
+      <div><div class="tok">.62 bg / blur 24</div><div class="tok">readable status</div></div>
+    </div>
+    <div class="sw ph-glass-decor">
+      <span class="name">Glass · Decor</span>
+      <div><div class="tok">.30 bg / blur 34</div><div class="tok">switcher · paws</div></div>
+    </div>
+  </div>
+</body>
+</html>

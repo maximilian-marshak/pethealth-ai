@@ -1,0 +1,58 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Feedback — Status, Progress" subtitle="Health status tiles and accent progress tracks" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<script type="module" src="https://unpkg.com/ionicons@7.4.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.4.0/dist/ionicons/ionicons.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 22px; background: var(--bg-base); color: var(--t1); }
+  .glabel { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--t3); margin-bottom: 10px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .prow { margin-bottom: 12px; }
+  .pmeta { display: flex; justify-content: space-between; font-size: 12px; color: var(--t3); margin-bottom: 6px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { StatusCard, ProgressBar } = window.PetHealthAIDesignSystem_fd90ba;
+    function Demo() {
+      return (
+        <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1.2, minWidth: 320 }}>
+            <div className="glabel">Status cards</div>
+            <div className="grid">
+              <StatusCard icon="medkit-outline" title="Vaccination" value="12 Jul" subtitle="Rabies booster" statusColor="var(--warn)" />
+              <StatusCard icon="calendar-outline" title="Vet" value="3 Aug" subtitle="Annual check-up" statusColor="var(--ok)" />
+              <StatusCard icon="bug-outline" title="Parasites" value="Overdue" subtitle="Last: 2 Feb" statusColor="var(--danger)" />
+              <StatusCard icon="scale-outline" title="Biometry" value="32.4 kg" subtitle="+0.3 kg · was 32.1" />
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <div className="glabel">Progress</div>
+            <div className="prow">
+              <div className="pmeta"><span>Earned this month</span><span>320/500</span></div>
+              <ProgressBar current={320} goal={500} />
+            </div>
+            <div className="prow">
+              <div className="pmeta"><span>Medication course</span><span>70%</span></div>
+              <ProgressBar percent={70} height={8} />
+            </div>
+            <div className="prow">
+              <div className="pmeta"><span>Profile complete</span><span>40%</span></div>
+              <ProgressBar percent={40} color="var(--cat-grooming)" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+  </script>
+</body>
+</html>

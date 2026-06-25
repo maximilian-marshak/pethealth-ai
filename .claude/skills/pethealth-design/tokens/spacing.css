@@ -1,0 +1,22 @@
+/* ════════════════════════════════════════════════════════════
+   PetHealthAI — Spacing tokens
+   Soft 4px base step. Generous gutters (screen padding 20–24),
+   large card radii. Used for gaps, padding, screen gutters.
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 10px;   /* tight card gaps (status grid) */
+  --space-4: 12px;
+  --space-5: 16px;   /* default card padding */
+  --space-6: 20px;   /* screen gutter / large card padding */
+  --space-7: 24px;
+  --space-8: 32px;
+  --space-9: 40px;
+  --space-10: 48px;
+
+  --screen-gutter: 20px;  /* horizontal screen padding */
+  --card-pad: 16px;       /* default GlassCard / Card padding */
+  --card-gap: 10px;       /* gap between stacked cards */
+}

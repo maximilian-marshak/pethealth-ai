@@ -1,0 +1,27 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Text — t1…t4" subtitle="Primary to placeholder, on near-white surface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px 20px; background: var(--bg-base); }
+  .row { display: flex; gap: 12px; }
+  .sw { flex: 1; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-md);
+        padding: 12px 14px; min-height: 90px; display: flex; flex-direction: column; justify-content: space-between; }
+  .big { font-size: 22px; font-weight: 700; }
+  .tok { font-size: 11px; color: var(--t3); }
+  .hex { font-size: 11px; font-weight: 600; color: var(--t3); font-variant-numeric: tabular-nums; }
+  .onacc { background: var(--accent-press); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><span class="big" style="color: var(--t1);">Aa</span><div><div class="tok">--t1 primary</div><div class="hex">#1A1A2E</div></div></div>
+    <div class="sw"><span class="big" style="color: var(--t2);">Aa</span><div><div class="tok">--t2 secondary</div><div class="hex">#4A4A5C</div></div></div>
+    <div class="sw"><span class="big" style="color: var(--t3);">Aa</span><div><div class="tok">--t3 muted</div><div class="hex">#8A8A99</div></div></div>
+    <div class="sw"><span class="big" style="color: var(--t4);">Aa</span><div><div class="tok">--t4 placeholder</div><div class="hex">#B5B5C0</div></div></div>
+    <div class="sw onacc"><span class="big" style="color: var(--on-accent);">Aa</span><div><div class="tok" style="color: rgba(255,255,255,.7)">--on-accent</div><div class="hex" style="color: rgba(255,255,255,.7)">#FFFFFF</div></div></div>
+  </div>
+</body>
+</html>
