@@ -4,17 +4,20 @@
 // title/body приходят через route params.
 // ══════════════════════════════════════════════════════════════
 
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../theme/ThemeProvider';
 
 export default function KnowledgeArticleScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { t } = useTranslation('ai');
+  const { theme } = useTheme();
+  const s = useMemo(() => makeStyles(theme), [theme]);
   const { title = '', body = '' } = route.params || {};
 
   useLayoutEffect(() => {
@@ -32,7 +35,7 @@ export default function KnowledgeArticleScreen() {
         ))}
 
         <View style={s.disclaimer}>
-          <Ionicons name="information-circle-outline" size={18} color="#6B7280" />
+          <Ionicons name="information-circle-outline" size={18} color={theme.t3} />
           <Text style={s.disclaimerText}>{t('knowledge.disclaimer')}</Text>
         </View>
       </ScrollView>
@@ -40,11 +43,11 @@ export default function KnowledgeArticleScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  container:      { flex: 1, backgroundColor: '#fff' },
+const makeStyles = (theme) => StyleSheet.create({
+  container:      { flex: 1, backgroundColor: theme.bg },
   content:        { padding: 20, paddingBottom: 32 },
-  h:              { fontSize: 22, fontWeight: '700', color: '#1A1A2E', marginBottom: 14 },
-  p:              { fontSize: 15, color: '#374151', lineHeight: 23, marginBottom: 14 },
-  disclaimer:     { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, marginTop: 8 },
-  disclaimerText: { flex: 1, fontSize: 12, color: '#6B7280', lineHeight: 17 },
+  h:              { fontSize: 22, fontWeight: '700', color: theme.t1, marginBottom: 14 },
+  p:              { fontSize: 15, color: theme.t2, lineHeight: 23, marginBottom: 14 },
+  disclaimer:     { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: theme.surface, borderRadius: 12, padding: 12, marginTop: 8 },
+  disclaimerText: { flex: 1, fontSize: 12, color: theme.t3, lineHeight: 17 },
 });
