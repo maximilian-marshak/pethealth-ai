@@ -1336,6 +1336,9 @@ export default function MedicalScreen() {
       new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' })
     );
     const cells = [...Array(firstOffset).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+    while (cells.length % 7 !== 0) cells.push(null); // дополнить последнюю неделю до 7
+    const weeks = [];
+    for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7)); // недели по 7 (flex-строки, без width-% переноса)
     return (
       <View style={styles.calCard}>
         <View style={styles.calHead}>
@@ -1350,27 +1353,29 @@ export default function MedicalScreen() {
         <View style={styles.calWeekRow}>
           {weekdays.map((w, i) => <Text key={i} style={styles.calWeekday}>{w}</Text>)}
         </View>
-        <View style={styles.calGrid}>
-          {cells.map((d, i) => {
-            if (d === null) return <View key={`e${i}`} style={styles.calCell} />;
-            const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const types = [...new Set((itemsByDate[ds] || []).map((e) => e.type))].slice(0, 3);
-            const on = selectedDate === ds;
-            const isToday = ds === todayYmd;
-            return (
-              <TouchableOpacity key={ds} style={styles.calCell} activeOpacity={0.7} onPress={() => setSelectedDate(ds)}>
-                <View style={[styles.calDayWrap, on && { backgroundColor: theme.accent }]}>
-                  <Text style={[styles.calDay, on ? { color: theme.onAccent } : isToday ? { color: theme.accent } : null]}>{d}</Text>
-                  <View style={styles.calDots}>
-                    {types.map((tp, k) => (
-                      <View key={k} style={[styles.calDot, { backgroundColor: on ? theme.onAccent : (theme.eventTypes[tp] || theme.eventTypes.record) }]} />
-                    ))}
+        {weeks.map((week, wi) => (
+          <View key={wi} style={styles.calRow}>
+            {week.map((d, di) => {
+              if (d === null) return <View key={`e${wi}-${di}`} style={styles.calCell} />;
+              const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+              const types = [...new Set((itemsByDate[ds] || []).map((e) => e.type))].slice(0, 3);
+              const on = selectedDate === ds;
+              const isToday = ds === todayYmd;
+              return (
+                <TouchableOpacity key={ds} style={styles.calCell} activeOpacity={0.7} onPress={() => setSelectedDate(ds)}>
+                  <View style={[styles.calDayWrap, on && { backgroundColor: theme.accent }]}>
+                    <Text style={[styles.calDay, on ? { color: theme.onAccent } : isToday ? { color: theme.accent } : null]}>{d}</Text>
+                    <View style={styles.calDots}>
+                      {types.map((tp, k) => (
+                        <View key={k} style={[styles.calDot, { backgroundColor: on ? theme.onAccent : (theme.eventTypes[tp] || theme.eventTypes.record) }]} />
+                      ))}
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
       </View>
     );
   };
@@ -1681,8 +1686,8 @@ const makeStyles = (theme) => StyleSheet.create({
   calMonth:             { fontSize: 16, fontFamily: theme.font.bold, color: theme.t1, textTransform: 'capitalize' },
   calWeekRow:           { flexDirection: 'row', marginBottom: 6 },
   calWeekday:           { flex: 1, textAlign: 'center', fontSize: 11, fontFamily: theme.font.bold, color: theme.t3, textTransform: 'capitalize' },
-  calGrid:              { flexDirection: 'row', flexWrap: 'wrap' },
-  calCell:              { width: `${100 / 7}%`, aspectRatio: 1, padding: 2 },
+  calRow:               { flexDirection: 'row' },
+  calCell:              { flex: 1, aspectRatio: 1, padding: 2 },
   calDayWrap:           { flex: 1, borderRadius: theme.radii.sm12, alignItems: 'center', justifyContent: 'center' },
   calDay:               { fontSize: 13.5, fontFamily: theme.font.semibold, color: theme.t1 },
   calDots:              { flexDirection: 'row', gap: 2, height: 5, marginTop: 2 },
