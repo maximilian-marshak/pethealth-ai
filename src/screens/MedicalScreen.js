@@ -1459,24 +1459,26 @@ export default function MedicalScreen() {
 
       {/* Фильтр-чипы (только в режиме списка) */}
       {viewMode === 'list' && (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipsRow}
-        contentContainerStyle={styles.chipsRowContent}
-      >
-        {TABS.map(tab => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.chip, activeTab === tab && styles.chipActive]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[styles.chipText, activeTab === tab && styles.chipTextActive]}>
-              {t(`tabs.${tab}`)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        {/* «+» в конце ряда фильтров (по эталону) — add-флоу прежний */}
+      <View style={styles.filterRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipsRow}
+          contentContainerStyle={styles.chipsRowContent}
+        >
+          {TABS.map(tab => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.chip, activeTab === tab && styles.chipActive]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[styles.chipText, activeTab === tab && styles.chipTextActive]}>
+                {t(`tabs.${tab}`)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        {/* «+» ВНЕ скролла (эталон) — фиксирован в конце ряда; add-флоу прежний */}
         <TouchableOpacity
           style={styles.chipAdd}
           onPress={() => {
@@ -1495,7 +1497,7 @@ export default function MedicalScreen() {
         >
           <Ionicons name="add" size={22} color={theme.onAccent} />
         </TouchableOpacity>
-      </ScrollView>
+      </View>
       )}
 
       {/* Content */}
@@ -1653,13 +1655,14 @@ const makeStyles = (theme) => StyleSheet.create({
   scanOverlayText:      { color: theme.onAccent, fontSize: 15, fontFamily: theme.font.semibold },
   petSwitcher:          { maxHeight: 52, backgroundColor: 'transparent', borderBottomWidth: 1, borderBottomColor: theme.hairline },
   petSwitcherContent:   { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  petChip:              { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.radii.pill999, backgroundColor: theme.chipBg, borderWidth: 1, borderColor: theme.hairline },
+  petChip:              { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.radii.pill999, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.chipBorder },
   petChipActive:        { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
   petChipText:          { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t2 },
   petChipEmoji:         { fontSize: 15 },
   petChipTextActive:    { color: theme.onAccent, fontFamily: theme.font.semibold },
-  chipsRow:             { maxHeight: 50, backgroundColor: 'transparent' },
-  chipsRowContent:      { paddingHorizontal: 16, paddingVertical: 10, gap: 8, alignItems: 'center' },
+  filterRow:            { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10 },
+  chipsRow:             { flex: 1 },
+  chipsRowContent:      { gap: 8, alignItems: 'center' },
   timelineList:         { gap: 10 },
   tlCard:               { backgroundColor: theme.surface, borderRadius: theme.radii.md16, borderWidth: 1, borderColor: theme.hairline, shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
   tlRow:                { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14 },
@@ -1766,11 +1769,11 @@ const makeMStyles = (theme) => StyleSheet.create({
   btnSave:     { backgroundColor: theme.accentPress },
   btnCancelText: { fontSize: 15, fontFamily: theme.font.semibold, color: theme.t2 },
   btnSaveText: { fontSize: 15, fontFamily: theme.font.semibold, color: theme.onAccent },
-  chip:        { paddingHorizontal: 16, paddingVertical: 9, borderRadius: theme.radii.pill999, backgroundColor: theme.chipBg, borderWidth: 1, borderColor: theme.hairline },
+  chip:        { paddingHorizontal: 14, paddingVertical: 7, borderRadius: theme.radii.pill999, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.chipBorder },
   chipActive:  { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
   chipText:    { fontSize: 13, fontFamily: theme.font.semibold, color: theme.t2 },
   chipTextActive: { color: theme.onAccent, fontFamily: theme.font.semibold },
-  chipAdd:     { width: 38, height: 38, borderRadius: theme.radii.pill999, backgroundColor: theme.accentPress, alignItems: 'center', justifyContent: 'center' },
+  chipAdd:     { width: 38, height: 38, borderRadius: theme.radii.pill999, backgroundColor: theme.accentPress, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   toggleRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 4 },
   toggle:      { width: 48, height: 26, borderRadius: theme.radii.sm12, justifyContent: 'center', paddingHorizontal: 3 },
   toggleOn:    { backgroundColor: theme.accent },

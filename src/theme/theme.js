@@ -81,8 +81,9 @@ const lightBase = {
   // data-стекло (плотное/читаемое)
   surfaceGlassData: { bg: 'rgba(255,255,255,0.62)', blur: 24, saturate: 1.4 }, // spec
   hairline: 'rgba(0,0,0,0.06)',                  // spec
-  // Фон неактивных чипов (фильтр/pet-свитчер): solid-серый, заметный на bgBase. derived
-  chipBg: '#E4E7EB',                             // derived: видимая нейтральная таблетка на #FBFEFD
+  // Контур неактивных чипов (белый surface-чип): solid-серый 1px, читаемый в RN
+  // (6%-hairline на белом почти невидим). derived. Эталон — белая таблетка + тонкий контур.
+  chipBorder: '#D1D5DB',                         // derived: чёткий, но тонкий контур на surface/bgBase
   // текст t1 (основной) … t4 (плейсхолдер) + on-accent — spec (visual_foundation §2.3)
   t1: '#1A1A2E', t2: '#4A4A5C', t3: '#8A8A99', t4: '#B5B5C0', onAccent: '#FFFFFF', // spec
   // Категориальная палитра типов событий (календарь Medical): отдельная от accent
@@ -134,7 +135,7 @@ const darkBase = {
   surfaceGlass: { bg: 'rgba(38,42,56,0.34)', blur: 34, border: 'rgba(255,255,255,0.14)' }, // spec (saturate не задан каноном)
   surfaceGlassData: { bg: 'rgba(30,33,44,0.66)', blur: 24 }, // spec
   hairline: 'rgba(255,255,255,0.08)',            // spec
-  chipBg: '#2A2D36',                             // derived: видимая таблетка на тёмном bgBase #0F1117
+  chipBorder: '#3A3D46',                         // derived: видимый контур на surface dark #1E1E28
   t1: '#F2F2F7', t2: '#B0B0BC', t3: '#7A7A88', t4: '#55555F', onAccent: '#FFFFFF', // spec
   // Категориальная палитра типов событий (dark — чуть ярче для контраста на тёмном).
   eventTypes: {
