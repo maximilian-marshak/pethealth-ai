@@ -23,7 +23,6 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { parseMedicalDocument } from '../services/ocrService';
 import AutocompleteInput from '../components/AutocompleteInput';
 import { VACCINES, DRUGS } from '../data/medicalPresets';
-import { Calendar } from 'react-native-calendars';
 import { useMedicalCalendar } from '../hooks/useMedicalCalendar';
 import { useMedicationIntakes } from '../hooks/useMedicationIntakes';
 import { useUnits } from '../hooks/useUnits';
@@ -800,7 +799,7 @@ export default function MedicalScreen() {
 
   const { pets, selectedPet, selectPet, loading: petsLoading } = usePetContext();
   const { awardEvent } = useLoyaltyPoints();
-  const { markedDates, itemsByDate } = useMedicalCalendar(selectedPet?.id, theme.eventTypes);
+  const { itemsByDate } = useMedicalCalendar(selectedPet?.id, theme.eventTypes);
   const { isTaken, markTaken, unmark } = useMedicationIntakes(selectedPet?.id);
   const { unit } = useUnits();
   const { allergies } = usePetHealth(selectedPet?.id);
@@ -812,6 +811,8 @@ export default function MedicalScreen() {
   const [activeTab,   setActiveTab]   = useState('overview');
   const [viewMode,    setViewMode]    = useState('list');
   const [selectedDate, setSelectedDate] = useState(null);
+  // Отображаемый месяц кастом-календаря (1-е число); навигация — display-only поверх itemsByDate.
+  const [currentMonth, setCurrentMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
   const [scanning,    setScanning]    = useState(false);
   const [exporting,   setExporting]   = useState(false);
   const [vaccines,    setVaccines]    = useState([]);
@@ -1322,6 +1323,58 @@ export default function MedicalScreen() {
     );
   };
 
+  // ─── Кастомная брендовая сетка календаря (заменяет react-native-calendars) ─
+  // Данные точек/agenda — из useMedicalCalendar (itemsByDate); месяц-навигация display-only.
+  const renderCalendarGrid = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const monthLabel = currentMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstOffset = (new Date(year, month, 1).getDay() + 6) % 7; // Пн-first
+    // Короткие дни недели (Пн-first), локализованные (1 янв 2024 = понедельник).
+    const weekdays = Array.from({ length: 7 }, (_, i) =>
+      new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' })
+    );
+    const cells = [...Array(firstOffset).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+    return (
+      <View style={styles.calCard}>
+        <View style={styles.calHead}>
+          <TouchableOpacity onPress={() => setCurrentMonth(new Date(year, month - 1, 1))} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-back" size={20} color={theme.accent} />
+          </TouchableOpacity>
+          <Text style={styles.calMonth}>{monthLabel}</Text>
+          <TouchableOpacity onPress={() => setCurrentMonth(new Date(year, month + 1, 1))} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-forward" size={20} color={theme.accent} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.calWeekRow}>
+          {weekdays.map((w, i) => <Text key={i} style={styles.calWeekday}>{w}</Text>)}
+        </View>
+        <View style={styles.calGrid}>
+          {cells.map((d, i) => {
+            if (d === null) return <View key={`e${i}`} style={styles.calCell} />;
+            const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const types = [...new Set((itemsByDate[ds] || []).map((e) => e.type))].slice(0, 3);
+            const on = selectedDate === ds;
+            const isToday = ds === todayYmd;
+            return (
+              <TouchableOpacity key={ds} style={styles.calCell} activeOpacity={0.7} onPress={() => setSelectedDate(ds)}>
+                <View style={[styles.calDayWrap, on && { backgroundColor: theme.accent }]}>
+                  <Text style={[styles.calDay, on ? { color: theme.onAccent } : isToday ? { color: theme.accent } : null]}>{d}</Text>
+                  <View style={styles.calDots}>
+                    {types.map((tp, k) => (
+                      <View key={k} style={[styles.calDot, { backgroundColor: on ? theme.onAccent : (theme.eventTypes[tp] || theme.eventTypes.record) }]} />
+                    ))}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    );
+  };
+
   // ─── JSX Return ─────────────────────────────────────────────────────────
 
   const TABS = ['overview', 'vaccines', 'medications', 'records'];
@@ -1451,26 +1504,7 @@ export default function MedicalScreen() {
       {/* Content */}
       {viewMode === 'calendar' ? (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          <Calendar
-            markingType="multi-dot"
-            onDayPress={(d) => setSelectedDate(d.dateString)}
-            markedDates={selectedDate
-              ? { ...markedDates, [selectedDate]: { ...(markedDates[selectedDate] || {}), selected: true, selectedColor: theme.accentPress } }
-              : markedDates}
-            theme={{
-              calendarBackground: 'transparent',
-              monthTextColor: theme.t1,
-              dayTextColor: theme.t1,
-              textSectionTitleColor: theme.t3,
-              textDisabledColor: theme.t4,
-              todayTextColor: theme.accent,
-              selectedDayBackgroundColor: theme.accentPress,
-              selectedDayTextColor: theme.onAccent,
-              arrowColor: theme.accent,
-              dotColor: theme.accent,
-            }}
-            style={styles.calendar}
-          />
+          {renderCalendarGrid()}
 
           {/* Легенда типов событий (категориальная палитра) */}
           <View style={styles.legend}>
@@ -1643,7 +1677,17 @@ const makeStyles = (theme) => StyleSheet.create({
   tlTitle:              { flex: 1, fontSize: 14.5, fontFamily: theme.font.bold, color: theme.t1 },
   tlSub:                { fontSize: 12.5, color: theme.t2, marginTop: 1 },
   segmentWrap:          { paddingHorizontal: 16, marginVertical: 10 },
-  calendar:             { marginHorizontal: 8, marginTop: 4, borderRadius: theme.radii.sm12, overflow: 'hidden' },
+  calCard:              { backgroundColor: theme.surface, borderRadius: theme.radii.md16, borderWidth: 1, borderColor: theme.hairline, padding: 16, marginBottom: 14, shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  calHead:              { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  calMonth:             { fontSize: 16, fontFamily: theme.font.bold, color: theme.t1, textTransform: 'capitalize' },
+  calWeekRow:           { flexDirection: 'row', marginBottom: 6 },
+  calWeekday:           { flex: 1, textAlign: 'center', fontSize: 11, fontFamily: theme.font.bold, color: theme.t3, textTransform: 'capitalize' },
+  calGrid:              { flexDirection: 'row', flexWrap: 'wrap' },
+  calCell:              { width: `${100 / 7}%`, aspectRatio: 1, padding: 2 },
+  calDayWrap:           { flex: 1, borderRadius: theme.radii.sm12, alignItems: 'center', justifyContent: 'center' },
+  calDay:               { fontSize: 13.5, fontFamily: theme.font.semibold, color: theme.t1 },
+  calDots:              { flexDirection: 'row', gap: 2, height: 5, marginTop: 2 },
+  calDot:               { width: 5, height: 5, borderRadius: theme.radii.pill999 },
   legend:               { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 12, paddingTop: 10 },
   legendItem:           { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot:            { width: 8, height: 8, borderRadius: theme.radii.xs4 },
