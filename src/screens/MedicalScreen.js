@@ -785,6 +785,20 @@ const AGENDA_ICONS = {
 // Порядок типов для легенды календаря.
 const EVENT_TYPE_KEYS = ['record', 'prescription', 'vaccine', 'reminder', 'appointment'];
 
+// Эмодзи по виду питомца (pet-чипы свитчера). species в БД — с заглавной ('Dog'/'Cat'/…),
+// поэтому ключ нормализуем (lowercase/trim) + синонимы ru/en. Неизвестное → 🐾.
+const SPECIES_EMOJI = {
+  dog: '🐶', собака: '🐶', пёс: '🐶', пес: '🐶',
+  cat: '🐱', кошка: '🐱', кот: '🐱',
+  rabbit: '🐰', кролик: '🐰',
+  bird: '🐦', птица: '🐦',
+  hamster: '🐹', хомяк: '🐹',
+  fish: '🐠', рыба: '🐠', рыбка: '🐠',
+  turtle: '🐢', черепаха: '🐢',
+  snake: '🐍', змея: '🐍',
+};
+const speciesEmoji = (s) => SPECIES_EMOJI[(s || '').toString().trim().toLowerCase()] || '🐾';
+
 export default function MedicalScreen() {
   const navigation = useNavigation();
   const { t, i18n } = useTranslation('medical');
@@ -1254,8 +1268,6 @@ export default function MedicalScreen() {
     let sub = '';
     let badge = null;
     let onPress;
-    let onEdit;
-    let onDelete;
 
     if (kind === 'vaccine') {
       const v = raw;
@@ -1266,24 +1278,18 @@ export default function MedicalScreen() {
       const cls = statusKey === 'overdue' ? 'badgeRed' : statusKey === 'due_soon' ? 'badgeYellow' : (statusKey === 'up_to_date' || statusKey === 'completed') ? 'badgeGreen' : null;
       badge = { text: getStatusBadgeText(statusKey, days), cls };
       onPress = v.record_id ? () => navigation.navigate('RecordDetail', { recordId: v.record_id, petId: selectedPet.id }) : undefined;
-      onEdit = () => { setEditVaccine(v); setVaccineModal(true); };
-      onDelete = () => deleteVaccine(v.id);
     } else if (kind === 'medication') {
       const m = raw;
       title = m.name;
       sub = [m.dose && t('card.dosage', { value: m.dose }), m.frequency && t('card.frequency', { value: m.frequency })].filter(Boolean).join(' · ');
       badge = { text: m.active ? t('status.active') : t('status.inactive'), cls: m.active ? 'badgeGreen' : 'badgeGray' };
       onPress = m.record_id ? () => navigation.navigate('RecordDetail', { recordId: m.record_id, petId: selectedPet.id }) : undefined;
-      onEdit = () => { setEditMed(m); setMedModal(true); };
-      onDelete = () => deleteMedication(m.id);
     } else if (kind === 'record') {
       const r = raw;
       title = r.title || (r.record_type ? t(`recordTypes.${r.record_type}`, { defaultValue: r.record_type }) : t('status.visit'));
       sub = [r.vet_name && t('card.vet', { name: r.vet_name }), r.clinic_name && t('card.clinic', { name: r.clinic_name })].filter(Boolean).join(' · ');
       badge = { text: r.record_type ? t(`recordTypes.${r.record_type}`, { defaultValue: r.record_type }) : t('status.visit'), cls: 'badgePurple' };
       onPress = () => navigation.navigate('RecordDetail', { record: r, recordId: r.id, petId: selectedPet.id });
-      onEdit = () => { setEditRecord(r); setRecordModal(true); };
-      onDelete = () => deleteRecord(r.id);
     } else {
       const a = raw;
       title = a.clinic_name || t('appointments.untitled');
@@ -1311,14 +1317,7 @@ export default function MedicalScreen() {
             </View>
             {sub ? <Text style={styles.tlSub} numberOfLines={1}>{sub}</Text> : null}
           </View>
-          {onPress ? <Ionicons name="chevron-forward" size={18} color={theme.t4} /> : null}
         </TouchableOpacity>
-        {(onEdit || onDelete) ? (
-          <View style={styles.cardActions}>
-            {onEdit ? <TouchableOpacity style={styles.actionBtn} onPress={onEdit}><Text style={styles.actionEdit}>{t('card.edit')}</Text></TouchableOpacity> : null}
-            {onDelete ? <TouchableOpacity style={styles.actionBtn} onPress={onDelete}><Text style={styles.actionDelete}>{t('card.delete')}</Text></TouchableOpacity> : null}
-          </View>
-        ) : null}
       </View>
     );
   };
@@ -1411,28 +1410,6 @@ export default function MedicalScreen() {
           >
             <Ionicons name="scan-outline" size={20} color={theme.accent} />
           </TouchableOpacity>
-          {viewMode === 'list' && (
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={() => {
-              if (activeTab === 'vaccines') {
-                setEditVaccine(null); setVaccineModal(true);
-              } else if (activeTab === 'medications') {
-                setEditMed(null); setMedModal(true);
-              } else if (activeTab === 'records') {
-                Alert.alert(t('modal.addChooser.title'), undefined, [
-                  { text: t('recordTypes.visit'), onPress: () => { setEditRecord(null); setRecordModal(true); } },
-                  { text: t('recordTypes.procedure'), onPress: () => setProcedureModal(true) },
-                  { text: t('modal.cancel'), style: 'cancel' },
-                ]);
-              }
-            }}
-          >
-            <Text style={styles.addBtnText}>
-              {activeTab === 'overview' ? '···' : '+'}
-            </Text>
-          </TouchableOpacity>
-          )}
         </View>
       </View>
 
@@ -1455,6 +1432,7 @@ export default function MedicalScreen() {
               ]}
               onPress={() => selectPet(pet.id)}
             >
+              <Text style={styles.petChipEmoji}>{speciesEmoji(pet.species)}</Text>
               <Text style={[
                 styles.petChipText,
                 selectedPet?.id === pet.id && styles.petChipTextActive,
@@ -1498,6 +1476,25 @@ export default function MedicalScreen() {
             </Text>
           </TouchableOpacity>
         ))}
+        {/* «+» в конце ряда фильтров (по эталону) — add-флоу прежний */}
+        <TouchableOpacity
+          style={styles.chipAdd}
+          onPress={() => {
+            if (activeTab === 'vaccines') {
+              setEditVaccine(null); setVaccineModal(true);
+            } else if (activeTab === 'medications') {
+              setEditMed(null); setMedModal(true);
+            } else {
+              Alert.alert(t('modal.addChooser.title'), undefined, [
+                { text: t('recordTypes.visit'), onPress: () => { setEditRecord(null); setRecordModal(true); } },
+                { text: t('recordTypes.procedure'), onPress: () => setProcedureModal(true) },
+                { text: t('modal.cancel'), style: 'cancel' },
+              ]);
+            }
+          }}
+        >
+          <Ionicons name="add" size={22} color={theme.onAccent} />
+        </TouchableOpacity>
       </ScrollView>
       )}
 
@@ -1651,20 +1648,18 @@ const makeStyles = (theme) => StyleSheet.create({
   header:               { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: 'transparent', borderBottomWidth: 1, borderBottomColor: theme.hairline },
   headerTitle:          { fontSize: 26, fontFamily: theme.font.bold, color: theme.t1, letterSpacing: -0.4 },
   headerBtn:            { width: 40, height: 40, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline, borderRadius: theme.radii.r20, alignItems: 'center', justifyContent: 'center' },
-  addBtn:               { width: 40, height: 40, backgroundColor: theme.accentPress, borderRadius: theme.radii.r20, alignItems: 'center', justifyContent: 'center' },
-  addBtnText:           { color: theme.onAccent, fontSize: 22, fontFamily: theme.font.regular, lineHeight: 28 },
   headerActions:        { flexDirection: 'row', alignItems: 'center', gap: 8 },
   scanOverlay:          { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', gap: 14 }, // theme-neutral scrim
   scanOverlayText:      { color: theme.onAccent, fontSize: 15, fontFamily: theme.font.semibold },
   petSwitcher:          { maxHeight: 52, backgroundColor: 'transparent', borderBottomWidth: 1, borderBottomColor: theme.hairline },
   petSwitcherContent:   { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  petChip:              { paddingHorizontal: 16, paddingVertical: 6, borderRadius: theme.radii.r20, backgroundColor: theme.hairline, borderWidth: 1, borderColor: theme.hairline },
+  petChip:              { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.radii.pill999, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline },
   petChipActive:        { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
-  petChipText:          { fontSize: 14, fontFamily: theme.font.medium, color: theme.t2 },
+  petChipText:          { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t2 },
+  petChipEmoji:         { fontSize: 15 },
   petChipTextActive:    { color: theme.onAccent, fontFamily: theme.font.semibold },
   chipsRow:             { maxHeight: 50, backgroundColor: 'transparent' },
-  chipsRowContent:      { paddingHorizontal: 16, paddingVertical: 10 },
-  chipTextActive:       { color: theme.onAccent, fontFamily: theme.font.semibold },
+  chipsRowContent:      { paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center' },
   timelineList:         { gap: 10 },
   tlCard:               { backgroundColor: theme.surface, borderRadius: theme.radii.md16, borderWidth: 1, borderColor: theme.hairline, shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
   tlRow:                { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14 },
@@ -1724,10 +1719,6 @@ const makeStyles = (theme) => StyleSheet.create({
   cardTitle:            { fontSize: 16, fontFamily: theme.font.bold, color: theme.t1, flex: 1, marginRight: 8 },
   cardMeta:             { fontSize: 13, color: theme.t3, marginBottom: 3 },
   cardNote:             { fontSize: 13, color: theme.t3, marginTop: 4, fontStyle: 'italic' },
-  cardActions:          { flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.hairline },
-  actionBtn:            { paddingVertical: 4, paddingHorizontal: 8 },
-  actionEdit:           { fontSize: 13, fontFamily: theme.font.semibold, color: theme.accentPress },
-  actionDelete:         { fontSize: 13, fontFamily: theme.font.semibold, color: theme.danger },
   statusBadge:          { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.radii.r10 },
   statusText:           { fontSize: 11, fontFamily: theme.font.bold, color: theme.t1 },
   badgeRed:             { backgroundColor: theme.danger + '22' },
@@ -1775,10 +1766,11 @@ const makeMStyles = (theme) => StyleSheet.create({
   btnSave:     { backgroundColor: theme.accentPress },
   btnCancelText: { fontSize: 15, fontFamily: theme.font.semibold, color: theme.t2 },
   btnSaveText: { fontSize: 15, fontFamily: theme.font.semibold, color: theme.onAccent },
-  chip:        { paddingHorizontal: 14, paddingVertical: 7, borderRadius: theme.radii.r20, backgroundColor: theme.hairline, borderWidth: 1, borderColor: theme.hairline, marginRight: 8 },
+  chip:        { paddingHorizontal: 16, paddingVertical: 9, borderRadius: theme.radii.pill999, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline, marginRight: 8 },
   chipActive:  { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
-  chipText:    { fontSize: 13, fontFamily: theme.font.medium, color: theme.t2 },
+  chipText:    { fontSize: 13, fontFamily: theme.font.semibold, color: theme.t2 },
   chipTextActive: { color: theme.onAccent, fontFamily: theme.font.semibold },
+  chipAdd:     { width: 38, height: 38, borderRadius: theme.radii.pill999, backgroundColor: theme.accentPress, alignItems: 'center', justifyContent: 'center' },
   toggleRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 4 },
   toggle:      { width: 48, height: 26, borderRadius: theme.radii.sm12, justifyContent: 'center', paddingHorizontal: 3 },
   toggleOn:    { backgroundColor: theme.accent },
