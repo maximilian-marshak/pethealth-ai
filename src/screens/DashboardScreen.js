@@ -28,7 +28,7 @@ import IconChip from '../components/IconChip';
 import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useDashboardStatus } from '../hooks/useDashboardStatus';
 import { useCharity } from '../hooks/useCharity';
-import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
+import { useCharityRanks } from '../hooks/useCharityRanks';
 import { useNotifications } from '../hooks/useNotifications';
 import { requestNotificationPermission, scheduleNotificationsFromEvents, cancelAllScheduled } from '../utils/notificationsSetup';
 import { useNotificationPref } from '../hooks/useNotificationPref';
@@ -75,7 +75,7 @@ export default function DashboardScreen({ navigation }) {
   // ─── Ранг: имя реактивно по языку (из raw name_ru/name_en) ───
   const _lang = i18n.language || 'en';
   const rankName = (r) => (_lang.startsWith('ru') ? r?.name_ru : r?.name_en) || r?.name_en || r?.name_ru || '';
-  const rankAccent = leagueColor(currentRank?.league);
+  const rankAccent = theme.leagueColors[currentRank?.league] || theme.accent;
 
   // ─── Рекомендации (4.4): локализ. дата визита + 1–3 пункта из текста ───
   const recLocale = (i18n.language || 'en').startsWith('ru') ? 'ru-RU' : 'en-US';

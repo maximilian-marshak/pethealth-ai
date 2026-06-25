@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useLoyaltyPoints } from '../hooks/useLoyaltyPoints';
 import { useCharity } from '../hooks/useCharity';
-import { useCharityRanks, leagueColor } from '../hooks/useCharityRanks';
+import { useCharityRanks } from '../hooks/useCharityRanks';
 import { usePets } from '../hooks/usePets';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useLanguage } from '../hooks/useLanguage';
@@ -233,7 +233,7 @@ export default function ProfileScreen({ navigation }) {
   // ─── Ранг: имя реактивно по языку (из raw name_ru/name_en, не из memo) ───
   const _lang = i18n.language || 'en';
   const rankName = (r) => (_lang.startsWith('ru') ? r?.name_ru : r?.name_en) || r?.name_en || r?.name_ru || '';
-  const rankAccent = leagueColor(currentRank?.league);
+  const rankAccent = theme.leagueColors[currentRank?.league] || theme.accent;
   const rankPct = nextRank ? rankProgress : 100;
   // ─── Рефетч ─────────────────────────────────────────────
   const onRefresh = async () => {
@@ -492,7 +492,7 @@ export default function ProfileScreen({ navigation }) {
           </TouchableOpacity>
 
           {ranksExpanded && ranks.map((r) => {
-            const accent = leagueColor(r.league);
+            const accent = theme.leagueColors[r.league] || theme.accent;
             const isCurrent = currentRank && r.rank_no === currentRank.rank_no;
             return (
               <View

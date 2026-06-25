@@ -98,6 +98,14 @@ const lightBase = {
     relocation: '#4F8DF0', // blue
     general:    '#8C7FD0', // violet
   },
+  // Категориальная палитра лиг ранг-системы (charity-ранги) — медальные металлики,
+  // отдельный домен (не accent/семантика); рендерится в rank-картах Profile/Dashboard.
+  leagueColors: {
+    bronze:  '#CD7F32',
+    silver:  '#9CA3AF',
+    gold:    '#F59E0B',
+    diamond: '#22D3EE',
+  },
   // тень карточек (iOS shadow* + Android elevation) — derived
   shadow: { shadowColor: '#0B1F1A', shadowOpacity: 0.10, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 6 }, // derived
 };
@@ -136,6 +144,13 @@ const darkBase = {
     emergency:  '#F0826E', // red-orange
     relocation: '#6BA1F5', // blue
     general:    '#A99CE6', // violet
+  },
+  // Лиги (dark — металлики чуть ярче/насыщеннее для тёмного фона).
+  leagueColors: {
+    bronze:  '#DDA15E',
+    silver:  '#C4CAD6',
+    gold:    '#FFC44D',
+    diamond: '#5BE0F5',
   },
   shadow: { shadowColor: '#000000', shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 8 }, // derived
 };
