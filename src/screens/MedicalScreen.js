@@ -36,6 +36,8 @@ import { useAppointments } from '../hooks/useAppointments';
 import { useTheme } from '../theme/ThemeProvider';
 import { buildTheme } from '../theme/theme';
 import Screen from '../components/Screen';
+import Segmented from '../components/Segmented';
+import PassportView from '../components/PassportView';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1757,20 +1759,17 @@ export default function MedicalScreen() {
         </ScrollView>
       )}
 
-      {/* View toggle: list ↔ calendar */}
-      <View style={styles.viewToggle}>
-        <TouchableOpacity
-          style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
-          onPress={() => setViewMode('list')}
-        >
-          <Ionicons name="list-outline" size={20} color={viewMode === 'list' ? theme.onAccent : theme.accent} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.viewToggleBtn, viewMode === 'calendar' && styles.viewToggleBtnActive]}
-          onPress={() => setViewMode('calendar')}
-        >
-          <Ionicons name="calendar-outline" size={20} color={viewMode === 'calendar' ? theme.onAccent : theme.accent} />
-        </TouchableOpacity>
+      {/* Segmented: Список / Календарь / Паспорт */}
+      <View style={styles.segmentWrap}>
+        <Segmented
+          options={[
+            { k: 'list',     label: t('segment.list') },
+            { k: 'calendar', label: t('segment.calendar') },
+            { k: 'passport', label: t('segment.passport') },
+          ]}
+          value={viewMode}
+          onChange={setViewMode}
+        />
       </View>
 
       {/* Tabs (только в режиме списка) */}
@@ -1896,6 +1895,12 @@ export default function MedicalScreen() {
             </View>
           ) : null}
         </ScrollView>
+      ) : viewMode === 'passport' ? (
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+          {selectedPet ? (
+            <PassportView pet={selectedPet} refreshSignal={0} />
+          ) : null}
+        </ScrollView>
       ) : loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} size="large" color={theme.accent} />
       ) : (
@@ -1967,9 +1972,7 @@ const makeStyles = (theme) => StyleSheet.create({
   tabActive:            { borderBottomColor: theme.accent },
   tabText:              { fontSize: 12, fontFamily: theme.font.medium, color: theme.t3 },
   tabTextActive:        { color: theme.accentPress, fontFamily: theme.font.bold },
-  viewToggle:           { flexDirection: 'row', alignSelf: 'center', backgroundColor: theme.accentTint, borderRadius: theme.radii.r10, padding: 3, marginVertical: 10, gap: 3 },
-  viewToggleBtn:        { paddingVertical: 6, paddingHorizontal: 22, borderRadius: theme.radii.sm8, alignItems: 'center', justifyContent: 'center' },
-  viewToggleBtnActive:  { backgroundColor: theme.accentPress },
+  segmentWrap:          { paddingHorizontal: 16, marginVertical: 10 },
   calendar:             { marginHorizontal: 8, marginTop: 4, borderRadius: theme.radii.sm12, overflow: 'hidden' },
   legend:               { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 12, paddingTop: 10 },
   legendItem:           { flexDirection: 'row', alignItems: 'center', gap: 6 },

@@ -58,6 +58,11 @@
       "title": "Медкарта",
       "back": "Назад"
     },
+    "segment": {
+      "list": "Список",
+      "calendar": "Календарь",
+      "passport": "Паспорт"
+    },
     "tabs": {
       "overview": "Обзор",
       "vaccines": "Вакцины",
