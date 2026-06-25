@@ -77,7 +77,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     navigation.setOptions({
       headerShown: true,
       headerTitle: title || t('chat.defaultTitle'),
-      headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
+      headerTitleStyle: { fontFamily: theme.font.bold, fontSize: 18 },
       headerStyle: { backgroundColor: catColor },
       headerTintColor: onCat,
       headerLeft: () => (
@@ -513,7 +513,7 @@ const makeStyles = (theme) => StyleSheet.create({
   petHeaderText: {
     fontSize: 14,
     color: theme.onAccent,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
   },
 
   messagesList: {
@@ -541,7 +541,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 12,
     textAlign: 'center',
@@ -558,7 +558,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   suggestedQuestionsTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t3,
     marginBottom: 12,
     textAlign: 'center',
@@ -655,7 +655,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   emergencyText: {
     color: theme.danger,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
   },
   errorText: {
     color: theme.danger,
@@ -680,7 +680,7 @@ const makeStyles = (theme) => StyleSheet.create({
   visionBadgeText: {
     fontSize: 11,
     color: theme.accent,
-    fontWeight: '500',
+    fontFamily: theme.font.medium,
   },
 
   // Typing Indicator

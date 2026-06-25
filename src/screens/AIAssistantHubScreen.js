@@ -485,7 +485,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   pickerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 16,
   },
@@ -509,7 +509,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   pickerRowName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t1,
   },
   pickerRowDetails: {
@@ -556,7 +556,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.onAccent,
     marginBottom: 8,
   },
@@ -585,7 +585,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   petName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
   },
   petDetails: {
@@ -617,7 +617,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   freeChatTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 4,
   },
@@ -649,7 +649,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   photoAnalysisTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 4,
   },
@@ -659,7 +659,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginHorizontal: 20,
     marginTop: 30,
@@ -695,7 +695,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   categoryTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t1,
     marginBottom: 4,
   },
@@ -709,7 +709,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   quickQuestionsHeader: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     marginBottom: 12,
   },
   quickQuestionCard: {
