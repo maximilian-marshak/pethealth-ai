@@ -137,21 +137,26 @@ export default function AppointmentsScreen() {
     return (
       <View key={a.id} style={s.card}>
         <View style={s.cardTop}>
-          <Text style={s.clinic} numberOfLines={1}>
-            {a.clinic_name || t('appointments.untitled')}
+          <Text style={s.title} numberOfLines={1}>
+            {a.reason || a.clinic_name || t('appointments.untitled')}
           </Text>
-          <View style={[s.badge, { backgroundColor: color + '22' }]}>
+          <View style={[s.badge, { backgroundColor: color + '1f' }]}>
             <Text style={[s.badgeText, { color }]}>
               {t(`appointments.status.${a.status}`, { defaultValue: a.status })}
             </Text>
           </View>
         </View>
 
-        {a.reason ? <Text style={s.reason}>{a.reason}</Text> : null}
+        {a.clinic_name && a.reason ? (
+          <View style={s.infoRow}>
+            <Ionicons name="business-outline" size={15} color={theme.t3} />
+            <Text style={s.infoText} numberOfLines={1}>{a.clinic_name}</Text>
+          </View>
+        ) : null}
 
-        <View style={s.dateRow}>
+        <View style={s.infoRow}>
           <Ionicons name="time-outline" size={15} color={theme.t3} />
-          <Text style={s.date}>{fmt(a.requested_at)}</Text>
+          <Text style={s.infoText}>{fmt(a.requested_at)}</Text>
         </View>
 
         <View style={s.actions}>
@@ -280,14 +285,13 @@ const makeStyles = (theme) => StyleSheet.create({
   section:      { marginBottom: 20 },
   sectionTitle: { fontSize: 16, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 10 },
   empty:        { fontSize: 13, color: theme.t4, paddingVertical: 8 },
-  card:         { backgroundColor: theme.surface, borderRadius: theme.radii.r14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: theme.hairline },
-  cardTop:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  clinic:       { flex: 1, fontSize: 15, fontFamily: theme.font.semibold, color: theme.t1 },
-  badge:        { paddingHorizontal: 10, paddingVertical: 3, borderRadius: theme.radii.sm8 },
-  badgeText:    { fontSize: 11, fontFamily: theme.font.bold },
-  reason:       { fontSize: 13, color: theme.t2, marginTop: 6 },
-  dateRow:      { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-  date:         { fontSize: 13, color: theme.t3 },
+  card:         { backgroundColor: theme.surface, borderRadius: theme.radii.r14, padding: 15, marginBottom: 11, borderWidth: 1, borderColor: theme.hairline, ...theme.shadow },
+  cardTop:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 },
+  title:        { flex: 1, fontSize: 15, fontFamily: theme.font.bold, color: theme.t1 },
+  badge:        { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.radii.pill999 },
+  badgeText:    { fontSize: 11.5, fontFamily: theme.font.bold },
+  infoRow:      { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 4 },
+  infoText:     { fontSize: 13, color: theme.t2, flexShrink: 1 },
   actions:      { flexDirection: 'row', gap: 18, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.hairline },
   actionBtn:    { flexDirection: 'row', alignItems: 'center', gap: 5 },
   actionText:   { fontSize: 13, fontFamily: theme.font.semibold },
