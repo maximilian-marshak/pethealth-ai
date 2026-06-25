@@ -1327,7 +1327,8 @@ export default function MedicalScreen() {
   const renderCalendarGrid = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const monthLabel = currentMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+    // month:'long' + год числом (без year:'numeric' — иначе ru добавляет суффикс «г.»). capitalize — в стиле calMonth.
+    const monthLabel = `${currentMonth.toLocaleDateString(locale, { month: 'long' })} ${year}`;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstOffset = (new Date(year, month, 1).getDay() + 6) % 7; // Пн-first
     // Короткие дни недели (Пн-first), локализованные (1 янв 2024 = понедельник).

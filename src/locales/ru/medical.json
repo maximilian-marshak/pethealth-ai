@@ -7,7 +7,7 @@
         "prescription": "Лекарство",
         "vaccine": "Вакцина",
         "reminder": "Напоминание",
-        "appointment": "Запись"
+        "appointment": "Приём"
       },
       "intake": { "give": "Дал сегодня?", "taken": "Принято" }
     },
