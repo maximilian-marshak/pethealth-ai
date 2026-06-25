@@ -16,8 +16,21 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import { supabase } from '../utils/supabase';
+import IconChip from '../components/IconChip';
+import GlassCard from '../components/GlassCard';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// record_type → ключ категориальной палитры eventTypes (цвет/иконка hero). Большинство → record.
+const REC_TYPE_KEY = {
+  vaccination: 'vaccine', medication_course: 'prescription', parasite_treatment: 'prescription',
+  visit: 'record', procedure: 'record', lab_test: 'record', other: 'record',
+};
+// Иконка hero по ключу палитры (единый набор с календарём/timeline).
+const TYPE_ICON = {
+  record: 'document-text-outline', prescription: 'medical-outline', vaccine: 'medkit-outline',
+  reminder: 'notifications-outline', appointment: 'today-outline',
+};
 
 export default function RecordDetailScreen() {
   const navigation = useNavigation();
@@ -125,20 +138,29 @@ export default function RecordDetailScreen() {
   };
 
   // ─── Render helpers ───────────────────────────────────────────────────────
-  const Row = ({ label, value }) =>
-    value == null || value === '' ? null : (
-      <View style={s.row}>
-        <Text style={s.rowLabel}>{label}</Text>
-        <Text style={s.rowValue}>{String(value)}</Text>
+  // Карточка полей (эталон): SolidCard с рядами label/value + hairline-разделитель между.
+  const FieldsCard = ({ title, fields }) => {
+    const present = fields.filter((f) => f.value != null && f.value !== '');
+    if (!present.length && !title) return null;
+    return (
+      <View style={s.fieldsCard}>
+        {title ? <Text style={s.childTitle}>{title}</Text> : null}
+        {present.map((f, i) => (
+          <View key={i} style={[s.fieldRow, i < present.length - 1 && s.fieldRowDivider]}>
+            <Text style={s.fieldLabel}>{f.label}</Text>
+            <Text style={s.fieldValue}>{String(f.value)}</Text>
+          </View>
+        ))}
       </View>
     );
+  };
 
-  const ChildSection = ({ title, items, renderItem }) =>
+  const ChildSection = ({ title, items, getTitle, getFields }) =>
     !items.length ? null : (
-      <View style={s.section}>
+      <View style={s.childSection}>
         <Text style={s.sectionTitle}>{title}</Text>
         {items.map((it, i) => (
-          <View key={it.id || i} style={s.childCard}>{renderItem(it)}</View>
+          <FieldsCard key={it.id || i} title={getTitle(it)} fields={getFields(it)} />
         ))}
       </View>
     );
@@ -152,6 +174,10 @@ export default function RecordDetailScreen() {
       ? `${record.weight}${record.weight_unit ? ' ' + t(`review.weightUnits.${record.weight_unit}`, { defaultValue: record.weight_unit }) : ''}`
       : null;
 
+  // Цвет/иконка hero по типу записи (категориальная палитра eventTypes; не accent).
+  const evKey = REC_TYPE_KEY[record?.record_type] || 'record';
+  const evColor = theme.eventTypes[evKey];
+
   return (
     <SafeAreaView style={s.container} edges={['top']}>
       <View style={s.header}>
@@ -159,7 +185,9 @@ export default function RecordDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={theme.accent} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('detail.title')}</Text>
-        <View style={s.headerBtn} />
+        <TouchableOpacity onPress={handleEdit} style={s.headerBtn} disabled={!record || deleting}>
+          <Ionicons name="create-outline" size={22} color={theme.accent} />
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -173,105 +201,113 @@ export default function RecordDetailScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-          {/* Parent */}
-          <View style={s.topRow}>
-            <Text style={s.date}>{fmt(record.occurred_at ?? record.date)}</Text>
-            <View style={s.badge}><Text style={s.badgeText}>{recordTypeLabel}</Text></View>
-          </View>
-
-          <View style={s.section}>
-            <Row label={t('review.fields.vetName')} value={record.vet_name} />
-            <Row label={t('review.fields.clinicName')} value={record.clinic_name} />
-            <Row label={t('review.fields.diagnosis')} value={record.diagnosis} />
-            <Row label={t('review.fields.diagnosisCode')} value={record.diagnosis_code} />
-            <Row label={t('review.fields.symptoms')} value={record.symptoms} />
-            <Row label={t('review.fields.weight')} value={weightValue} />
-            <Row label={t('review.fields.temperature')} value={record.temperature} />
-            <Row label={t('review.fields.followUp')} value={record.follow_up_date ? fmt(record.follow_up_date) : null} />
-            <Row label={t('review.fields.urgency')} value={record.urgency ? t(`urgency.${record.urgency}`, { defaultValue: record.urgency }) : null} />
-          </View>
-
-          {record.recommendations ? (
-            <View style={s.section}>
-              <Text style={s.sectionTitle}>{t('detail.recommendations')}</Text>
-              <View style={s.recoCard}>
-                <Text style={s.recoText}>{String(record.recommendations)}</Text>
-              </View>
+          {/* Hero: IconChip (цвет типа) + название + дата·клиника */}
+          <View style={s.heroCard}>
+            <IconChip name={TYPE_ICON[evKey] || TYPE_ICON.record} size={26} color={evColor} bg={evColor + '1f'} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.heroTitle} numberOfLines={2}>{record.title || recordTypeLabel}</Text>
+              <Text style={s.heroSub}>
+                {[fmt(record.occurred_at ?? record.date), record.clinic_name].filter(Boolean).join(' · ')}
+              </Text>
             </View>
+          </View>
+
+          {/* Поля записи */}
+          <FieldsCard
+            fields={[
+              { label: t('review.fields.vetName'), value: record.vet_name },
+              { label: t('review.fields.clinicName'), value: record.clinic_name },
+              { label: t('review.fields.diagnosis'), value: record.diagnosis },
+              { label: t('review.fields.diagnosisCode'), value: record.diagnosis_code },
+              { label: t('review.fields.symptoms'), value: record.symptoms },
+              { label: t('review.fields.weight'), value: weightValue },
+              { label: t('review.fields.temperature'), value: record.temperature },
+              { label: t('review.fields.followUp'), value: record.follow_up_date ? fmt(record.follow_up_date) : null },
+              { label: t('review.fields.urgency'), value: record.urgency ? t(`urgency.${record.urgency}`, { defaultValue: record.urgency }) : null },
+            ]}
+          />
+
+          {/* Рекомендации врача (GlassCard data) */}
+          {record.recommendations ? (
+            <GlassCard variant="data" style={s.glassMb}>
+              <View style={s.recoHeader}>
+                <Ionicons name="clipboard-outline" size={18} color={theme.accent} />
+                <Text style={s.recoTitle}>{t('detail.recommendations')}</Text>
+              </View>
+              <View style={s.recoList}>
+                {String(record.recommendations).split('\n').map((r) => r.trim()).filter(Boolean).map((r, i) => (
+                  <View key={i} style={s.recoItem}>
+                    <View style={s.recoBullet} />
+                    <Text style={s.recoItemText}>{r}</Text>
+                  </View>
+                ))}
+              </View>
+            </GlassCard>
           ) : null}
 
-          {/* Children */}
+          {/* Дети — карточки полей того же стиля */}
           <ChildSection
             title={t('review.sections.vaccines')}
             items={vaccines}
-            renderItem={(v) => (
-              <>
-                <Text style={s.childTitle}>{v.vaccine_name || '—'}</Text>
-                <Row label={t('review.fields.vaccineType')} value={v.vaccine_type ? t(`vaccineTypes.${v.vaccine_type}`, { defaultValue: v.vaccine_type }) : null} />
-                <Row label={t('review.fields.dateGiven')} value={v.date_given ? fmt(v.date_given) : null} />
-                <Row label={t('review.fields.nextDue')} value={v.next_due_date ? fmt(v.next_due_date) : null} />
-              </>
-            )}
+            getTitle={(v) => v.vaccine_name || '—'}
+            getFields={(v) => [
+              { label: t('review.fields.vaccineType'), value: v.vaccine_type ? t(`vaccineTypes.${v.vaccine_type}`, { defaultValue: v.vaccine_type }) : null },
+              { label: t('review.fields.dateGiven'), value: v.date_given ? fmt(v.date_given) : null },
+              { label: t('review.fields.nextDue'), value: v.next_due_date ? fmt(v.next_due_date) : null },
+            ]}
           />
           <ChildSection
             title={t('review.sections.prescriptions')}
             items={prescriptions}
-            renderItem={(p) => (
-              <>
-                <Text style={s.childTitle}>{p.name || '—'}</Text>
-                <Row label={t('review.fields.dose')} value={p.dose} />
-                <Row label={t('review.fields.frequency')} value={p.frequency} />
-                <Row label={t('review.fields.startDate')} value={p.start_date ? fmt(p.start_date) : null} />
-                <Row label={t('review.fields.endDate')} value={p.end_date ? fmt(p.end_date) : null} />
-                <Row label={t('review.fields.instruction')} value={p.instruction} />
-                <Row label={t('review.fields.active')} value={p.active === false ? t('status.inactive') : t('status.active')} />
-              </>
-            )}
+            getTitle={(p) => p.name || '—'}
+            getFields={(p) => [
+              { label: t('review.fields.dose'), value: p.dose },
+              { label: t('review.fields.frequency'), value: p.frequency },
+              { label: t('review.fields.startDate'), value: p.start_date ? fmt(p.start_date) : null },
+              { label: t('review.fields.endDate'), value: p.end_date ? fmt(p.end_date) : null },
+              { label: t('review.fields.instruction'), value: p.instruction },
+              { label: t('review.fields.active'), value: p.active === false ? t('status.inactive') : t('status.active') },
+            ]}
           />
           <ChildSection
             title={t('review.sections.parasites')}
             items={parasites}
-            renderItem={(p) => (
-              <>
-                <Text style={s.childTitle}>{p.product || '—'}</Text>
-                <Row label={t('review.fields.kind') } value={p.kind ? t(`review.kinds.${p.kind}`, { defaultValue: p.kind }) : null} />
-                <Row label={t('review.fields.treatedOn')} value={p.treated_on ? fmt(p.treated_on) : null} />
-                <Row label={t('review.fields.nextDue')} value={p.next_due_date ? fmt(p.next_due_date) : null} />
-              </>
-            )}
+            getTitle={(p) => p.product || '—'}
+            getFields={(p) => [
+              { label: t('review.fields.kind'), value: p.kind ? t(`review.kinds.${p.kind}`, { defaultValue: p.kind }) : null },
+              { label: t('review.fields.treatedOn'), value: p.treated_on ? fmt(p.treated_on) : null },
+              { label: t('review.fields.nextDue'), value: p.next_due_date ? fmt(p.next_due_date) : null },
+            ]}
           />
           <ChildSection
             title={t('review.sections.labs')}
             items={labs}
-            renderItem={(l) => (
-              <>
-                <Text style={s.childTitle}>{l.test_type || '—'}</Text>
-                <Row label={t('review.fields.status')} value={l.status ? t(`review.labStatus.${l.status}`, { defaultValue: l.status }) : null} />
-                <Row label={t('review.fields.result')} value={l.result} />
-              </>
-            )}
+            getTitle={(l) => l.test_type || '—'}
+            getFields={(l) => [
+              { label: t('review.fields.status'), value: l.status ? t(`review.labStatus.${l.status}`, { defaultValue: l.status }) : null },
+              { label: t('review.fields.result'), value: l.result },
+            ]}
           />
 
-          {/* Attachment */}
+          {/* Скан документа */}
           {(signedUrl || hasAttachment) && (
-            <View style={s.section}>
+            <View style={s.childSection}>
               <Text style={s.sectionTitle}>{t('detail.attachment')}</Text>
               {signedUrl ? (
-                <TouchableOpacity activeOpacity={0.85} onPress={() => setViewerOpen(true)}>
-                  <Image source={{ uri: signedUrl }} style={s.attachment} resizeMode="contain" />
+                <TouchableOpacity activeOpacity={0.85} onPress={() => setViewerOpen(true)} style={s.scanCard}>
+                  <Image source={{ uri: signedUrl }} style={s.scanImage} resizeMode="cover" />
                 </TouchableOpacity>
               ) : (
-                <Text style={s.attachmentUnavailable}>{t('detail.attachmentUnavailable')}</Text>
+                <View style={[s.scanCard, s.scanEmpty]}>
+                  <Ionicons name="document-outline" size={32} color={theme.t3} />
+                  <Text style={s.attachmentUnavailable}>{t('detail.attachmentUnavailable')}</Text>
+                </View>
               )}
             </View>
           )}
 
-          {/* Actions */}
+          {/* Actions — edit вынесен в шапку (эталон); здесь только delete */}
           <View style={s.footer}>
-            <TouchableOpacity style={[s.btn, s.btnEdit]} onPress={handleEdit} disabled={deleting}>
-              <Ionicons name="create-outline" size={18} color={theme.onAccent} />
-              <Text style={s.btnEditText}>{t('card.edit')}</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={[s.btn, s.btnDelete]} onPress={handleDelete} disabled={deleting}>
               {deleting ? <ActivityIndicator color={theme.danger} /> : (
                 <>
@@ -330,20 +366,31 @@ const makeStyles = (theme) => StyleSheet.create({
   headerBtn:   { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
   content:     { padding: 16, paddingBottom: 40 },
-  topRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  date:        { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
-  badge:       { backgroundColor: theme.accentTint, paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.radii.r10 },
-  badgeText:   { fontSize: 11, fontFamily: theme.font.bold, color: theme.accent },
-  section:     { marginBottom: 16, borderTopWidth: 1, borderTopColor: theme.hairline, paddingTop: 12 },
+  // ─── Hero ──────────────────────────────────────
+  heroCard:    { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: theme.surface, borderRadius: theme.radii.md16, borderWidth: 1, borderColor: theme.hairline, padding: 16, marginBottom: 14, ...theme.shadow },
+  heroTitle:   { fontSize: 17, fontFamily: theme.font.bold, color: theme.t1 },
+  heroSub:     { fontSize: 13, color: theme.t2, marginTop: 2 },
+  // ─── Карточка полей (ряды label/value + divider) ──
+  fieldsCard:  { backgroundColor: theme.surface, borderRadius: theme.radii.md16, borderWidth: 1, borderColor: theme.hairline, paddingHorizontal: 14, marginBottom: 14, ...theme.shadow },
+  fieldRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  fieldRowDivider: { borderBottomWidth: 1, borderBottomColor: theme.hairline },
+  fieldLabel:  { fontSize: 13.5, fontFamily: theme.font.semibold, color: theme.t2, flexShrink: 0 },
+  fieldValue:  { fontSize: 14, fontFamily: theme.font.bold, color: theme.t1, flex: 1, textAlign: 'right' },
+  childSection:{ marginBottom: 14 },
   sectionTitle:{ fontSize: 15, fontFamily: theme.font.bold, color: theme.t2, marginBottom: 8 },
-  row:         { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 6 },
-  rowLabel:    { fontSize: 13, color: theme.t3, flexShrink: 0 },
-  rowValue:    { fontSize: 13, color: theme.t1, fontFamily: theme.font.medium, flex: 1, textAlign: 'right' },
-  childCard:   { backgroundColor: theme.surface, borderRadius: theme.radii.sm12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: theme.hairline },
-  childTitle:  { fontSize: 15, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 6 },
-  recoCard:    { backgroundColor: theme.accentTint, borderLeftWidth: 3, borderLeftColor: theme.accent, borderRadius: theme.radii.r10, padding: 12 },
-  recoText:    { fontSize: 14, color: theme.t1, lineHeight: 20 },
-  attachment:  { width: '100%', height: 240, borderRadius: theme.radii.sm12, backgroundColor: theme.hairline },
+  childTitle:  { fontSize: 15, fontFamily: theme.font.bold, color: theme.t1, paddingTop: 12, paddingBottom: 2 },
+  // ─── Рекомендации (GlassCard data) ──────────────
+  glassMb:     { marginBottom: 14 },
+  recoHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  recoTitle:   { fontSize: 15, fontFamily: theme.font.bold, color: theme.t1 },
+  recoList:    { gap: 9 },
+  recoItem:    { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  recoBullet:  { width: 6, height: 6, borderRadius: theme.radii.pill999, backgroundColor: theme.accent, marginTop: 7, flexShrink: 0 },
+  recoItemText:{ flex: 1, fontSize: 14, color: theme.t1, lineHeight: 20 },
+  // ─── Скан документа ────────────────────────────
+  scanCard:    { backgroundColor: theme.surface, borderRadius: theme.radii.md16, borderWidth: 1, borderColor: theme.hairline, height: 160, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  scanEmpty:   { gap: 8 },
+  scanImage:   { width: '100%', height: '100%' },
   attachmentUnavailable: { fontSize: 13, color: theme.t4, fontStyle: 'italic' },
   footer:      { flexDirection: 'row', gap: 12, marginTop: 8 },
   btn:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: theme.radii.sm12 },
