@@ -17,6 +17,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import { useAppointments } from '../hooks/useAppointments';
+import Segmented from '../components/Segmented';
 
 export default function AppointmentsScreen() {
   const navigation = useNavigation();
@@ -35,6 +36,7 @@ export default function AppointmentsScreen() {
 
   const { petId } = route.params || {};
   const { future, past, loading, create, updateStatus, remove } = useAppointments(petId);
+  const [apptView, setApptView] = useState('upcoming'); // 'upcoming' | 'past' — сегмент списка
 
   // ── Create-modal state ──
   const [createOpen, setCreateOpen] = useState(false);
@@ -175,16 +177,10 @@ export default function AppointmentsScreen() {
     );
   };
 
-  const renderSection = (titleKey, items, emptyKey) => (
-    <View style={s.section}>
-      <Text style={s.sectionTitle}>{t(titleKey)}</Text>
-      {items.length === 0 ? (
-        <Text style={s.empty}>{t(emptyKey)}</Text>
-      ) : (
-        items.map(renderCard)
-      )}
-    </View>
-  );
+  const renderList = (items, emptyKey) =>
+    items.length === 0
+      ? <Text style={s.empty}>{t(emptyKey)}</Text>
+      : items.map(renderCard);
 
   return (
     <SafeAreaView style={s.container} edges={['bottom']}>
@@ -192,8 +188,19 @@ export default function AppointmentsScreen() {
         <ActivityIndicator style={{ marginTop: 40 }} size="large" color={theme.accent} />
       ) : (
         <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-          {renderSection('appointments.sections.upcoming', future, 'appointments.empty.upcoming')}
-          {renderSection('appointments.sections.past', past, 'appointments.empty.past')}
+          <View style={s.segmentWrap}>
+            <Segmented
+              options={[
+                { k: 'upcoming', label: t('appointments.segment.upcoming') },
+                { k: 'past',     label: t('appointments.segment.past') },
+              ]}
+              value={apptView}
+              onChange={setApptView}
+            />
+          </View>
+          {apptView === 'upcoming'
+            ? renderList(future, 'appointments.empty.upcoming')
+            : renderList(past, 'appointments.empty.past')}
         </ScrollView>
       )}
 
@@ -282,8 +289,7 @@ export default function AppointmentsScreen() {
 const makeStyles = (theme) => StyleSheet.create({
   container:    { flex: 1, backgroundColor: theme.bg },
   content:      { padding: 16, paddingBottom: 96 },
-  section:      { marginBottom: 20 },
-  sectionTitle: { fontSize: 16, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 10 },
+  segmentWrap:  { marginBottom: 14 },
   empty:        { fontSize: 13, color: theme.t4, paddingVertical: 8 },
   card:         { backgroundColor: theme.surface, borderRadius: theme.radii.r14, padding: 15, marginBottom: 11, borderWidth: 1, borderColor: theme.hairline, ...theme.shadow },
   cardTop:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 },

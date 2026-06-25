@@ -16,6 +16,7 @@
       "create": "Создать запись",
       "untitled": "Запись",
       "sections": { "upcoming": "Предстоящие", "past": "Прошедшие" },
+      "segment": { "upcoming": "Предстоящие", "past": "Прошедшие" },
       "empty": { "upcoming": "Нет предстоящих записей", "past": "Нет прошедших записей" },
       "status": { "requested": "Заявка", "confirmed": "Подтверждена", "cancelled": "Отменена", "completed": "Завершена" },
       "actions": { "cancel": "Отменить", "delete": "Удалить" },
