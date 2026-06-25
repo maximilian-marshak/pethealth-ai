@@ -1662,33 +1662,21 @@ export default function MedicalScreen() {
 
   return (
     <Screen>
-      {/* Header */}
+      {/* Header — заголовок 26 + 3 круглые кнопки (Documents/PDF/OCR) + add (по эталону §4) */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('header.title')}</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.scanBtn}
-            onPress={() => { if (selectedPet?.id) navigation.navigate('Appointments', { petId: selectedPet.id }); }}
-          >
-            <Ionicons name="today-outline" size={20} color={theme.accent} />
-          </TouchableOpacity>
           {selectedPet?.id && (
             <TouchableOpacity
-              style={styles.scanBtn}
+              style={styles.headerBtn}
               onPress={() => navigation.navigate('Documents', { petId: selectedPet.id })}
             >
-              <Ionicons name="documents-outline" size={20} color={theme.accent} />
+              <Ionicons name="folder-open-outline" size={20} color={theme.accent} />
             </TouchableOpacity>
           )}
           {selectedPet?.id && (
             <TouchableOpacity
-              style={styles.scanBtn}
+              style={styles.headerBtn}
               onPress={handleExport}
               disabled={exporting}
             >
@@ -1698,7 +1686,7 @@ export default function MedicalScreen() {
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={styles.scanBtn}
+            style={styles.headerBtn}
             onPress={handleScan}
             disabled={scanning}
           >
@@ -1952,13 +1940,11 @@ export default function MedicalScreen() {
 const makeStyles = (theme) => StyleSheet.create({
   container:            { flex: 1, backgroundColor: 'transparent' },
   header:               { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: 'transparent', borderBottomWidth: 1, borderBottomColor: theme.hairline },
-  backBtn:              { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow:            { fontSize: 22, color: theme.accent, fontFamily: theme.font.semibold },
-  headerTitle:          { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
-  addBtn:               { width: 36, height: 36, backgroundColor: theme.accentPress, borderRadius: theme.radii.r18, alignItems: 'center', justifyContent: 'center' },
+  headerTitle:          { fontSize: 26, fontFamily: theme.font.bold, color: theme.t1, letterSpacing: -0.4 },
+  headerBtn:            { width: 40, height: 40, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.hairline, borderRadius: theme.radii.r20, alignItems: 'center', justifyContent: 'center' },
+  addBtn:               { width: 40, height: 40, backgroundColor: theme.accentPress, borderRadius: theme.radii.r20, alignItems: 'center', justifyContent: 'center' },
   addBtnText:           { color: theme.onAccent, fontSize: 22, fontFamily: theme.font.regular, lineHeight: 28 },
   headerActions:        { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  scanBtn:              { width: 36, height: 36, backgroundColor: theme.accentTint, borderRadius: theme.radii.r18, alignItems: 'center', justifyContent: 'center' },
   scanOverlay:          { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', gap: 14 }, // theme-neutral scrim
   scanOverlayText:      { color: theme.onAccent, fontSize: 15, fontFamily: theme.font.semibold },
   petSwitcher:          { maxHeight: 52, backgroundColor: 'transparent', borderBottomWidth: 1, borderBottomColor: theme.hairline },
