@@ -58,6 +58,11 @@
       "title": "Medical Records",
       "back": "Back"
     },
+    "segment": {
+      "list": "List",
+      "calendar": "Calendar",
+      "passport": "Passport"
+    },
     "tabs": {
       "overview": "Overview",
       "vaccines": "Vaccines",
