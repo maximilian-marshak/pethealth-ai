@@ -405,7 +405,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.onAccent,
     marginBottom: 4,
   },
@@ -427,7 +427,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   label: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t2,
     marginBottom: 8,
   },
@@ -479,11 +479,11 @@ const makeStyles = (theme) => StyleSheet.create({
   optionText: {
     fontSize: 14,
     color: theme.t3,
-    fontWeight: '500',
+    fontFamily: theme.font.medium,
   },
   optionTextSelected: {
     color: theme.accentPress,
-    fontWeight: '700',
+    fontFamily: theme.font.bold,
   },
   rowInputs: {
     flexDirection: 'row',
@@ -508,7 +508,7 @@ const makeStyles = (theme) => StyleSheet.create({
   saveButtonText: {
     color: theme.onAccent,
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: theme.font.bold,
   },
   loadingRow: {
     flexDirection: 'row',
@@ -522,6 +522,6 @@ const makeStyles = (theme) => StyleSheet.create({
   cancelButtonText: {
     color: theme.t3,
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: theme.font.medium,
   },
 });

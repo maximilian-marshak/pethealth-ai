@@ -67,7 +67,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   cardTitle: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: theme.font.bold,
     color: theme.t3,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -75,7 +75,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   cardValue: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 3,
   },

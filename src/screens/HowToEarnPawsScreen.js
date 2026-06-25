@@ -105,7 +105,7 @@ const makeStyles = (theme) => StyleSheet.create({
   list:      { padding: 16 },
   row:       { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surface, borderRadius: theme.radii.r14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: theme.hairline },
   iconWrap:  { width: 40, height: 40, borderRadius: theme.radii.sm12, backgroundColor: theme.accentTint, alignItems: 'center', justifyContent: 'center' },
-  name:      { fontSize: 15, fontWeight: '600', color: theme.t1 },
+  name:      { fontSize: 15, fontFamily: theme.font.semibold, color: theme.t1 },
   cap:       { fontSize: 12, color: theme.t4, marginTop: 2 },
-  points:    { fontSize: 16, fontWeight: '800', color: theme.accent },
+  points:    { fontSize: 16, fontFamily: theme.font.bold, color: theme.accent },
 });

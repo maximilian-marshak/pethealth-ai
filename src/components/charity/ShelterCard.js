@@ -99,7 +99,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   name: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 4,
   },
@@ -140,7 +140,7 @@ const makeStyles = (theme) => StyleSheet.create({
   statsText: {
     fontSize: 14,
     color: theme.t2,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     marginLeft: 6,
   },
   donationButtons: {
@@ -162,7 +162,7 @@ const makeStyles = (theme) => StyleSheet.create({
   donateButtonText: {
     color: theme.onAccent,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
   },
   donateButtonTextDisabled: {
     color: theme.t4,

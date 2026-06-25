@@ -119,7 +119,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   title: {
     fontSize: 36,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.accent,
     marginBottom: 8,
   },
@@ -152,7 +152,7 @@ const makeStyles = (theme) => StyleSheet.create({
   buttonText: {
     color: theme.onAccent,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
   },
   switchText: {
     color: theme.accentPress,

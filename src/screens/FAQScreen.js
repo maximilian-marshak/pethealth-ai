@@ -57,6 +57,6 @@ const makeStyles = (theme) => StyleSheet.create({
   card:      { backgroundColor: theme.surface, borderRadius: theme.radii.r14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: theme.hairline },
   cardOpen:  { borderColor: theme.accent },
   qRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  q:         { flex: 1, fontSize: 15, fontWeight: '600', color: theme.t1 },
+  q:         { flex: 1, fontSize: 15, fontFamily: theme.font.semibold, color: theme.t1 },
   a:         { fontSize: 14, color: theme.t2, lineHeight: 20, marginTop: 10 },
 });

@@ -293,7 +293,7 @@ const makeStyles = (theme) => StyleSheet.create({
   // Заголовок экрана
   screenTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 20,
   },
@@ -319,7 +319,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginTop: 8,
   },
@@ -339,7 +339,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t1,
   },
 
@@ -373,7 +373,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   donationShelter: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t1,
     marginBottom: 4,
   },
@@ -386,7 +386,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   donationAmount: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.accent,
   },
   donationPaws: {
@@ -402,7 +402,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t1,
     marginTop: 16,
     marginBottom: 8,
@@ -424,7 +424,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   motivationalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.onAccent,
     marginTop: 12,
     marginBottom: 8,

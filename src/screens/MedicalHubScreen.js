@@ -17,5 +17,5 @@ export default function MedicalHubScreen() {
 
 const makeStyles = (theme) => StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bg },
-  title:     { fontSize: 24, fontWeight: 'bold', color: theme.accent },
+  title:     { fontSize: 24, fontFamily: theme.font.bold, color: theme.accent },
 });

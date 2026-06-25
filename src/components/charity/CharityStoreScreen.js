@@ -222,7 +222,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   balanceText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginLeft: 8,
   },
@@ -236,7 +236,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   historyButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.accent,
     marginLeft: 6,
   },
@@ -248,7 +248,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginBottom: 8,
   },
@@ -285,14 +285,14 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.t1,
     marginTop: 16,
     marginBottom: 8,
   },
   modalShelter: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t2,
     textAlign: 'center',
   },
@@ -310,7 +310,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalAmount: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: theme.font.bold,
     color: theme.accent,
   },
   modalBalanceInfo: {
@@ -325,7 +325,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalBalanceValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t1,
   },
   modalButtons: {
@@ -347,12 +347,12 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalButtonTextCancel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.t2,
   },
   modalButtonTextConfirm: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.font.semibold,
     color: theme.onAccent,
   },
 });
