@@ -79,7 +79,7 @@ export default function ShelterCard({ shelter, onDonate, userPoints }) {
 const makeStyles = (theme) => StyleSheet.create({
   card: {
     backgroundColor: theme.surface,
-    borderRadius: 16,
+    borderRadius: theme.radii.md16,
     padding: 16,
     marginBottom: 16,
     shadowColor: theme.shadow.shadowColor,
@@ -153,7 +153,7 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.accentPress,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     alignItems: 'center',
   },
   donateButtonDisabled: {

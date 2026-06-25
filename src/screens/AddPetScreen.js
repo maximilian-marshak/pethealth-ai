@@ -435,7 +435,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.hairline,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
@@ -458,7 +458,7 @@ const makeStyles = (theme) => StyleSheet.create({
   optionButton: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: theme.radii.r20,
     borderWidth: 1.5,
     borderColor: theme.hairline,
     backgroundColor: theme.surface,
@@ -466,7 +466,7 @@ const makeStyles = (theme) => StyleSheet.create({
   genderButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     borderWidth: 1.5,
     borderColor: theme.hairline,
     backgroundColor: theme.surface,
@@ -490,7 +490,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   saveButton: {
     backgroundColor: theme.accentPress,
-    borderRadius: 14,
+    borderRadius: theme.radii.r14,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 10,

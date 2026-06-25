@@ -122,7 +122,7 @@ export default function DocumentsScreen() {
 const makeStyles = (theme) => StyleSheet.create({
   container:        { flex: 1, backgroundColor: theme.bg },
   grid:             { padding: PAD },
-  cell:             { borderRadius: 12, overflow: 'hidden', backgroundColor: theme.accentTint, marginBottom: GAP },
+  cell:             { borderRadius: theme.radii.sm12, overflow: 'hidden', backgroundColor: theme.accentTint, marginBottom: GAP },
   cellImage:        { width: '100%', height: '100%' },
   cellPlaceholder:  { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bg },
   empty:            { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },

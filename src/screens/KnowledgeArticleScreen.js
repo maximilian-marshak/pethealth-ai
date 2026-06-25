@@ -48,6 +48,6 @@ const makeStyles = (theme) => StyleSheet.create({
   content:        { padding: 20, paddingBottom: 32 },
   h:              { fontSize: 22, fontWeight: '700', color: theme.t1, marginBottom: 14 },
   p:              { fontSize: 15, color: theme.t2, lineHeight: 23, marginBottom: 14 },
-  disclaimer:     { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: theme.surface, borderRadius: 12, padding: 12, marginTop: 8 },
+  disclaimer:     { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: theme.surface, borderRadius: theme.radii.sm12, padding: 12, marginTop: 8 },
   disclaimerText: { flex: 1, fontSize: 12, color: theme.t3, lineHeight: 17 },
 });

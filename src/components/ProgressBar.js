@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeProvider';
+import { radii } from '../theme/theme';
 
 export default function ProgressBar({ current = 0, goal = 1000, height = 12, percent, color }) {
   const { theme } = useTheme();
@@ -34,15 +35,15 @@ export default function ProgressBar({ current = 0, goal = 1000, height = 12, per
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    borderRadius: 100,
+    borderRadius: radii.pill999,
     overflow: 'hidden',
   },
   background: {
     flex: 1,
-    borderRadius: 100,
+    borderRadius: radii.pill999,
   },
   fill: {
     height: '100%',
-    borderRadius: 100,
+    borderRadius: radii.pill999,
   },
 });

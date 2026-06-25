@@ -136,7 +136,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.hairline,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     padding: 16,
     marginBottom: 16,
     fontSize: 16,
@@ -144,7 +144,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   button: {
     backgroundColor: theme.accentPress,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     padding: 16,
     alignItems: 'center',
     marginBottom: 16,

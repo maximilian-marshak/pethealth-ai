@@ -54,7 +54,7 @@ export default function FAQScreen() {
 const makeStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bg },
   content:   { padding: 16 },
-  card:      { backgroundColor: theme.surface, borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: theme.hairline },
+  card:      { backgroundColor: theme.surface, borderRadius: theme.radii.r14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: theme.hairline },
   cardOpen:  { borderColor: theme.accent },
   qRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   q:         { flex: 1, fontSize: 15, fontWeight: '600', color: theme.t1 },

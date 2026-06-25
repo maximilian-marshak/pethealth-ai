@@ -231,7 +231,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: theme.radii.sm8,
     backgroundColor: theme.surface,
   },
   historyButtonText: {
@@ -277,7 +277,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalContent: {
     backgroundColor: theme.surface,
-    borderRadius: 20,
+    borderRadius: theme.radii.r20,
     padding: 24,
     width: '100%',
     maxWidth: 400,
@@ -305,7 +305,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.surface,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     marginBottom: 20,
   },
   modalAmount: {
@@ -336,7 +336,7 @@ const makeStyles = (theme) => StyleSheet.create({
   modalButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: theme.radii.sm12,
     alignItems: 'center',
   },
   modalButtonCancel: {

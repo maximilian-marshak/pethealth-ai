@@ -43,7 +43,7 @@ const makeStyles = (theme) => StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: theme.surface,
-    borderRadius: 14,
+    borderRadius: theme.radii.r14,
     padding: 13,
     borderLeftWidth: 4,
     shadowColor: theme.shadow.shadowColor,
@@ -61,7 +61,7 @@ const makeStyles = (theme) => StyleSheet.create({
   iconWrap: {
     width: 26,
     height: 26,
-    borderRadius: 7,
+    borderRadius: theme.radii.sm8,
     alignItems: 'center',
     justifyContent: 'center',
   },
