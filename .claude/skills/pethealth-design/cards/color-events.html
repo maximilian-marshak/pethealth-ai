@@ -1,0 +1,25 @@
+<!-- @dsCard group="Colors" viewport="700x140" name="Event Types" subtitle="Medical calendar categories — distinct, avoids green/red" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px 20px; background: var(--bg-base); }
+  .row { display: flex; gap: 12px; }
+  .sw { flex: 1; border-radius: var(--r-md); padding: 12px; min-height: 84px; color: #fff;
+        display: flex; flex-direction: column; justify-content: space-between; }
+  .name { font-weight: 700; font-size: 12px; }
+  .hex { font-size: 11px; font-weight: 600; opacity: 0.9; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw" style="background: var(--event-record);"><span class="name">Record</span><span class="hex">#7B6EF0</span></div>
+    <div class="sw" style="background: var(--event-prescription);"><span class="name">Prescription</span><span class="hex">#4F8DF0</span></div>
+    <div class="sw" style="background: var(--event-vaccine);"><span class="name">Vaccine</span><span class="hex">#2BB6A8</span></div>
+    <div class="sw" style="background: var(--event-reminder);"><span class="name">Reminder</span><span class="hex">#E0A23E</span></div>
+    <div class="sw" style="background: var(--event-appointment);"><span class="name">Appointment</span><span class="hex">#E06C9C</span></div>
+  </div>
+</body>
+</html>

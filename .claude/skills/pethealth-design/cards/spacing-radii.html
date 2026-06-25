@@ -1,0 +1,25 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Radii" subtitle="sm 12 · md 16 · lg 24 · xl 28 · pill 999" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px 22px; background: var(--bg-base); color: var(--t1); }
+  .row { display: flex; gap: 14px; align-items: flex-end; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
+  .box { width: 100%; height: 72px; background: var(--accent-tint); border: 1.5px solid var(--accent); }
+  .lbl { font-size: 11px; color: var(--t2); font-weight: 600; }
+  .pill { width: 100%; height: 40px; border-radius: var(--r-pill); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="item"><div class="box" style="border-radius:var(--r-sm);"></div><span class="lbl">sm · 12</span></div>
+    <div class="item"><div class="box" style="border-radius:var(--r-md);"></div><span class="lbl">md · 16</span></div>
+    <div class="item"><div class="box" style="border-radius:var(--r-lg);"></div><span class="lbl">lg · 24</span></div>
+    <div class="item"><div class="box" style="border-radius:var(--r-xl);"></div><span class="lbl">xl · 28</span></div>
+    <div class="item"><div class="box pill"></div><span class="lbl">pill · 999</span></div>
+  </div>
+</body>
+</html>

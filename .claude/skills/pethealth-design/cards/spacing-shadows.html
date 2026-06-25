@@ -1,0 +1,24 @@
+<!-- @dsCard group="Spacing" viewport="700x160" name="Shadows & Glow" subtitle="Diffuse soft shadows + mint accent glow" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 22px; background: var(--bg-base); }
+  .row { display: flex; gap: 20px; }
+  .item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .box { width: 100%; height: 64px; background: var(--surface); border-radius: var(--r-md); }
+  .lbl { font-size: 11px; color: var(--t2); font-weight: 600; text-align: center; }
+  .glow { border: 1px solid var(--accent); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="item"><div class="box" style="box-shadow: var(--shadow-1);"></div><span class="lbl">shadow-1<br>0 2 8 / .04</span></div>
+    <div class="item"><div class="box" style="box-shadow: var(--shadow-2);"></div><span class="lbl">shadow-2<br>0 8 24 / .08</span></div>
+    <div class="item"><div class="box" style="box-shadow: var(--shadow-3);"></div><span class="lbl">shadow-3<br>0 16 40 / .12</span></div>
+    <div class="item"><div class="box glow" style="box-shadow: var(--glow-accent);"></div><span class="lbl">glow-accent<br>0 0 24 mint /.30</span></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,138 @@
+/* ════════════════════════════════════════════════════════════
+   PetHealthAI — Color tokens
+   Source of truth: src/theme/theme.js + docs/PetHealthAI_visual_foundation.md
+   Mint/teal accent · health semantics (ok/warn/danger, separate from accent)
+   · two-tier glass · radial-blob backgrounds · categorical palettes.
+
+   Both light and dark are first-class. Dark is scoped to
+   [data-theme="dark"] (and honours prefers-color-scheme by default
+   when the consumer opts in with [data-theme="auto"]).
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── Accent — mint/teal (brand) ───────────────────────────── */
+  --accent: #56B89F;          /* CTA, active states, icon-chips, highlights, AI logo */
+  --accent-press: #3E9C84;    /* pressed state — ALSO use as fill behind white CTA text (AA) */
+  --accent-tint: #E0F2EC;     /* icon-chip bg, soft surfaces */
+
+  /* Optional accent presets (mint is canon; peach/blue are opt-in theme variants) */
+  --accent-peach: #EC8C69;
+  --accent-peach-press: #D2734F;
+  --accent-peach-tint: #FBE6DC;
+  --accent-blue: #4F8DF0;
+  --accent-blue-press: #3A74D1;
+  --accent-blue-tint: #E2ECFC;
+
+  /* ─── Health semantics — separate triad, never the brand accent ── */
+  --ok: #2EA567;       /* protected / in range (grassy green — distinct from teal) */
+  --warn: #E8A93C;     /* due soon / time to renew */
+  --danger: #E2574C;   /* overdue / alarm / destructive */
+
+  /* ─── Backgrounds — radial blobs ───────────────────────────── */
+  --bg-base: #FBFEFD;  /* near-white substrate under the blobs */
+  --blob-mint: #56B89F;
+  --blob-peach: #EC8C69;
+  --blob-blue: #4F8DF0;
+
+  /* ─── Surfaces & glass (two-tier) ──────────────────────────── */
+  --surface: #FFFFFF;                       /* solid — data cards, medical records */
+  --glass-data-bg: rgba(255,255,255,0.62);  /* data glass — readable status/recs */
+  --glass-data-blur: 24px;
+  --glass-decor-bg: rgba(255,255,255,0.30); /* decor glass — switcher, insight, paws */
+  --glass-decor-blur: 34px;
+  --glass-decor-border: rgba(255,255,255,0.65);
+  --hairline: rgba(0,0,0,0.06);             /* dividers */
+
+  /* ─── Text — t1 (primary) … t4 (placeholder) ───────────────── */
+  --t1: #1A1A2E;       /* primary body / numbers */
+  --t2: #4A4A5C;       /* secondary */
+  --t3: #8A8A99;       /* muted / captions */
+  --t4: #B5B5C0;       /* placeholder / disabled */
+  --on-accent: #FFFFFF;
+
+  /* ─── Categorical: medical event types (NOT status, NOT brand) ── */
+  --event-record: #7B6EF0;        /* violet — visit/record */
+  --event-prescription: #4F8DF0;  /* blue — medication */
+  --event-vaccine: #2BB6A8;       /* teal (brand-adjacent) — vaccine */
+  --event-reminder: #E0A23E;      /* amber — reminder */
+  --event-appointment: #E06C9C;   /* rose — appointment */
+
+  /* ─── Categorical: AI assistant categories ─────────────────── */
+  --cat-health: #2FAFB5;      /* teal */
+  --cat-nutrition: #6BB24F;   /* green */
+  --cat-behavior: #E0A23E;    /* amber */
+  --cat-grooming: #E07BA8;    /* rose */
+  --cat-emergency: #E8654E;   /* red-orange */
+  --cat-relocation: #4F8DF0;  /* blue */
+  --cat-general: #8C7FD0;     /* violet */
+
+  /* ─── Radii ────────────────────────────────────────────────── */
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 28px;   /* large cards */
+  --r-pill: 999px;
+
+  /* ─── Shadows & accent glow ────────────────────────────────── */
+  --shadow-1: 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-2: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-3: 0 16px 40px rgba(0,0,0,0.12);
+  --shadow-card: 0 8px 16px rgba(11,31,26,0.10);    /* GlassCard outer shadow */
+  --glow-accent: 0 0 24px rgba(86,184,159,0.30);    /* chat/active card glow */
+}
+
+/* ════════════════════════════════════════════════════════════
+   Dark theme — equal first-class. Apply via [data-theme="dark"].
+   ════════════════════════════════════════════════════════════ */
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  --accent: #6FCBB2;
+  --accent-press: #56B89F;
+  --accent-tint: rgba(86,184,159,0.18);
+
+  --accent-peach: #F2A07B;
+  --accent-peach-press: #DB8763;
+  --accent-peach-tint: rgba(242,160,123,0.18);
+  --accent-blue: #6BA1F5;
+  --accent-blue-press: #5587DC;
+  --accent-blue-tint: rgba(107,161,245,0.18);
+
+  /* health semantics shared across themes */
+  --ok: #2EA567;
+  --warn: #E8A93C;
+  --danger: #E2574C;
+
+  --bg-base: #0F1117;
+  --blob-mint: #6FCBB2;
+  --blob-peach: #F2A07B;
+  --blob-blue: #6BA1F5;
+
+  --surface: #1E1E28;
+  --glass-data-bg: rgba(30,33,44,0.66);
+  --glass-decor-bg: rgba(38,42,56,0.34);
+  --glass-decor-border: rgba(255,255,255,0.14);
+  --hairline: rgba(255,255,255,0.08);
+
+  --t1: #F2F2F7;
+  --t2: #B0B0BC;
+  --t3: #7A7A88;
+  --t4: #55555F;
+  --on-accent: #FFFFFF;
+
+  --event-record: #9A8FF5;
+  --event-prescription: #6BA1F5;
+  --event-vaccine: #4FCFC0;
+  --event-reminder: #ECB75C;
+  --event-appointment: #EC88B2;
+
+  --cat-health: #4FC9CE;
+  --cat-nutrition: #84C96B;
+  --cat-behavior: #ECB75C;
+  --cat-grooming: #EC93B8;
+  --cat-emergency: #F0826E;
+  --cat-relocation: #6BA1F5;
+  --cat-general: #A99CE6;
+
+  --shadow-card: 0 10px 18px rgba(0,0,0,0.45);
+  --glow-accent: 0 0 28px rgba(111,203,178,0.36);
+}

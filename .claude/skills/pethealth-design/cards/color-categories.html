@@ -1,0 +1,27 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Assistant Categories" subtitle="AI hub tiles — 7 distinct tones, emergency in red-orange" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px 20px; background: var(--bg-base); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .sw { border-radius: var(--r-md); padding: 12px; min-height: 56px; color: #fff;
+        display: flex; flex-direction: column; justify-content: space-between; }
+  .name { font-weight: 700; font-size: 12px; }
+  .hex { font-size: 11px; font-weight: 600; opacity: 0.9; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="sw" style="background: var(--cat-health);"><span class="name">Health</span><span class="hex">#2FAFB5</span></div>
+    <div class="sw" style="background: var(--cat-nutrition);"><span class="name">Nutrition</span><span class="hex">#6BB24F</span></div>
+    <div class="sw" style="background: var(--cat-behavior);"><span class="name">Behavior</span><span class="hex">#E0A23E</span></div>
+    <div class="sw" style="background: var(--cat-grooming);"><span class="name">Grooming</span><span class="hex">#E07BA8</span></div>
+    <div class="sw" style="background: var(--cat-emergency);"><span class="name">Emergency</span><span class="hex">#E8654E</span></div>
+    <div class="sw" style="background: var(--cat-relocation);"><span class="name">Relocation</span><span class="hex">#4F8DF0</span></div>
+    <div class="sw" style="background: var(--cat-general);"><span class="name">General</span><span class="hex">#8C7FD0</span></div>
+  </div>
+</body>
+</html>

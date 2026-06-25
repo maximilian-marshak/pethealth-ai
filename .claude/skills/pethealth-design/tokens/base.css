@@ -1,0 +1,49 @@
+/* ════════════════════════════════════════════════════════════
+   PetHealthAI — Base reset & shared utilities
+   Body defaults to Nunito + t1. Provides the signature radial-blob
+   background as a reusable helper (.ph-bg) plus a glass mixin pair.
+   ════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-body);
+  color: var(--t1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ─── Signature background: near-white substrate + 3 soft radial blobs.
+   Mint dominates (top-left), peach (top-right) and blue (bottom) are
+   delicate. Mirrors theme.js bgBlobs. Apply to a full-bleed wrapper. ── */
+.ph-bg {
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(72% 72% at 16% 10%, color-mix(in srgb, var(--blob-mint) 26%, transparent), transparent 70%),
+    radial-gradient(55% 55% at 92% 4%, color-mix(in srgb, var(--blob-peach) 18%, transparent), transparent 70%),
+    radial-gradient(66% 66% at 50% 96%, color-mix(in srgb, var(--blob-blue) 16%, transparent), transparent 70%);
+}
+[data-theme="dark"] .ph-bg {
+  background-image:
+    radial-gradient(72% 72% at 16% 10%, color-mix(in srgb, var(--blob-mint) 15%, transparent), transparent 70%),
+    radial-gradient(55% 55% at 92% 4%, color-mix(in srgb, var(--blob-peach) 11%, transparent), transparent 70%),
+    radial-gradient(66% 66% at 50% 96%, color-mix(in srgb, var(--blob-blue) 12%, transparent), transparent 70%);
+}
+
+/* ─── Glass surfaces (web: backdrop-filter blur) ──────────────── */
+.ph-glass-data {
+  background: var(--glass-data-bg);
+  backdrop-filter: blur(var(--glass-data-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-data-blur)) saturate(1.4);
+  border: 1px solid var(--hairline);
+}
+.ph-glass-decor {
+  background: var(--glass-decor-bg);
+  backdrop-filter: blur(var(--glass-decor-blur)) saturate(1.9);
+  -webkit-backdrop-filter: blur(var(--glass-decor-blur)) saturate(1.9);
+  border: 1px solid var(--glass-decor-border);
+}

@@ -1,0 +1,33 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Accent — Mint" subtitle="Brand teal: CTA, active states, icon-chips, highlights" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px 20px; background: var(--bg-base); }
+  .row { display: flex; gap: 14px; }
+  .sw { flex: 1; border-radius: var(--r-md); padding: 12px 14px; min-height: 86px;
+        display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--hairline); }
+  .name { font-weight: 700; font-size: 13px; }
+  .hex { font-size: 12px; font-weight: 600; opacity: 0.85; font-variant-numeric: tabular-nums; }
+  .tok { font-size: 11px; opacity: 0.7; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw" style="background: var(--accent); color: #fff;">
+      <span class="name">Accent</span>
+      <div><div class="hex">#56B89F</div><div class="tok">--accent</div></div>
+    </div>
+    <div class="sw" style="background: var(--accent-press); color: #fff;">
+      <span class="name">Accent Press</span>
+      <div><div class="hex">#3E9C84</div><div class="tok">--accent-press · CTA fill</div></div>
+    </div>
+    <div class="sw" style="background: var(--accent-tint); color: var(--accent-press);">
+      <span class="name">Accent Tint</span>
+      <div><div class="hex">#E0F2EC</div><div class="tok">--accent-tint</div></div>
+    </div>
+  </div>
+</body>
+</html>

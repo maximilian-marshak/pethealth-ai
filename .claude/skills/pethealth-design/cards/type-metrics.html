@@ -1,0 +1,25 @@
+<!-- @dsCard group="Type" viewport="700x150" name="Numeric Metrics" subtitle="Weight, Paws, dates — large & bold (700)" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px 22px; background: var(--bg-base); color: var(--t1); }
+  .row { display: flex; gap: 14px; }
+  .metric { flex: 1; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-md);
+            padding: 12px 14px; box-shadow: var(--shadow-1); }
+  .cap { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--t3); }
+  .num { font-size: 30px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .unit { font-size: 15px; font-weight: 600; color: var(--t3); }
+  .sub { font-size: 12px; color: var(--t3); margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="metric"><div class="cap">Weight</div><div class="num">32.4<span class="unit"> kg</span></div><div class="sub">+0.3 kg · was 32.1</div></div>
+    <div class="metric"><div class="cap">Total Paws</div><div class="num" style="color:var(--accent-press);">1,240</div><div class="sub">Earned this month 320/500</div></div>
+    <div class="metric"><div class="cap">Next Vaccine</div><div class="num" style="font-size:24px;">12 Jul</div><div class="sub" style="color:var(--warn); font-weight:600;">Due soon</div></div>
+  </div>
+</body>
+</html>

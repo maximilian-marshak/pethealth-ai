@@ -1,0 +1,25 @@
+<!-- @dsCard group="Spacing" viewport="700x160" name="Spacing Scale" subtitle="4px base step · screen gutter 20 · card padding 16" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px 22px; background: var(--bg-base); color: var(--t1); }
+  .stack { display: flex; flex-direction: column; gap: 9px; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .bar { height: 16px; background: var(--accent); border-radius: 4px; }
+  .lbl { font-size: 12px; color: var(--t2); font-weight: 600; width: 150px; flex: none; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <div class="stack">
+    <div class="row"><span class="lbl">--space-1 · 4</span><span class="bar" style="width:4px;"></span></div>
+    <div class="row"><span class="lbl">--space-2 · 8</span><span class="bar" style="width:8px;"></span></div>
+    <div class="row"><span class="lbl">--space-4 · 12</span><span class="bar" style="width:12px;"></span></div>
+    <div class="row"><span class="lbl">--space-5 · 16 (card)</span><span class="bar" style="width:16px;"></span></div>
+    <div class="row"><span class="lbl">--space-6 · 20 (gutter)</span><span class="bar" style="width:20px;"></span></div>
+    <div class="row"><span class="lbl">--space-8 · 32</span><span class="bar" style="width:32px;"></span></div>
+  </div>
+</body>
+</html>
