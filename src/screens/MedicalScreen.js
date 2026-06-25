@@ -1746,6 +1746,12 @@ const makeStyles = (theme) => StyleSheet.create({
   emptyIcon:            { fontSize: 48, marginBottom: 12 },
   emptyTitle:           { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 6 },
   emptySub:             { fontSize: 14, color: theme.t3, textAlign: 'center', paddingHorizontal: 20 },
+  // Фильтр-чипы списка (были ошибочно только в makeMStyles → styles.chip=undefined). Белая таблетка + контур.
+  chip:                 { paddingHorizontal: 14, paddingVertical: 7, borderRadius: theme.radii.pill999, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.chipBorder },
+  chipActive:           { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
+  chipText:             { fontSize: 13, fontFamily: theme.font.semibold, color: theme.t2 },
+  chipTextActive:       { color: theme.onAccent, fontFamily: theme.font.semibold },
+  chipAdd:              { width: 38, height: 38, borderRadius: theme.radii.pill999, backgroundColor: theme.accentPress, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 });
 
 const makeDpStyles = (theme) => StyleSheet.create({
@@ -1773,7 +1779,6 @@ const makeMStyles = (theme) => StyleSheet.create({
   chipActive:  { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
   chipText:    { fontSize: 13, fontFamily: theme.font.semibold, color: theme.t2 },
   chipTextActive: { color: theme.onAccent, fontFamily: theme.font.semibold },
-  chipAdd:     { width: 38, height: 38, borderRadius: theme.radii.pill999, backgroundColor: theme.accentPress, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   toggleRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 4 },
   toggle:      { width: 48, height: 26, borderRadius: theme.radii.sm12, justifyContent: 'center', paddingHorizontal: 3 },
   toggleOn:    { backgroundColor: theme.accent },
