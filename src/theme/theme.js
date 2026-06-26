@@ -99,13 +99,13 @@ const lightBase = {
   // Категориальная палитра AI-категорий хаба (§6.1) — отдельный домен, как eventTypes.
   // 7 различимых пастельно-средних тонов; emergency — красно-оранжевый (срочность).
   assistantCategories: {
-    health:     '#2FAFB5', // teal
-    nutrition:  '#6BB24F', // green
-    behavior:   '#E0A23E', // amber
-    grooming:   '#E07BA8', // rose
-    emergency:  '#E8654E', // red-orange (срочность)
-    relocation: '#4F8DF0', // blue
-    general:    '#8C7FD0', // violet
+    health:     '#238286', // teal   (затемнён под белую иконку: white 4.56)
+    nutrition:  '#4E8339', // green  (затемнён: white 4.54)
+    behavior:   '#9F6C19', // amber  (затемнён: white 4.53)
+    grooming:   '#D13B7E', // rose   (затемнён: white 4.53)
+    emergency:  '#E8654E', // red-orange (срочность; white 3.28 ≥3:1)
+    relocation: '#4F8DF0', // blue   (white 3.28 ≥3:1)
+    general:    '#8C7FD0', // violet (white 3.46 ≥3:1)
   },
   // Категориальная палитра лиг ранг-системы (charity-ранги) — медальные металлики,
   // отдельный домен (не accent/семантика); рендерится в rank-картах Profile/Dashboard.
@@ -145,15 +145,16 @@ const darkBase = {
     reminder:     '#ECB75C', // amber
     appointment:  '#EC88B2', // rose
   },
-  // AI-категории хаба (dark — чуть ярче для контраста).
+  // AI-категории хаба (dark — затемнены под белую иконку на solid-чипах, white ≥4.5;
+  // как текст на тёмном фоне сохраняют читаемость cat/bg ~4.1 ≥3:1).
   assistantCategories: {
-    health:     '#4FC9CE', // teal
-    nutrition:  '#84C96B', // green
-    behavior:   '#ECB75C', // amber
-    grooming:   '#EC93B8', // rose
-    emergency:  '#F0826E', // red-orange
-    relocation: '#6BA1F5', // blue
-    general:    '#A99CE6', // violet
+    health:     '#258185', // teal   (white 4.61)
+    nutrition:  '#478430', // green  (white 4.55)
+    behavior:   '#9F6B13', // amber  (white 4.58)
+    grooming:   '#DA2F76', // rose   (white 4.52)
+    emergency:  '#DE3617', // red-orange (white 4.52)
+    relocation: '#1F70F0', // blue   (white 4.53)
+    general:    '#7965D8', // violet (white 4.50)
   },
   // Лиги (dark — металлики чуть ярче/насыщеннее для тёмного фона).
   leagueColors: {

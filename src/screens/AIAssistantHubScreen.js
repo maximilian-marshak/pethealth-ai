@@ -2,7 +2,7 @@
 // src/screens/AIAssistantHubScreen.js
 // ══════════════════════════════════════════════════
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -18,19 +17,25 @@ import { usePetContext } from '../context/PetContext';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
-import GlassCard from '../components/GlassCard';
+
+// Эмодзи питомца по виду (как в MedicalScreen).
+const SPECIES_EMOJI = {
+  dog: '🐶', собака: '🐶', пёс: '🐶', пес: '🐶',
+  cat: '🐱', кошка: '🐱', кот: '🐱',
+  rabbit: '🐰', кролик: '🐰',
+  bird: '🐦', птица: '🐦',
+  hamster: '🐹', хомяк: '🐹',
+  fish: '🐠', рыба: '🐠', рыбка: '🐠',
+  turtle: '🐢', черепаха: '🐢',
+  snake: '🐍', змея: '🐍',
+};
+const speciesEmoji = (s) => SPECIES_EMOJI[(s || '').toString().trim().toLowerCase()] || '🐾';
 
 export default function AIAssistantHubScreen({ navigation }) {
   const { selectedPet, pets, selectPet } = usePetContext();
   const { t } = useTranslation('ai');
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const [pickerVisible, setPickerVisible] = useState(false);
-
-  const handleSelectPet = async (petId) => {
-    await selectPet(petId);
-    setPickerVisible(false);
-  };
 
   // ═══ КАТЕГОРИИ ═══
   const categories = [
@@ -236,20 +241,8 @@ export default function AIAssistantHubScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ═══ HEADER ═══ */}
+        {/* ═══ HEADER (плоский, эталон) ═══ */}
         <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View style={styles.headerIcon}>
-              <Ionicons name="chatbubbles" size={32} color={theme.onAccent} />
-            </View>
-            <TouchableOpacity
-              style={styles.photoButton}
-              onPress={handlePhotoAnalysis}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="camera" size={24} color={theme.onAccent} />
-            </TouchableOpacity>
-          </View>
           <Text style={styles.headerTitle}>{t('hub.title')}</Text>
           <Text style={styles.headerSubtitle}>
             {selectedPet
@@ -258,68 +251,56 @@ export default function AIAssistantHubScreen({ navigation }) {
           </Text>
         </View>
 
-        {/* ═══ SELECTED PET INFO (тап → выбор питомца) ═══ */}
-        {selectedPet && (
-          <TouchableOpacity
-            style={styles.petInfoCard}
-            onPress={() => setPickerVisible(true)}
-            activeOpacity={0.7}
+        {/* ═══ PET-СВИТЧЕР чипами (как MedicalScreen) → selectPet ═══ */}
+        {pets.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.petSwitcher}
+            contentContainerStyle={styles.petSwitcherContent}
           >
-            <Ionicons name="paw" size={24} color={theme.accent} />
-            <View style={styles.petInfoText}>
-              <Text style={styles.petName}>{selectedPet.name}</Text>
-              <Text style={styles.petDetails}>
-                {selectedPet.breed} • {selectedPet.age != null
-                  ? t('common:yearsOld', { count: selectedPet.age })
-                  : t('chat.unknownAge')}
-              </Text>
-            </View>
-            {pets.length > 1 && (
-              <Ionicons name="chevron-down" size={20} color={theme.t3} />
-            )}
-          </TouchableOpacity>
+            {pets.map((pet) => (
+              <TouchableOpacity
+                key={pet.id}
+                style={[styles.petChip, selectedPet?.id === pet.id && styles.petChipActive]}
+                onPress={() => selectPet(pet.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.petChipEmoji}>{speciesEmoji(pet.species)}</Text>
+                <Text style={[styles.petChipText, selectedPet?.id === pet.id && styles.petChipTextActive]}>
+                  {pet.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
 
-        {/* ═══ SECTION: ASK AI ═══ */}
-        <Text style={styles.sectionTitle}>{t('hub.sections.ai')}</Text>
-
-        {/* ═══ FREE CHAT CARD ═══ */}
-        <GlassCard variant="decor" style={styles.freeChatCard}>
+        {/* ═══ ЭКШН-ПЛИТКИ: Free Chat + Photo — крупные квадраты с заливкой ═══ */}
+        <View style={styles.actionTiles}>
           <TouchableOpacity
-            style={styles.freeChatInner}
+            style={[styles.actionTile, { backgroundColor: theme.assistantCategories.health }]}
             onPress={handleStartFreeChat}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <View style={styles.freeChatIcon}>
-              <Ionicons name="chatbubble-ellipses" size={28} color={theme.onAccent} />
+            <View style={styles.actionTileIcon}>
+              <Ionicons name="chatbubbles" size={26} color={theme.onAccent} />
             </View>
-            <View style={styles.freeChatContent}>
-              <Text style={styles.freeChatTitle}>{t('hub.freeChat')}</Text>
-              <Text style={styles.freeChatSubtitle}>{t('hub.freeChatSubtitle')}</Text>
-            </View>
-            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+            <Text style={styles.actionTileTitle}>{t('hub.freeChat')}</Text>
           </TouchableOpacity>
-        </GlassCard>
 
-        {/* ═══ PHOTO ANALYSIS CARD ═══ */}
-        <GlassCard variant="decor" style={styles.photoAnalysisCard}>
           <TouchableOpacity
-            style={styles.photoAnalysisInner}
+            style={[styles.actionTile, { backgroundColor: theme.assistantCategories.general }]}
             onPress={handlePhotoAnalysis}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <View style={styles.photoAnalysisIcon}>
-              <Ionicons name="camera" size={28} color={theme.onAccent} />
+            <View style={styles.actionTileIcon}>
+              <Ionicons name="camera" size={26} color={theme.onAccent} />
             </View>
-            <View style={styles.photoAnalysisContent}>
-              <Text style={styles.photoAnalysisTitle}>{t('hub.photoAnalysis')}</Text>
-              <Text style={styles.photoAnalysisSubtitle}>{t('hub.photoAnalysisSubtitle')}</Text>
-            </View>
-            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+            <Text style={styles.actionTileTitle}>{t('hub.photoAnalysis')}</Text>
           </TouchableOpacity>
-        </GlassCard>
+        </View>
 
-        {/* ═══ CATEGORIES GRID ═══ */}
+        {/* ═══ CATEGORIES GRID — 2 колонки квадратов (эталон) ═══ */}
         <Text style={styles.sectionTitle}>{t('hub.browseByCategory')}</Text>
         <View style={styles.categoriesGrid}>
           {categories.map((category) => {
@@ -327,18 +308,14 @@ export default function AIAssistantHubScreen({ navigation }) {
             return (
             <TouchableOpacity
               key={category.id}
-              style={[styles.categoryCard, { borderLeftColor: catColor }]}
+              style={styles.categoryCard}
               onPress={() => handleCategoryPress(category)}
               activeOpacity={0.7}
             >
-              <View style={[styles.categoryIcon, { backgroundColor: catColor + '20' }]}>
-                <Ionicons name={category.icon} size={28} color={catColor} />
+              <View style={[styles.categoryChip, { backgroundColor: catColor }]}>
+                <Ionicons name={category.icon} size={20} color={theme.onAccent} />
               </View>
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryTitle}>{category.title}</Text>
-                <Text style={styles.categoryDescription}>{category.description}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={theme.t3} />
+              <Text style={styles.categoryTitle}>{category.title}</Text>
             </TouchableOpacity>
           ); })}
         </View>
@@ -367,97 +344,42 @@ export default function AIAssistantHubScreen({ navigation }) {
           </View>
         ); })}
 
-        {/* ═══ SECTION: REFERENCE (статика, без AI) ═══ */}
+        {/* ═══ SECTION: REFERENCE (статика, без AI) — tileBtn ═══ */}
         <Text style={styles.sectionTitle}>{t('hub.sections.reference')}</Text>
-        <GlassCard variant="decor" style={styles.freeChatCard}>
+        <View style={styles.referenceTiles}>
           <TouchableOpacity
-            style={styles.freeChatInner}
+            style={styles.tileBtn}
             onPress={() => navigation.navigate('KnowledgeBase')}
             activeOpacity={0.8}
           >
-            <View style={[styles.freeChatIcon, { backgroundColor: theme.accentPress }]}>
-              <Ionicons name="library" size={28} color={theme.onAccent} />
+            <View style={[styles.tileChip, { backgroundColor: theme.assistantCategories.health }]}>
+              <Ionicons name="library" size={22} color={theme.onAccent} />
             </View>
-            <View style={styles.freeChatContent}>
-              <Text style={styles.freeChatTitle}>{t('knowledge.title')}</Text>
-              <Text style={styles.freeChatSubtitle}>{t('hub.knowledgeSubtitle')}</Text>
+            <View style={styles.tileText}>
+              <Text style={styles.tileTitle}>{t('knowledge.title')}</Text>
+              <Text style={styles.tileSubtitle}>{t('hub.knowledgeSubtitle')}</Text>
             </View>
-            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+            <Ionicons name="chevron-forward" size={18} color={theme.t3} />
           </TouchableOpacity>
-        </GlassCard>
 
-        <GlassCard variant="decor" style={styles.freeChatCard}>
           <TouchableOpacity
-            style={styles.freeChatInner}
+            style={styles.tileBtn}
             onPress={() => navigation.navigate('Relocation')}
             activeOpacity={0.8}
           >
-            <View style={[styles.freeChatIcon, { backgroundColor: theme.accentPress }]}>
-              <Ionicons name="airplane" size={26} color={theme.onAccent} />
+            <View style={[styles.tileChip, { backgroundColor: theme.assistantCategories.relocation }]}>
+              <Ionicons name="airplane" size={22} color={theme.onAccent} />
             </View>
-            <View style={styles.freeChatContent}>
-              <Text style={styles.freeChatTitle}>{t('relocation.title')}</Text>
-              <Text style={styles.freeChatSubtitle}>{t('hub.relocationSubtitle')}</Text>
+            <View style={styles.tileText}>
+              <Text style={styles.tileTitle}>{t('relocation.title')}</Text>
+              <Text style={styles.tileSubtitle}>{t('hub.relocationSubtitle')}</Text>
             </View>
-            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+            <Ionicons name="chevron-forward" size={18} color={theme.t3} />
           </TouchableOpacity>
-        </GlassCard>
+        </View>
 
         <View style={styles.footerSpacing} />
       </ScrollView>
-
-      {/* ═══ FAB ═══ */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={handleStartFreeChat}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="chatbubbles" size={28} color={theme.onAccent} />
-      </TouchableOpacity>
-
-      {/* ═══ PET PICKER MODAL ═══ */}
-      <Modal
-        visible={pickerVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPickerVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.pickerOverlay}
-          activeOpacity={1}
-          onPress={() => setPickerVisible(false)}
-        >
-          <View style={styles.pickerSheet}>
-            <Text style={styles.pickerTitle}>{t('hub.choosePet')}</Text>
-            <ScrollView>
-              {pets.map((pet) => {
-                const isActive = pet.id === selectedPet?.id;
-                return (
-                  <TouchableOpacity
-                    key={pet.id}
-                    style={[styles.pickerRow, isActive && styles.pickerRowActive]}
-                    onPress={() => handleSelectPet(pet.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="paw" size={20} color={isActive ? theme.accent : theme.t3} />
-                    <View style={styles.pickerRowText}>
-                      <Text style={styles.pickerRowName}>{pet.name}</Text>
-                      <Text style={styles.pickerRowDetails}>
-                        {pet.breed} • {pet.age != null
-                          ? t('common:yearsOld', { count: pet.age })
-                          : t('chat.unknownAge')}
-                      </Text>
-                    </View>
-                    {isActive && (
-                      <Ionicons name="checkmark-circle" size={22} color={theme.accent} />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </Screen>
   );
 }
@@ -469,193 +391,135 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 24,
   },
-  pickerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // theme-neutral scrim
-    justifyContent: 'flex-end',
+  // Плоский заголовок (эталон)
+  header: {
+    paddingTop: 8,
+    paddingBottom: 4,
+    paddingHorizontal: 20,
   },
-  pickerSheet: {
-    backgroundColor: theme.surface,
-    borderTopLeftRadius: theme.radii.r20,
-    borderTopRightRadius: theme.radii.r20,
-    padding: 20,
-    maxHeight: '60%',
-  },
-  pickerTitle: {
-    fontSize: 18,
+  headerTitle: {
+    fontSize: 26,
     fontFamily: theme.font.bold,
     color: theme.t1,
-    marginBottom: 16,
+    letterSpacing: -0.4,
   },
-  pickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: theme.radii.sm12,
-    marginBottom: 8,
-    backgroundColor: theme.surface,
-    gap: 12,
-  },
-  pickerRowActive: {
-    backgroundColor: theme.accent + '20',
-    borderWidth: 1,
-    borderColor: theme.accent,
-  },
-  pickerRowText: {
-    flex: 1,
-  },
-  pickerRowName: {
-    fontSize: 16,
-    fontFamily: theme.font.semibold,
-    color: theme.t1,
-  },
-  pickerRowDetails: {
-    fontSize: 13,
+  headerSubtitle: {
+    fontSize: 14,
     color: theme.t2,
     marginTop: 2,
   },
-  header: {
-    backgroundColor: theme.accentPress,
-    paddingTop: 20,
-    paddingBottom: 30,
+  // Pet-свитчер чипами (паттерн MedicalScreen)
+  petSwitcher: {
+    maxHeight: 52,
+    backgroundColor: 'transparent',
+  },
+  petSwitcherContent: {
     paddingHorizontal: 20,
-    alignItems: 'center',
-    borderBottomLeftRadius: theme.radii.xl28,
-    borderBottomRightRadius: theme.radii.xl28,
+    paddingVertical: 10,
+    gap: 8,
   },
-  headerTop: {
-    width: '100%',
+  petChip: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    position: 'relative',
-  },
-  headerIcon: {
-    width: 64,
-    height: 64,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: theme.radii.pill999,
-    backgroundColor: theme.onAccent + '33',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photoButton: {
-    position: 'absolute',
-    right: 0,
-    width: 48,
-    height: 48,
-    borderRadius: theme.radii.lg24,
-    backgroundColor: theme.onAccent + '33',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: theme.onAccent + '4D',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontFamily: theme.font.bold,
-    color: theme.onAccent,
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: theme.onAccent + 'E6',
-    textAlign: 'center',
-  },
-  petInfoCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: theme.surface,
-    marginHorizontal: 20,
-    marginTop: -20,
+    borderWidth: 1,
+    borderColor: theme.chipBorder,
+  },
+  petChipActive: {
+    backgroundColor: theme.accentPress,
+    borderColor: theme.accentPress,
+  },
+  petChipText: {
+    fontSize: 14,
+    fontFamily: theme.font.semibold,
+    color: theme.t2,
+  },
+  petChipTextActive: {
+    color: theme.onAccent,
+  },
+  petChipEmoji: {
+    fontSize: 15,
+  },
+  // Экшн-плитки Free Chat / Photo — 2 крупных квадрата с заливкой, белый текст/иконка
+  actionTiles: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    marginTop: 16,
+  },
+  actionTile: {
+    flex: 1,
+    minHeight: 132,
+    borderRadius: theme.radii.r18,
     padding: 16,
-    borderRadius: theme.radii.md16,
+    justifyContent: 'space-between',
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 3,
   },
-  petInfoText: {
-    marginLeft: 12,
+  actionTileIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.radii.pill999,
+    backgroundColor: theme.onAccent + '26', // полупрозрачный белый круг на заливке
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionTileTitle: {
+    fontSize: 20,
+    fontFamily: theme.font.bold,
+    color: theme.onAccent,
+    lineHeight: 24,
+    marginTop: 12,
+  },
+  // Reference-плитки (Справочник) — компактные строки tileBtn
+  tileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.hairline,
+    borderRadius: theme.radii.r18,
+    shadowColor: theme.shadow.shadowColor,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  tileChip: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radii.r14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileText: {
     flex: 1,
   },
-  petName: {
-    fontSize: 18,
+  tileTitle: {
+    fontSize: 15,
     fontFamily: theme.font.bold,
     color: theme.t1,
   },
-  petDetails: {
-    fontSize: 14,
+  tileSubtitle: {
+    fontSize: 12,
     color: theme.t2,
     marginTop: 2,
   },
-  freeChatCard: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: theme.radii.r20,
-  },
-  freeChatInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // Справочник — те же tileBtn, что и экшн-плитки (AH-1)
+  referenceTiles: {
+    paddingHorizontal: 20,
     gap: 12,
-  },
-  freeChatIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: theme.radii.xl28,
-    backgroundColor: theme.onAccent + '33',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  freeChatContent: {
-    flex: 1,
-  },
-  freeChatTitle: {
-    fontSize: 18,
-    fontFamily: theme.font.bold,
-    color: theme.t1,
-    marginBottom: 4,
-  },
-  freeChatSubtitle: {
-    fontSize: 14,
-    color: theme.t2,
-  },
-  photoAnalysisCard: {
-    marginHorizontal: 20,
-    marginTop: 12,
-    borderRadius: theme.radii.r20,
-  },
-  photoAnalysisInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  photoAnalysisIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: theme.radii.xl28,
-    backgroundColor: theme.onAccent + '33',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  photoAnalysisContent: {
-    flex: 1,
-  },
-  photoAnalysisTitle: {
-    fontSize: 18,
-    fontFamily: theme.font.bold,
-    color: theme.t1,
-    marginBottom: 4,
-  },
-  photoAnalysisSubtitle: {
-    fontSize: 14,
-    color: theme.t2,
   },
   sectionTitle: {
     fontSize: 20,
@@ -666,42 +530,39 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 16,
   },
   categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
   },
   categoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: '48%',
+    minHeight: 108,
     backgroundColor: theme.surface,
-    padding: 16,
-    borderRadius: theme.radii.md16,
+    borderWidth: 1,
+    borderColor: theme.hairline,
+    borderRadius: theme.radii.r18,
+    padding: 14,
     marginBottom: 12,
-    borderLeftWidth: 4,
+    gap: 10,
     shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1,
   },
-  categoryIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: theme.radii.md16,
+  categoryChip: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radii.r14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  categoryContent: {
-    flex: 1,
   },
   categoryTitle: {
-    fontSize: 16,
-    fontFamily: theme.font.semibold,
+    fontSize: 14,
+    fontFamily: theme.font.bold,
     color: theme.t1,
-    marginBottom: 4,
-  },
-  categoryDescription: {
-    fontSize: 13,
-    color: theme.t2,
+    lineHeight: 18,
   },
   quickQuestionsSection: {
     marginHorizontal: 20,
@@ -717,7 +578,9 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.surface,
     padding: 14,
-    borderRadius: theme.radii.sm12,
+    borderRadius: theme.radii.r14,
+    borderWidth: 1,
+    borderColor: theme.hairline,
     marginBottom: 8,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
@@ -733,21 +596,5 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   footerSpacing: {
     height: 40,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    width: 64,
-    height: 64,
-    borderRadius: theme.radii.pill999,
-    backgroundColor: theme.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
   },
 });

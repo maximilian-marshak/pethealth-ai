@@ -8,6 +8,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  ScrollView,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -21,18 +22,8 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
 import GlassCard from '../components/GlassCard';
-
-// Читаемый текст на цветной (category) подложке: по относительной яркости фона
-// выбираем тёмный (t1) на светлых категориях / onAccent на тёмных — контраст AA.
-const readableText = (hex, theme) => {
-  const h = (hex || '').replace('#', '');
-  if (h.length < 6) return theme.onAccent;
-  const r = parseInt(h.slice(0, 2), 16) / 255;
-  const g = parseInt(h.slice(2, 4), 16) / 255;
-  const b = parseInt(h.slice(4, 6), 16) / 255;
-  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return lum > 0.55 ? theme.t1 : theme.onAccent;
-};
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 
 import { usePetContext } from '../context/PetContext';
 import { usePetHealth } from '../hooks/usePetHealth';
@@ -59,10 +50,10 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   const health = usePetHealth(selectedPet?.id);
   const { unit } = useUnits();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  // Цвет категории (из хаба, уже токен) + читаемый на нём текст/иконки.
+  // Цвет категории (из хаба, уже токен) — для аватара ассистента в шапке.
   const catColor = color || theme.accent;
-  const onCat = readableText(catColor, theme);
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -72,52 +63,32 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   const conversationIdRef = useRef(null);
   const didAutoActRef = useRef(false);
 
-  // ═══ ЗАГОЛОВОК ═══
+  // ═══ ЗАГОЛОВОК: нативный скрыт — кастомная glass-шапка в теле (эталон) ═══
   useEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      headerTitle: title || t('chat.defaultTitle'),
-      headerTitleStyle: { fontFamily: theme.font.bold, fontSize: 18 },
-      headerStyle: { backgroundColor: catColor },
-      headerTintColor: onCat,
-      headerLeft: () => (
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 10 }}>
-          <Ionicons name="arrow-back" size={24} color={onCat} />
-        </TouchableOpacity>
-      ),
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert(
-              t('chat.clearChat'),
-              t('chat.clearChatMessage'),
-              [
-                { text: t('hub.cancel'), style: 'cancel' },
-                {
-                  text: t('chat.clear'),
-                  style: 'destructive',
-                  onPress: async () => {
-                    try {
-                      if (conversationIdRef.current) {
-                        await clearConversation(conversationIdRef.current);
-                      }
-                    } catch (e) {
-                      console.error('❌ clearConversation failed:', e);
-                      Alert.alert(t('chat.clearError'));
-                    }
-                    setMessages([]);
-                  },
-                },
-              ]
-            )
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
+  // Очистка чата (была в нативном headerRight → теперь ellipsis кастомной шапки). Логика та же.
+  const handleClearChat = () => {
+    Alert.alert(t('chat.clearChat'), t('chat.clearChatMessage'), [
+      { text: t('hub.cancel'), style: 'cancel' },
+      {
+        text: t('chat.clear'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            if (conversationIdRef.current) {
+              await clearConversation(conversationIdRef.current);
+            }
+          } catch (e) {
+            console.error('❌ clearConversation failed:', e);
+            Alert.alert(t('chat.clearError'));
           }
-          style={{ marginRight: 10 }}
-        >
-          <Ionicons name="trash-outline" size={22} color={onCat} />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation, title, color, t, catColor, onCat]);
+          setMessages([]);
+        },
+      },
+    ]);
+  };
 
   // ═══ ИНИЦИАЛИЗАЦИЯ: беседа + история ДО авто-действий ═══
   useEffect(() => {
@@ -250,6 +221,60 @@ export default function AIAssistantChatScreen({ route, navigation }) {
     }
   };
 
+  // ═══ ПРИКРЕПЛЕНИЕ ФОТО (attach) ═══
+  // Зеркалит пикер из AIAssistantHubScreen, но вместо навигации зовёт
+  // СУЩЕСТВУЮЩИЙ in-screen обработчик handlePhotoAnalysis(uri, type).
+  const handleAttachPhoto = () => {
+    if (isLoading) return;
+    Alert.alert(
+      t('hub.photoSourceTitle'),
+      t('hub.photoSourceMessage'),
+      [
+        { text: t('hub.takePhoto'), onPress: () => attachFromCamera() },
+        { text: t('hub.chooseGallery'), onPress: () => attachFromGallery() },
+        { text: t('hub.cancel'), style: 'cancel' },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const attachFromCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('hub.permissionRequired'), t('hub.cameraPermission'));
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'], allowsEditing: true, quality: 0.8, aspect: [4, 3],
+    });
+    if (!result.canceled) promptAttachAnalysisType(result.assets[0].uri);
+  };
+
+  const attachFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('hub.permissionRequired'), t('hub.galleryPermission'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'], allowsEditing: true, quality: 0.8, aspect: [4, 3],
+    });
+    if (!result.canceled) promptAttachAnalysisType(result.assets[0].uri);
+  };
+
+  const promptAttachAnalysisType = (uri) => {
+    Alert.alert(
+      t('hub.analysisTypeTitle'),
+      t('hub.analysisTypeMessage'),
+      [
+        { text: t('hub.checkSymptoms'), onPress: () => handlePhotoAnalysis(uri, 'symptoms') },
+        { text: t('hub.identifyBreed'), onPress: () => handlePhotoAnalysis(uri, 'breed') },
+        { text: t('hub.generalAnalysis'), onPress: () => handlePhotoAnalysis(uri, 'general') },
+      ],
+      { cancelable: true }
+    );
+  };
+
   // ═══ ПРОМПТ ДЛЯ АНАЛИЗА ═══
   const getAnalysisPrompt = (type) => {
     const prompts = {
@@ -309,55 +334,46 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   };
 
   // ═══ EMPTY STATE ═══
-  const renderEmptyState = () => {
-    const suggestedQuestions = [
-      t('chat.suggestedQ1'),
-      t('chat.suggestedQ2'),
-      t('chat.suggestedQ3'),
-      t('chat.suggestedQ4'),
-    ];
+  // Подсказки-вопросы: используются и в пустом состоянии, и в quick-replies над вводом.
+  const suggestedQuestions = [
+    t('chat.suggestedQ1'),
+    t('chat.suggestedQ2'),
+    t('chat.suggestedQ3'),
+    t('chat.suggestedQ4'),
+  ];
+  // Индекс первого ассистент-сообщения (glow только у него).
+  const firstAssistantIndex = messages.findIndex((m) => m.role === 'assistant');
 
+  // Пустое состояние — эталонный greeting-пузырь (bot-бабл с glow).
+  // Подсказки вынесены в quick-replies над вводом; разделитель «Сегодня» — ListHeaderComponent.
+  const renderEmptyState = () => {
+    const title = selectedPet
+      ? t('chat.emptyTitleWithPet', { name: selectedPet.name })
+      : t('chat.emptyTitle');
+    const welcome = selectedPet
+      ? t('chat.emptyWelcomeWithPet', { name: selectedPet.name })
+      : t('chat.emptyWelcome');
     return (
-      <View style={styles.emptyStateContainer}>
-        <View style={[styles.emptyStateIcon, { backgroundColor: catColor }]}>
-          <Ionicons name={selectedPet ? 'paw' : 'chatbubbles'} size={48} color={onCat} />
-        </View>
-        <Text style={styles.emptyStateTitle}>
-          {selectedPet
-            ? t('chat.emptyTitleWithPet', { name: selectedPet.name })
-            : t('chat.emptyTitle')}
-        </Text>
-        <Text style={styles.emptyStateSubtitle}>
-          {selectedPet
-            ? t('chat.emptyWelcomeWithPet', { name: selectedPet.name })
-            : t('chat.emptyWelcome')}
-        </Text>
-        <View style={styles.suggestedQuestionsContainer}>
-          <Text style={styles.suggestedQuestionsTitle}>{t('chat.tryAsking')}</Text>
-          {suggestedQuestions.map((question, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.suggestedQuestionButton}
-              onPress={() => handleSendMessage(question, true)}
-            >
-              <Ionicons name="help-circle-outline" size={20} color={catColor} />
-              <Text style={styles.suggestedQuestionText}>{question}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      <View
+        style={[styles.messageContainer, styles.assistantMessage, styles.assistantGlow, styles.greetingBubble]}
+      >
+        <Text style={styles.greetingTitle}>{title}</Text>
+        <Text style={[styles.messageText, styles.assistantText]}>{welcome}</Text>
       </View>
     );
   };
 
   // ═══ РЕНДЕР СООБЩЕНИЯ ═══
-  const renderMessage = ({ item }) => {
+  const renderMessage = ({ item, index }) => {
     const isUser = item.role === 'user';
+    const glow = !isUser && index === firstAssistantIndex;
 
     return (
       <View
         style={[
           styles.messageContainer,
           isUser ? styles.userMessage : styles.assistantMessage,
+          glow && styles.assistantGlow,
           item.isEmergency && styles.emergencyMessage,
           item.isError && styles.errorMessage,
         ]}
@@ -441,35 +457,76 @@ export default function AIAssistantChatScreen({ route, navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      {selectedPet && (
-        <View style={[styles.petHeader, { backgroundColor: catColor }]}>
-          <Ionicons name="paw" size={20} color={onCat} />
-          <Text style={[styles.petHeaderText, { color: onCat }]}>
-            {t('chat.petHeader', {
-              name: selectedPet.name,
-              breed: selectedPet.breed,
-              age: selectedPet.age || t('chat.unknownAge'),
-            })}
-          </Text>
+      {/* Custom glass-шапка (эталон): back + аватар(catColor)+online + title/статус + ellipsis */}
+      <GlassCard variant="decor" radius={0} padding={0}>
+        <View style={[styles.chatHeaderRow, { paddingTop: insets.top + 6 }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-back" size={26} color={theme.accent} />
+          </TouchableOpacity>
+          <View style={styles.chatAvatarWrap}>
+            <View style={[styles.chatAvatar, { backgroundColor: catColor + '22' }]}>
+              <Ionicons name="sparkles" size={20} color={catColor} />
+            </View>
+            <View style={styles.chatOnlineDot} />
+          </View>
+          <View style={styles.chatHeaderText}>
+            <Text style={styles.chatHeaderTitle} numberOfLines={1}>{title || t('chat.defaultTitle')}</Text>
+            <Text style={styles.chatHeaderStatus} numberOfLines={1}>
+              {selectedPet ? t('chat.statusOnlineWithPet', { name: selectedPet.name }) : t('chat.statusOnline')}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={handleClearChat} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="ellipsis-horizontal" size={22} color={theme.t3} />
+          </TouchableOpacity>
         </View>
-      )}
+      </GlassCard>
 
       <FlatList
         ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
+        style={styles.messagesFlex}
         contentContainerStyle={styles.messagesList}
         ListEmptyComponent={renderEmptyState}
+        ListHeaderComponent={<Text style={styles.dayDivider}>{t('chat.today')}</Text>}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
       />
 
       {isLoading && renderTypingIndicator()}
 
+      {/* Quick-replies — горизонтальные чипы над вводом (из suggestedQuestions), видны всегда */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.quickRow}
+        contentContainerStyle={styles.quickRowContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {suggestedQuestions.map((q, i) => (
+          <TouchableOpacity
+            key={i}
+            style={styles.quickChip}
+            onPress={() => handleSendMessage(q, true)}
+            disabled={isLoading}
+          >
+            <Text style={styles.quickChipText} numberOfLines={1}>{q}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       {/* Инпут — glass pill (GlassCard decor) + accent-кнопка */}
       <GlassCard variant="decor" style={styles.inputBar} radius={0} padding={12}>
         <View style={styles.inputRow}>
+          <TouchableOpacity
+            style={styles.attachButton}
+            onPress={handleAttachPhoto}
+            disabled={isLoading}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="add-circle-outline" size={28} color={theme.accent} />
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             value={inputText}
@@ -502,20 +559,30 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: 'transparent',
   },
 
-  // Pet Header (bg = category-цвет inline; текст onCat inline по контрасту)
-  petHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
+  // Custom glass-шапка чата (эталон): аватар(catColor inline) + online(ok) + title/статус
+  chatHeaderRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 16, paddingBottom: 12,
   },
-  petHeaderText: {
-    fontSize: 14,
-    color: theme.onAccent,
-    fontFamily: theme.font.semibold,
+  chatAvatarWrap: { position: 'relative' },
+  chatAvatar: {
+    width: 42, height: 42, borderRadius: theme.radii.pill999,
+    alignItems: 'center', justifyContent: 'center',
   },
+  chatOnlineDot: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 11, height: 11, borderRadius: theme.radii.pill999,
+    backgroundColor: theme.ok, borderWidth: 2, borderColor: theme.bgBase,
+  },
+  chatHeaderText: { flex: 1 },
+  chatHeaderTitle: { fontSize: 15.5, fontFamily: theme.font.bold, color: theme.t1 },
+  chatHeaderStatus: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.ok, marginTop: 1 },
 
+  // Лента берёт свободное место колонки и скроллит внутри (иначе раздувается
+  // под контент и выдавливает quickRow + input при непустой истории).
+  messagesFlex: {
+    flex: 1,
+  },
   messagesList: {
     paddingHorizontal: 16,
     paddingTop: 20,
@@ -523,86 +590,63 @@ const makeStyles = (theme) => StyleSheet.create({
     flexGrow: 1,
   },
 
-  // Empty State
-  emptyStateContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 30,
-    paddingVertical: 40,
-  },
-  emptyStateIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: theme.radii.pill999,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyStateTitle: {
-    fontSize: 24,
-    fontFamily: theme.font.bold,
-    color: theme.t1,
-    marginBottom: 12,
+  // Разделитель «Сегодня» над лентой
+  dayDivider: {
     textAlign: 'center',
-  },
-  emptyStateSubtitle: {
-    fontSize: 16,
-    color: theme.t2,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 30,
-  },
-  suggestedQuestionsContainer: {
-    width: '100%',
-  },
-  suggestedQuestionsTitle: {
-    fontSize: 14,
+    fontSize: 11.5,
     fontFamily: theme.font.semibold,
     color: theme.t3,
-    marginBottom: 12,
-    textAlign: 'center',
+    marginBottom: 14,
   },
-  suggestedQuestionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.surface,
-    padding: 14,
-    borderRadius: theme.radii.sm12,
-    marginBottom: 10,
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+
+  // Quick-replies (горизонтальные чипы над вводом)
+  quickRow: { maxHeight: 48, flexGrow: 0, flexShrink: 0 },
+  quickRowContent: { paddingHorizontal: 16, paddingBottom: 8 },
+  quickChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: theme.radii.pill999,
+    backgroundColor: theme.accentTint,
+    marginRight: 8,
   },
-  suggestedQuestionText: {
-    flex: 1,
-    fontSize: 14,
+  quickChipText: { fontSize: 13, fontFamily: theme.font.bold, color: theme.accentPress },
+
+  // Empty State — greeting-пузырь (bot-бабл)
+  greetingBubble: {
+    marginTop: 2,
+  },
+  greetingTitle: {
+    fontSize: 15.5,
+    fontFamily: theme.font.bold,
     color: theme.t1,
-    marginLeft: 10,
+    marginBottom: 4,
   },
 
   // Messages
   messageContainer: {
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: theme.radii.md16,
-    maxWidth: '80%',
+    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: theme.radii.r20,
   },
   // user-бабл — accentPress-заливка (белый на accent ≈2.4:1 не AA; accentPress лучше)
   userMessage: {
     backgroundColor: theme.accentPress,
     alignSelf: 'flex-end',
-    borderBottomRightRadius: theme.radii.xs4,
+    maxWidth: '82%',
+    borderBottomRightRadius: theme.radii.sm8,
   },
-  // bot-бабл — surface + свечение glow-accent (по §6.2); текст t1
+  // bot-бабл — data-стекло (surfaceGlassData) + hairline; текст t1
   assistantMessage: {
-    backgroundColor: theme.surface,
+    backgroundColor: theme.surfaceGlassData.bg,
     alignSelf: 'flex-start',
-    borderBottomLeftRadius: theme.radii.xs4,
+    maxWidth: '88%',
+    borderBottomLeftRadius: theme.radii.sm8,
     borderWidth: 1,
     borderColor: theme.hairline,
+  },
+  // glow-accent — только у первого ассистент-сообщения (по §6.2)
+  assistantGlow: {
     shadowColor: theme.glowAccent.shadowColor,
     shadowOpacity: theme.glowAccent.shadowOpacity,
     shadowRadius: theme.glowAccent.shadowRadius,
@@ -644,8 +688,8 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   
   messageText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14.5,
+    lineHeight: 21,
   },
   userText: {
     color: theme.onAccent,
@@ -716,29 +760,39 @@ const makeStyles = (theme) => StyleSheet.create({
   // Input Bar — glass pill (GlassCard decor), низ экрана
   inputBar: {
     marginHorizontal: 0,
+    flexShrink: 0,
     borderTopWidth: 1,
     borderTopColor: theme.hairline,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
+    gap: 8,
+  },
+  // attach — слева, зовёт handleAttachPhoto (камера/галерея → handlePhotoAnalysis)
+  attachButton: {
+    width: 36,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     maxHeight: 100,
     backgroundColor: theme.surface,
-    borderRadius: theme.radii.r20,
+    borderRadius: theme.radii.pill999,
+    borderWidth: 1,
+    borderColor: theme.hairline,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 15,
+    paddingVertical: 11,
+    fontSize: 14.5,
     color: theme.t1,
-    marginRight: 8,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radii.r20,
+    width: 44,
+    height: 44,
+    borderRadius: theme.radii.pill999,
     backgroundColor: theme.accentPress,
     justifyContent: 'center',
     alignItems: 'center',
