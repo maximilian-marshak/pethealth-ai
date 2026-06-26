@@ -6,7 +6,10 @@
       "summary": "Summary"
     },
     "summary": {
-      "comingSoon": "Coming soon"
+      "weightLabel": "Weight",
+      "noWeight": "Add at least two weight entries to see the trend.",
+      "recentTitle": "Recent Activity",
+      "emptyFeed": "Earn paws by logging your pet's care."
     },
     "feed": {
       "donation": "Donation: {{shelter}}"

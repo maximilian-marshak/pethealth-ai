@@ -12,20 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import { supabase } from '../utils/supabase';
-
-// Иконка по event_key (фолбэк — paw-outline).
-const EVENT_ICONS = {
-  visit_verified:       'medical-outline',
-  vaccination_verified: 'medkit-outline',
-  reminder_completed:   'notifications-outline',
-  course_completed:     'checkmark-done-outline',
-  ocr_document:         'document-text-outline',
-  daily_checkin:        'today-outline',
-  streak_7:             'flame-outline',
-  streak_30:            'flame',
-  manual_first:         'create-outline',
-  medication_taken:     'bandage-outline',
-};
+import { EVENT_ICONS } from '../utils/pointsFeed';
 
 export default function HowToEarnPawsScreen() {
   const navigation = useNavigation();
