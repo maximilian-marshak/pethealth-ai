@@ -123,16 +123,16 @@ export default function PetDetailScreen({ route, navigation }) {
 
       const { data: lastVisitData } = await supabase
         .from('medical_records')
-        .select('date')
+        .select('occurred_at')
         .eq('pet_id', petId)
         .in('record_type', ['checkup', 'surgery', 'diagnosis'])
-        .order('date', { ascending: false })
+        .order('occurred_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       let daysSince = null;
-      if (lastVisitData?.date) {
-        const diffTime = Date.now() - new Date(lastVisitData.date).getTime();
+      if (lastVisitData?.occurred_at) {
+        const diffTime = Date.now() - new Date(lastVisitData.occurred_at).getTime();
         daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       }
 
