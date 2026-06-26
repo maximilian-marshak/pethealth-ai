@@ -14,6 +14,7 @@
     "feed": {
       "donation": "Donation: {{shelter}}"
     },
+    "showMore": "Show more",
 
     "stats": {
       "week": "This Week",

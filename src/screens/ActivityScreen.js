@@ -87,6 +87,10 @@ export default function ActivityScreen() {
   const [activityDate, setActivityDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // Пагинация по 5 (только отображение): Трекер-история + лента наград Сводки.
+  const [visibleCount, setVisibleCount] = useState(5);
+  const [visibleFeed, setVisibleFeed] = useState(5);
+
 
   useEffect(() => {
     fetchPets();
@@ -95,6 +99,7 @@ export default function ActivityScreen() {
   useEffect(() => {
     if (selectedPetId) {
       fetchActivities();
+      setVisibleCount(5); // новый питомец — история сначала по 5
     }
   }, [selectedPetId]);
 
@@ -507,32 +512,43 @@ export default function ActivityScreen() {
             <Text style={styles.summaryHint}>{t('summary.emptyFeed')}</Text>
           </View>
         ) : (
-          <View style={styles.feedCard}>
-            {pointsHistory.map((row, i) => {
-              const parsed = parsePointsReason(row);
-              const last = i === pointsHistory.length - 1;
-              const positive = Number(row.points) >= 0;
-              const isDon = parsed.kind === 'donation';
-              const icon = isDon ? 'heart-outline' : (EVENT_ICONS[parsed.eventKey] || 'paw-outline');
-              const title = isDon
-                ? t('feed.donation', { shelter: parsed.shelter })
-                : t(`dashboard:paws.events.${parsed.eventKey}`, { defaultValue: parsed.eventKey });
-              return (
-                <View key={`${row.created_at}-${i}`} style={[styles.feedRow, !last && styles.feedRowDivider]}>
-                  <IconChip name={icon} color={isDon ? theme.danger : theme.accent} size={17} />
-                  <View style={styles.feedText}>
-                    <Text style={styles.feedTitle} numberOfLines={1}>{title}</Text>
+          <>
+            <View style={styles.feedCard}>
+              {pointsHistory.slice(0, visibleFeed).map((row, i, arr) => {
+                const parsed = parsePointsReason(row);
+                const last = i === arr.length - 1;
+                const positive = Number(row.points) >= 0;
+                const isDon = parsed.kind === 'donation';
+                const icon = isDon ? 'heart-outline' : (EVENT_ICONS[parsed.eventKey] || 'paw-outline');
+                const title = isDon
+                  ? t('feed.donation', { shelter: parsed.shelter })
+                  : t(`dashboard:paws.events.${parsed.eventKey}`, { defaultValue: parsed.eventKey });
+                return (
+                  <View key={`${row.created_at}-${i}`} style={[styles.feedRow, !last && styles.feedRowDivider]}>
+                    <IconChip name={icon} color={isDon ? theme.danger : theme.accent} size={17} />
+                    <View style={styles.feedText}>
+                      <Text style={styles.feedTitle} numberOfLines={1}>{title}</Text>
+                    </View>
+                    <View style={styles.feedRight}>
+                      <Text style={[styles.feedPaws, !positive && styles.feedPawsNeg]}>
+                        {`${positive ? '+' : ''}${row.points} 🐾`}
+                      </Text>
+                      <Text style={styles.feedWhen}>{formatDate(row.created_at)}</Text>
+                    </View>
                   </View>
-                  <View style={styles.feedRight}>
-                    <Text style={[styles.feedPaws, !positive && styles.feedPawsNeg]}>
-                      {`${positive ? '+' : ''}${row.points} 🐾`}
-                    </Text>
-                    <Text style={styles.feedWhen}>{formatDate(row.created_at)}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
+                );
+              })}
+            </View>
+            {pointsHistory.length > visibleFeed && (
+              <TouchableOpacity
+                style={styles.showMoreBtn}
+                onPress={() => setVisibleFeed((c) => c + 5)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.showMoreText}>{t('showMore')}</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
       </ScrollView>
     );
@@ -652,12 +668,23 @@ export default function ActivityScreen() {
             <Text style={styles.emptySubtext}>{t('empty.subtitle')}</Text>
           </View>
         ) : (
-          <FlatList
-            data={activities}
-            renderItem={renderActivityItem}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-          />
+          <>
+            <FlatList
+              data={activities.slice(0, visibleCount)}
+              renderItem={renderActivityItem}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+            />
+            {activities.length > visibleCount && (
+              <TouchableOpacity
+                style={styles.showMoreBtn}
+                onPress={() => setVisibleCount((c) => c + 5)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.showMoreText}>{t('showMore')}</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -876,6 +903,20 @@ const makeStyles = (theme) => StyleSheet.create({
   feedPaws: { fontSize: 13, fontFamily: theme.font.bold, color: theme.accentPress },
   feedPawsNeg: { color: theme.t3 },
   feedWhen: { fontSize: 11, color: theme.t4, marginTop: 1 },
+
+  // Единая кнопка «Показать больше» (Трекер-история + лента Сводки)
+  showMoreBtn: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 16,
+    paddingVertical: 12,
+    borderRadius: theme.radii.r14,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.hairline,
+    alignItems: 'center',
+  },
+  showMoreText: { fontSize: 14, fontFamily: theme.font.bold, color: theme.accent },
   content: { flex: 1 },
   statsContainer: { padding: 16, gap: 12 },
   statCard: {
