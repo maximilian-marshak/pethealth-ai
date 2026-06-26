@@ -33,6 +33,8 @@ import Screen from '../components/Screen';
 import GlassCard from '../components/GlassCard';
 import Badge from '../components/ui/Badge';
 import Switch from '../components/ui/Switch';
+import Button from '../components/ui/Button';
+import IconChip from '../components/IconChip';
 import Segmented from '../components/Segmented';
 import { unitLabel } from '../utils/formatWeight';
 
@@ -290,29 +292,21 @@ export default function ProfileScreen({ navigation }) {
       {/* STATS ROW */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <View style={[styles.statIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="paw" size={24} color={theme.accent} />
-          </View>
+          <IconChip name="paw" color={theme.accent} size={22} />
           <Text style={styles.statValue}>{loadingPoints ? '...' : currentBalance}</Text>
           <Text style={styles.statLabel}>{t('profile:loyalty')}</Text>
         </View>
 
         <View style={styles.statCard}>
-          <View style={[styles.statIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="heart" size={24} color={theme.accent} />
-          </View>
+          <IconChip name="heart" color={theme.accent} size={22} />
           <Text style={styles.statValue}>{loadingCharity ? '...' : totalDonated}</Text>
           <Text style={styles.statLabel}>{t('profile:totalDonated')}</Text>
         </View>
 
         <View style={styles.statCard}>
-          <View style={[styles.statIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="home" size={24} color={theme.accent} />
-          </View>
+          <IconChip name="home" color={theme.accent} size={22} />
           <Text style={styles.statValue}>{loadingCharity ? '...' : shelterCount}</Text>
-          <Text style={styles.statLabel}>
-            {t('profile:settings')}
-          </Text>
+          <Text style={styles.statLabel}>{t('profile:settings')}</Text>
         </View>
       </View>
 
@@ -373,7 +367,7 @@ export default function ProfileScreen({ navigation }) {
       {/* PETS */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🐾 {t('pets:title')}</Text>
+          <Text style={styles.sectionTitle}>{t('pets:title')}</Text>
           <TouchableOpacity onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             navigation.navigate('AddPet');
@@ -421,7 +415,7 @@ export default function ProfileScreen({ navigation }) {
       {/* CHARITY */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>💝 {t('profile:totalDonated')}</Text>
+          <Text style={styles.sectionTitle}>{t('profile:totalDonated')}</Text>
           <TouchableOpacity onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             navigation.navigate('CharityHistory');
@@ -487,30 +481,23 @@ export default function ProfileScreen({ navigation }) {
           </SettingRow>
         </GlassCard>
 
-        <TouchableOpacity
-          style={[styles.settingItem, styles.logoutItem]}
-          onPress={handleLogout}
-        >
-          <View style={[styles.settingIcon, { backgroundColor: theme.hairline }]}>
-            <Ionicons name="log-out" size={20} color={theme.t2} />
-          </View>
-          <Text style={[styles.settingText, styles.logoutText]}>{t('profile:logout')}</Text>
-          <Ionicons name="chevron-forward" size={20} color={theme.t4} />
-        </TouchableOpacity>
+        <View style={styles.actionsWrap}>
+          <Button variant="outline" block icon="log-out-outline" onPress={handleLogout}>
+            {t('profile:logout')}
+          </Button>
 
-        <TouchableOpacity
-          style={[styles.settingItem, styles.deleteAccountItem]}
-          onPress={handleDeleteAccount}
-          disabled={deleting}
-        >
-          <View style={[styles.settingIcon, { backgroundColor: theme.danger + '22' }]}>
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            onPress={handleDeleteAccount}
+            disabled={deleting}
+            activeOpacity={0.7}
+          >
             {deleting
               ? <ActivityIndicator size="small" color={theme.danger} />
-              : <Ionicons name="trash-outline" size={20} color={theme.danger} />}
-          </View>
-          <Text style={[styles.settingText, styles.deleteAccountText]}>{t('profile:deleteAccount')}</Text>
-          {!deleting && <Ionicons name="chevron-forward" size={20} color={theme.t4} />}
-        </TouchableOpacity>
+              : <Ionicons name="trash-outline" size={18} color={theme.danger} />}
+            <Text style={styles.deleteText}>{t('profile:deleteAccount')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <Text style={styles.versionText}>PetHealth AI v1.0.0</Text>
@@ -613,24 +600,17 @@ const makeStyles = (theme) => StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: theme.surface,
-    borderRadius: theme.radii.md16,
+    borderRadius: theme.radii.r18,
     padding: 16,
     alignItems: 'center',
+    gap: 8,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: theme.radii.sm12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  statValue: { fontSize: 22, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 4 },
+  statValue: { fontSize: 22, fontFamily: theme.font.bold, color: theme.t1 },
   statLabel: { fontSize: 12, color: theme.t3, textAlign: 'center' },
   section: { paddingHorizontal: 20, marginTop: 24 },
   sectionHeader: {
@@ -639,7 +619,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
+  sectionTitle: { fontSize: 13, fontFamily: theme.font.bold, color: theme.t3, textTransform: 'uppercase', letterSpacing: 0.4 },
   seeAll: { fontSize: 14, color: theme.accent, fontFamily: theme.font.semibold },
   nextBadgeCard: {
     backgroundColor: theme.surface,
@@ -691,7 +671,7 @@ const makeStyles = (theme) => StyleSheet.create({
   charityCard: {
     backgroundColor: theme.surface,
     padding: 20,
-    borderRadius: theme.radii.md16,
+    borderRadius: theme.radii.r18,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -721,28 +701,6 @@ const makeStyles = (theme) => StyleSheet.create({
   settingLabel: { flex: 1, fontSize: 15, fontFamily: theme.font.medium, color: theme.t1 },
   settingDivider: { height: 1, backgroundColor: theme.hairline },
   settingSeg: { width: 128 },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.surface,
-    padding: 16,
-    borderRadius: theme.radii.sm12,
-    marginBottom: 8,
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  settingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radii.r10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  settingText: { flex: 1, fontSize: 15, color: theme.t1, fontFamily: theme.font.medium },
   settingValue: { fontSize: 14, color: theme.t3, maxWidth: 150, textAlign: 'right' },
   phoneModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 24 }, // theme-neutral scrim
   phoneModalCard: { backgroundColor: theme.surface, borderRadius: theme.radii.md16, padding: 20 },
@@ -754,10 +712,10 @@ const makeStyles = (theme) => StyleSheet.create({
   phoneBtnSave: { backgroundColor: theme.accentPress },
   phoneBtnCancelText: { color: theme.t1, fontFamily: theme.font.semibold, fontSize: 15 },
   phoneBtnSaveText: { color: theme.onAccent, fontFamily: theme.font.semibold, fontSize: 15 },
-  logoutItem: { borderWidth: 1, borderColor: theme.hairline },
-  logoutText: { color: theme.t2 },
-  deleteAccountItem: { borderWidth: 1, borderColor: theme.danger },
-  deleteAccountText: { color: theme.danger, fontFamily: theme.font.semibold },
+  // Действия: Logout (ui/Button outline) + Delete (danger text-button)
+  actionsWrap: { marginTop: 8, gap: 12 },
+  deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12 },
+  deleteText: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.danger },
   emptyCard: {
     backgroundColor: theme.surface,
     borderRadius: theme.radii.md16,
