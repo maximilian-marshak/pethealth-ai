@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -29,180 +28,25 @@ import ProgressBar from '../components/ProgressBar';
 import { supabase } from '../utils/supabase';
 import { useNotificationPref } from '../hooks/useNotificationPref';
 import { requestNotificationPermission, cancelAllScheduled } from '../utils/notificationsSetup';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme, setThemeMode } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
 import GlassCard from '../components/GlassCard';
 import Badge from '../components/ui/Badge';
-
-// ─── Language Switcher Component ──────────────────────────────────────────────
-const LanguageSwitcher = () => {
-  const { currentLanguage, switchLanguage } = useLanguage();
-  const { t } = useTranslation('common');
-  const { theme } = useTheme();
-  const switcherStyles = useMemo(() => makeSwitcherStyles(theme), [theme]);
-  const [switching, setSwitching] = useState(false);
-
-  const handleSwitch = async (lang) => {
-    if (lang === currentLanguage || switching) return;
-    try {
-      setSwitching(true);
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      await switchLanguage(lang);
-    } finally {
-      setSwitching(false);
-    }
-  };
-
-  return (
-    <View style={switcherStyles.container}>
-      <View style={switcherStyles.labelRow}>
-        <Ionicons name="language" size={20} color={theme.accent} />
-        <Text style={switcherStyles.label}>{t('language')}</Text>
-      </View>
-
-      <View style={switcherStyles.toggle}>
-        {/* EN кнопка */}
-        <TouchableOpacity
-          style={[
-            switcherStyles.langBtn,
-            currentLanguage === 'en' && switcherStyles.langBtnActive,
-          ]}
-          onPress={() => handleSwitch('en')}
-          disabled={switching}
-        >
-          <Text style={[
-            switcherStyles.langText,
-            currentLanguage === 'en' && switcherStyles.langTextActive,
-          ]}>
-            🇬🇧 EN
-          </Text>
-        </TouchableOpacity>
-
-        {/* RU кнопка */}
-        <TouchableOpacity
-          style={[
-            switcherStyles.langBtn,
-            currentLanguage === 'ru' && switcherStyles.langBtnActive,
-          ]}
-          onPress={() => handleSwitch('ru')}
-          disabled={switching}
-        >
-          <Text style={[
-            switcherStyles.langText,
-            currentLanguage === 'ru' && switcherStyles.langTextActive,
-          ]}>
-            🇷🇺 RU
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {switching && (
-        <ActivityIndicator
-          size="small"
-          color={theme.accent}
-          style={switcherStyles.spinner}
-        />
-      )}
-    </View>
-  );
-};
-
-const makeSwitcherStyles = (theme) => StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.surface,
-    padding: 16,
-    borderRadius: theme.radii.sm12,
-    marginBottom: 8,
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  label: {
-    fontSize: 15,
-    color: theme.t1,
-    fontFamily: theme.font.medium,
-  },
-  toggle: {
-    flexDirection: 'row',
-    backgroundColor: theme.accentTint,
-    borderRadius: theme.radii.r10,
-    padding: 3,
-    gap: 3,
-  },
-  langBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: theme.radii.sm8,
-  },
-  langBtnActive: {
-    backgroundColor: theme.accentPress,
-    shadowColor: theme.accent,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  langText: {
-    fontSize: 13,
-    fontFamily: theme.font.semibold,
-    color: theme.t2,
-  },
-  langTextActive: {
-    color: theme.onAccent,
-  },
-  spinner: {
-    marginLeft: 8,
-  },
-});
-
-// ─── Units Switcher Component (кг / фунты) ────────────────────────────────────
-const UnitsSwitcher = () => {
-  const { unit, setUnit } = useUnits();
-  const { t } = useTranslation('profile');
-  const { theme } = useTheme();
-  const switcherStyles = useMemo(() => makeSwitcherStyles(theme), [theme]);
-
-  return (
-    <View style={switcherStyles.container}>
-      <View style={switcherStyles.labelRow}>
-        <Ionicons name="barbell-outline" size={20} color={theme.accent} />
-        <Text style={switcherStyles.label}>{t('units.title')}</Text>
-      </View>
-
-      <View style={switcherStyles.toggle}>
-        {['kg', 'lb'].map((u) => (
-          <TouchableOpacity
-            key={u}
-            style={[switcherStyles.langBtn, unit === u && switcherStyles.langBtnActive]}
-            onPress={() => setUnit(u)}
-          >
-            <Text style={[switcherStyles.langText, unit === u && switcherStyles.langTextActive]}>
-              {t(`units.${u}`)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-};
+import Switch from '../components/ui/Switch';
+import Segmented from '../components/Segmented';
+import { unitLabel } from '../utils/formatWeight';
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen({ navigation }) {
   const { user, signOut } = useAuth();
-  const { theme } = useTheme();
+  const { theme, scheme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { enabled: notificationsEnabled, setEnabled: setNotificationsEnabled } = useNotificationPref();
+  const { currentLanguage, switchLanguage } = useLanguage();
+  const { unit, setUnit } = useUnits();
   const { t, i18n } = useTranslation(['profile', 'common', 'pets']);
+  // Нормализованный код языка для сегмента (i18n.language может быть 'en-US').
+  const langCode = (currentLanguage || '').startsWith('ru') ? 'ru' : 'en';
 
   // ─── Хуки данных ────────────────────────────────────────
   const { points, loading: loadingPoints, refreshPoints } = useLoyaltyPoints();
@@ -394,6 +238,20 @@ export default function ProfileScreen({ navigation }) {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.email || 'User')}&size=200&background=6C63FF&color=fff`;
   };
 
+  // Ряд настройки (эталон): иконка accent + label + контрол справа.
+  const SettingRow = ({ icon, label, onPress, children }) => {
+    const inner = (
+      <View style={styles.settingRow}>
+        <Ionicons name={icon} size={20} color={theme.accent} />
+        <Text style={styles.settingLabel} numberOfLines={1}>{label}</Text>
+        {children}
+      </View>
+    );
+    return onPress
+      ? <TouchableOpacity onPress={onPress} activeOpacity={0.7}>{inner}</TouchableOpacity>
+      : inner;
+  };
+
   // ─── Render ─────────────────────────────────────────────
   return (
     <Screen>
@@ -583,52 +441,51 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </View>
 
-      {/* SETTINGS */}
+      {/* SETTINGS (эталон: GlassCard data + Row-паттерн) */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>
-          ⚙️ {t('profile:settings')}
-        </Text>
+        <Text style={styles.sectionLabel}>{t('profile:settings')}</Text>
+        <GlassCard variant="data" style={styles.settingsCard} radius={theme.radii.r20}>
+          <SettingRow icon="notifications-outline" label={t('profile:notifications')}>
+            <Switch value={notificationsEnabled} onValueChange={onToggleNotifications} />
+          </SettingRow>
+          <View style={styles.settingDivider} />
 
-        {/* ─── Language Switcher ─── */}
-        <LanguageSwitcher />
+          <SettingRow icon="moon-outline" label={t('profile:darkMode')}>
+            <Switch value={scheme === 'dark'} onValueChange={(v) => setThemeMode(v ? 'dark' : 'light')} />
+          </SettingRow>
+          <View style={styles.settingDivider} />
 
-        {/* ─── Units Switcher ─── */}
-        <UnitsSwitcher />
+          <SettingRow icon="barbell-outline" label={t('profile:units.title')}>
+            <View style={styles.settingSeg}>
+              <Segmented
+                options={[{ k: 'kg', label: unitLabel('kg') }, { k: 'lb', label: unitLabel('lb') }]}
+                value={unit}
+                onChange={setUnit}
+              />
+            </View>
+          </SettingRow>
+          <View style={styles.settingDivider} />
 
-        <TouchableOpacity
-          style={styles.settingItem}
-          onPress={openPhoneModal}
-        >
-          <View style={[styles.settingIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="call" size={20} color={theme.accent} />
-          </View>
-          <Text style={styles.settingText}>{t('profile:phone')}</Text>
-          <Text style={styles.settingValue} numberOfLines={1}>{profile?.phone || '—'}</Text>
-        </TouchableOpacity>
+          <SettingRow icon="language-outline" label={t('common:language')}>
+            <View style={styles.settingSeg}>
+              <Segmented
+                options={[{ k: 'en', label: 'EN' }, { k: 'ru', label: 'RU' }]}
+                value={langCode}
+                onChange={switchLanguage}
+              />
+            </View>
+          </SettingRow>
+          <View style={styles.settingDivider} />
 
-        <View style={styles.settingItem}>
-          <View style={[styles.settingIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="notifications" size={20} color={theme.accent} />
-          </View>
-          <Text style={styles.settingText}>{t('profile:notifications')}</Text>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={onToggleNotifications}
-            trackColor={{ true: theme.accent, false: theme.hairline }}
-            thumbColor={theme.onAccent}
-          />
-        </View>
+          <SettingRow icon="call-outline" label={t('profile:phone')} onPress={openPhoneModal}>
+            <Text style={styles.settingValue} numberOfLines={1}>{profile?.phone || '—'}</Text>
+          </SettingRow>
+          <View style={styles.settingDivider} />
 
-        <TouchableOpacity
-          style={styles.settingItem}
-          onPress={() => navigation.navigate('FAQ')}
-        >
-          <View style={[styles.settingIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="help-circle" size={20} color={theme.accent} />
-          </View>
-          <Text style={styles.settingText}>FAQ</Text>
-          <Ionicons name="chevron-forward" size={20} color={theme.t4} />
-        </TouchableOpacity>
+          <SettingRow icon="help-circle-outline" label="FAQ" onPress={() => navigation.navigate('FAQ')}>
+            <Ionicons name="chevron-forward" size={18} color={theme.t3} />
+          </SettingRow>
+        </GlassCard>
 
         <TouchableOpacity
           style={[styles.settingItem, styles.logoutItem]}
@@ -850,6 +707,20 @@ const makeStyles = (theme) => StyleSheet.create({
   charityTitle: { fontSize: 14, color: theme.t2 },
   charityGoal: { fontSize: 16, fontFamily: theme.font.bold, color: theme.accent },
   charityHint: { fontSize: 12, color: theme.t3, textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
+  // Settings (эталон: секц-лейбл uppercase + GlassCard data + Row-паттерн)
+  sectionLabel: {
+    fontSize: 13,
+    fontFamily: theme.font.bold,
+    color: theme.t3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 8,
+  },
+  settingsCard: { marginBottom: 8 },
+  settingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
+  settingLabel: { flex: 1, fontSize: 15, fontFamily: theme.font.medium, color: theme.t1 },
+  settingDivider: { height: 1, backgroundColor: theme.hairline },
+  settingSeg: { width: 128 },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
