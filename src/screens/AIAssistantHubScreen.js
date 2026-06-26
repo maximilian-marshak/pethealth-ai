@@ -282,7 +282,7 @@ export default function AIAssistantHubScreen({ navigation }) {
 
           <TouchableOpacity style={styles.tileBtn} onPress={handlePhotoAnalysis} activeOpacity={0.8}>
             <View style={[styles.tileChip, { backgroundColor: theme.assistantCategories.general }]}>
-              <Ionicons name="camera" size={22} color={iconOn(theme.assistantCategories.general)} />
+              <Ionicons name="camera" size={22} color={theme.onAccent} />
             </View>
             <View style={styles.tileText}>
               <Text style={styles.tileTitle}>{t('hub.photoAnalysis')}</Text>
@@ -305,7 +305,7 @@ export default function AIAssistantHubScreen({ navigation }) {
               activeOpacity={0.7}
             >
               <View style={[styles.categoryChip, { backgroundColor: catColor }]}>
-                <Ionicons name={category.icon} size={20} color={iconOn(catColor)} />
+                <Ionicons name={category.icon} size={20} color={theme.onAccent} />
               </View>
               <Text style={styles.categoryTitle}>{category.title}</Text>
             </TouchableOpacity>
@@ -360,7 +360,7 @@ export default function AIAssistantHubScreen({ navigation }) {
             activeOpacity={0.8}
           >
             <View style={[styles.tileChip, { backgroundColor: theme.assistantCategories.relocation }]}>
-              <Ionicons name="airplane" size={22} color={iconOn(theme.assistantCategories.relocation)} />
+              <Ionicons name="airplane" size={22} color={theme.onAccent} />
             </View>
             <View style={styles.tileText}>
               <Text style={styles.tileTitle}>{t('relocation.title')}</Text>
