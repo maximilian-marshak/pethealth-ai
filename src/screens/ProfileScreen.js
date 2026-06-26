@@ -388,27 +388,32 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.emptySubtext}>{t('pets:addPet')}</Text>
           </View>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.petsScroll}>
-            {pets.map(pet => {
+          <GlassCard variant="data" style={styles.petsCard} radius={theme.radii.r20}>
+            {pets.map((pet, i) => {
               const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(pet.name)}&size=200&background=6C63FF&color=fff`;
+              const last = i === pets.length - 1;
               return (
                 <TouchableOpacity
                   key={pet.id}
-                  style={styles.petCard}
+                  style={[styles.petRow, !last && styles.petRowDivider]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     navigation.navigate('PetDetail', { petId: pet.id });
                   }}
+                  activeOpacity={0.7}
                 >
                   <Image source={{ uri: pet.avatar_url || fallbackUrl }} style={styles.petAvatar} />
-                  <Text style={styles.petName} numberOfLines={1}>{pet.name}</Text>
-                  <Text style={styles.petBreed} numberOfLines={1}>
-                    {pet.breed || pet.species || t('pets:other')}
-                  </Text>
+                  <View style={styles.petInfo}>
+                    <Text style={styles.petName} numberOfLines={1}>{pet.name}</Text>
+                    <Text style={styles.petBreed} numberOfLines={1}>
+                      {pet.breed || pet.species || t('pets:other')}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={theme.t3} />
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
+          </GlassCard>
         )}
       </View>
 
@@ -652,22 +657,14 @@ const makeStyles = (theme) => StyleSheet.create({
   rankRowNameCurrent: { fontFamily: theme.font.bold },
   rankRowThreshold: { fontSize: 12, color: theme.t3, fontFamily: theme.font.semibold },
   badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  petsScroll: { paddingRight: 20, gap: 12 },
-  petCard: {
-    width: 110,
-    backgroundColor: theme.surface,
-    borderRadius: theme.radii.md16,
-    padding: 12,
-    alignItems: 'center',
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  petAvatar: { width: 70, height: 70, borderRadius: theme.radii.pill999, marginBottom: 8 },
-  petName: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 2 },
-  petBreed: { fontSize: 12, color: theme.t3 },
+  // Питомцы — вертикальный список рядов в одной GlassCard data
+  petsCard: { marginBottom: 8 },
+  petRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+  petRowDivider: { borderBottomWidth: 1, borderBottomColor: theme.hairline },
+  petAvatar: { width: 48, height: 48, borderRadius: theme.radii.pill999 },
+  petInfo: { flex: 1, minWidth: 0 },
+  petName: { fontSize: 16, fontFamily: theme.font.bold, color: theme.t1 },
+  petBreed: { fontSize: 13, color: theme.t2, marginTop: 2 },
   charityCard: {
     backgroundColor: theme.surface,
     padding: 20,
@@ -718,7 +715,7 @@ const makeStyles = (theme) => StyleSheet.create({
   deleteText: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.danger },
   emptyCard: {
     backgroundColor: theme.surface,
-    borderRadius: theme.radii.md16,
+    borderRadius: theme.radii.r20,
     padding: 24,
     alignItems: 'center',
     shadowColor: theme.shadow.shadowColor,
