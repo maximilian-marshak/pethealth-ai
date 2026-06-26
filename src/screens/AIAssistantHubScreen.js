@@ -2,7 +2,7 @@
 // src/screens/AIAssistantHubScreen.js
 // ══════════════════════════════════════════════════
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -19,12 +18,24 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
 
+// Эмодзи питомца по виду (как в MedicalScreen).
+const SPECIES_EMOJI = {
+  dog: '🐶', собака: '🐶', пёс: '🐶', пес: '🐶',
+  cat: '🐱', кошка: '🐱', кот: '🐱',
+  rabbit: '🐰', кролик: '🐰',
+  bird: '🐦', птица: '🐦',
+  hamster: '🐹', хомяк: '🐹',
+  fish: '🐠', рыба: '🐠', рыбка: '🐠',
+  turtle: '🐢', черепаха: '🐢',
+  snake: '🐍', змея: '🐍',
+};
+const speciesEmoji = (s) => SPECIES_EMOJI[(s || '').toString().trim().toLowerCase()] || '🐾';
+
 export default function AIAssistantHubScreen({ navigation }) {
   const { selectedPet, pets, selectPet } = usePetContext();
   const { t } = useTranslation('ai');
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const [pickerVisible, setPickerVisible] = useState(false);
 
   // Читаемая иконка на solid-подложке: белая (onAccent) на тёмных цветах,
   // тёмная (t1) на светлых — белая держит ≥3:1 только при яркости фона ≤0.30.
@@ -36,11 +47,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       + 0.7152 * lin(parseInt(h.slice(2, 4), 16))
       + 0.0722 * lin(parseInt(h.slice(4, 6), 16));
     return L <= 0.30 ? theme.onAccent : theme.t1;
-  };
-
-  const handleSelectPet = async (petId) => {
-    await selectPet(petId);
-    setPickerVisible(false);
   };
 
   // ═══ КАТЕГОРИИ ═══
@@ -247,25 +253,39 @@ export default function AIAssistantHubScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ═══ HEADER (плоский, эталон) — subtitle/имя tappable → pet-picker ═══ */}
+        {/* ═══ HEADER (плоский, эталон) ═══ */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{t('hub.title')}</Text>
-          <TouchableOpacity
-            style={styles.subtitleRow}
-            onPress={() => setPickerVisible(true)}
-            disabled={!selectedPet}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.headerSubtitle}>
-              {selectedPet
-                ? t('hub.subtitleWithPet', { name: selectedPet.name })
-                : t('hub.subtitleNoPet')}
-            </Text>
-            {selectedPet && pets.length > 1 && (
-              <Ionicons name="chevron-down" size={16} color={theme.t3} />
-            )}
-          </TouchableOpacity>
+          <Text style={styles.headerSubtitle}>
+            {selectedPet
+              ? t('hub.subtitleWithPet', { name: selectedPet.name })
+              : t('hub.subtitleNoPet')}
+          </Text>
         </View>
+
+        {/* ═══ PET-СВИТЧЕР чипами (как MedicalScreen) → selectPet ═══ */}
+        {pets.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.petSwitcher}
+            contentContainerStyle={styles.petSwitcherContent}
+          >
+            {pets.map((pet) => (
+              <TouchableOpacity
+                key={pet.id}
+                style={[styles.petChip, selectedPet?.id === pet.id && styles.petChipActive]}
+                onPress={() => selectPet(pet.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.petChipEmoji}>{speciesEmoji(pet.species)}</Text>
+                <Text style={[styles.petChipText, selectedPet?.id === pet.id && styles.petChipTextActive]}>
+                  {pet.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {/* ═══ ЭКШН-ПЛИТКИ: Free Chat + Photo — крупные квадраты с заливкой ═══ */}
         <View style={styles.actionTiles}>
@@ -372,50 +392,6 @@ export default function AIAssistantHubScreen({ navigation }) {
 
         <View style={styles.footerSpacing} />
       </ScrollView>
-
-      {/* ═══ PET PICKER MODAL ═══ */}
-      <Modal
-        visible={pickerVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPickerVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.pickerOverlay}
-          activeOpacity={1}
-          onPress={() => setPickerVisible(false)}
-        >
-          <View style={styles.pickerSheet}>
-            <Text style={styles.pickerTitle}>{t('hub.choosePet')}</Text>
-            <ScrollView>
-              {pets.map((pet) => {
-                const isActive = pet.id === selectedPet?.id;
-                return (
-                  <TouchableOpacity
-                    key={pet.id}
-                    style={[styles.pickerRow, isActive && styles.pickerRowActive]}
-                    onPress={() => handleSelectPet(pet.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="paw" size={20} color={isActive ? theme.accent : theme.t3} />
-                    <View style={styles.pickerRowText}>
-                      <Text style={styles.pickerRowName}>{pet.name}</Text>
-                      <Text style={styles.pickerRowDetails}>
-                        {pet.breed} • {pet.age != null
-                          ? t('common:yearsOld', { count: pet.age })
-                          : t('chat.unknownAge')}
-                      </Text>
-                    </View>
-                    {isActive && (
-                      <Ionicons name="checkmark-circle" size={22} color={theme.accent} />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </Screen>
   );
 }
@@ -429,52 +405,6 @@ const makeStyles = (theme) => StyleSheet.create({
   scrollContent: {
     paddingBottom: 24,
   },
-  pickerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // theme-neutral scrim
-    justifyContent: 'flex-end',
-  },
-  pickerSheet: {
-    backgroundColor: theme.surface,
-    borderTopLeftRadius: theme.radii.r20,
-    borderTopRightRadius: theme.radii.r20,
-    padding: 20,
-    maxHeight: '60%',
-  },
-  pickerTitle: {
-    fontSize: 18,
-    fontFamily: theme.font.bold,
-    color: theme.t1,
-    marginBottom: 16,
-  },
-  pickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: theme.radii.sm12,
-    marginBottom: 8,
-    backgroundColor: theme.surface,
-    gap: 12,
-  },
-  pickerRowActive: {
-    backgroundColor: theme.accent + '20',
-    borderWidth: 1,
-    borderColor: theme.accent,
-  },
-  pickerRowText: {
-    flex: 1,
-  },
-  pickerRowName: {
-    fontSize: 16,
-    fontFamily: theme.font.semibold,
-    color: theme.t1,
-  },
-  pickerRowDetails: {
-    fontSize: 13,
-    color: theme.t2,
-    marginTop: 2,
-  },
   // Плоский заголовок (эталон)
   header: {
     paddingTop: 8,
@@ -487,15 +417,46 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.t1,
     letterSpacing: -0.4,
   },
-  subtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
-  },
   headerSubtitle: {
     fontSize: 14,
     color: theme.t2,
+    marginTop: 2,
+  },
+  // Pet-свитчер чипами (паттерн MedicalScreen)
+  petSwitcher: {
+    maxHeight: 52,
+    backgroundColor: 'transparent',
+  },
+  petSwitcherContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  petChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: theme.radii.pill999,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.chipBorder,
+  },
+  petChipActive: {
+    backgroundColor: theme.accentPress,
+    borderColor: theme.accentPress,
+  },
+  petChipText: {
+    fontSize: 14,
+    fontFamily: theme.font.semibold,
+    color: theme.t2,
+  },
+  petChipTextActive: {
+    color: theme.onAccent,
+  },
+  petChipEmoji: {
+    fontSize: 15,
   },
   // Экшн-плитки Free Chat / Photo — 2 крупных квадрата с заливкой, белый текст/иконка
   actionTiles: {
