@@ -43,7 +43,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'health',
       title: t('hub.categories.health.title'),
       icon: 'medical',
-      description: t('hub.categories.health.description'),
       questions: [
         t('hub.categories.health.q1'),
         t('hub.categories.health.q2'),
@@ -54,7 +53,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'nutrition',
       title: t('hub.categories.nutrition.title'),
       icon: 'restaurant',
-      description: t('hub.categories.nutrition.description'),
       questions: [
         t('hub.categories.nutrition.q1'),
         t('hub.categories.nutrition.q2'),
@@ -65,7 +63,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'behavior',
       title: t('hub.categories.behavior.title'),
       icon: 'school',
-      description: t('hub.categories.behavior.description'),
       questions: [
         t('hub.categories.behavior.q1'),
         t('hub.categories.behavior.q2'),
@@ -76,7 +73,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'grooming',
       title: t('hub.categories.grooming.title'),
       icon: 'cut',
-      description: t('hub.categories.grooming.description'),
       questions: [
         t('hub.categories.grooming.q1'),
         t('hub.categories.grooming.q2'),
@@ -87,7 +83,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'emergency',
       title: t('hub.categories.emergency.title'),
       icon: 'alert-circle',
-      description: t('hub.categories.emergency.description'),
       questions: [
         t('hub.categories.emergency.q1'),
         t('hub.categories.emergency.q2'),
@@ -98,7 +93,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'relocation',
       title: t('hub.categories.relocation.title'),
       icon: 'airplane',
-      description: t('hub.categories.relocation.description'),
       questions: [
         t('hub.categories.relocation.q1'),
         t('hub.categories.relocation.q2'),
@@ -109,7 +103,6 @@ export default function AIAssistantHubScreen({ navigation }) {
       id: 'general',
       title: t('hub.categories.general.title'),
       icon: 'help-circle',
-      description: t('hub.categories.general.description'),
       questions: [
         t('hub.categories.general.q1'),
         t('hub.categories.general.q2'),

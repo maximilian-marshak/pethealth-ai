@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -29,178 +28,27 @@ import ProgressBar from '../components/ProgressBar';
 import { supabase } from '../utils/supabase';
 import { useNotificationPref } from '../hooks/useNotificationPref';
 import { requestNotificationPermission, cancelAllScheduled } from '../utils/notificationsSetup';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme, setThemeMode } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
-
-// ─── Language Switcher Component ──────────────────────────────────────────────
-const LanguageSwitcher = () => {
-  const { currentLanguage, switchLanguage } = useLanguage();
-  const { t } = useTranslation('common');
-  const { theme } = useTheme();
-  const switcherStyles = useMemo(() => makeSwitcherStyles(theme), [theme]);
-  const [switching, setSwitching] = useState(false);
-
-  const handleSwitch = async (lang) => {
-    if (lang === currentLanguage || switching) return;
-    try {
-      setSwitching(true);
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      await switchLanguage(lang);
-    } finally {
-      setSwitching(false);
-    }
-  };
-
-  return (
-    <View style={switcherStyles.container}>
-      <View style={switcherStyles.labelRow}>
-        <Ionicons name="language" size={20} color={theme.accent} />
-        <Text style={switcherStyles.label}>{t('language')}</Text>
-      </View>
-
-      <View style={switcherStyles.toggle}>
-        {/* EN кнопка */}
-        <TouchableOpacity
-          style={[
-            switcherStyles.langBtn,
-            currentLanguage === 'en' && switcherStyles.langBtnActive,
-          ]}
-          onPress={() => handleSwitch('en')}
-          disabled={switching}
-        >
-          <Text style={[
-            switcherStyles.langText,
-            currentLanguage === 'en' && switcherStyles.langTextActive,
-          ]}>
-            🇬🇧 EN
-          </Text>
-        </TouchableOpacity>
-
-        {/* RU кнопка */}
-        <TouchableOpacity
-          style={[
-            switcherStyles.langBtn,
-            currentLanguage === 'ru' && switcherStyles.langBtnActive,
-          ]}
-          onPress={() => handleSwitch('ru')}
-          disabled={switching}
-        >
-          <Text style={[
-            switcherStyles.langText,
-            currentLanguage === 'ru' && switcherStyles.langTextActive,
-          ]}>
-            🇷🇺 RU
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {switching && (
-        <ActivityIndicator
-          size="small"
-          color={theme.accent}
-          style={switcherStyles.spinner}
-        />
-      )}
-    </View>
-  );
-};
-
-const makeSwitcherStyles = (theme) => StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.surface,
-    padding: 16,
-    borderRadius: theme.radii.sm12,
-    marginBottom: 8,
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  label: {
-    fontSize: 15,
-    color: theme.t1,
-    fontFamily: theme.font.medium,
-  },
-  toggle: {
-    flexDirection: 'row',
-    backgroundColor: theme.accentTint,
-    borderRadius: theme.radii.r10,
-    padding: 3,
-    gap: 3,
-  },
-  langBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: theme.radii.sm8,
-  },
-  langBtnActive: {
-    backgroundColor: theme.accentPress,
-    shadowColor: theme.accent,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  langText: {
-    fontSize: 13,
-    fontFamily: theme.font.semibold,
-    color: theme.t2,
-  },
-  langTextActive: {
-    color: theme.onAccent,
-  },
-  spinner: {
-    marginLeft: 8,
-  },
-});
-
-// ─── Units Switcher Component (кг / фунты) ────────────────────────────────────
-const UnitsSwitcher = () => {
-  const { unit, setUnit } = useUnits();
-  const { t } = useTranslation('profile');
-  const { theme } = useTheme();
-  const switcherStyles = useMemo(() => makeSwitcherStyles(theme), [theme]);
-
-  return (
-    <View style={switcherStyles.container}>
-      <View style={switcherStyles.labelRow}>
-        <Ionicons name="barbell-outline" size={20} color={theme.accent} />
-        <Text style={switcherStyles.label}>{t('units.title')}</Text>
-      </View>
-
-      <View style={switcherStyles.toggle}>
-        {['kg', 'lb'].map((u) => (
-          <TouchableOpacity
-            key={u}
-            style={[switcherStyles.langBtn, unit === u && switcherStyles.langBtnActive]}
-            onPress={() => setUnit(u)}
-          >
-            <Text style={[switcherStyles.langText, unit === u && switcherStyles.langTextActive]}>
-              {t(`units.${u}`)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-};
+import GlassCard from '../components/GlassCard';
+import Badge from '../components/ui/Badge';
+import Switch from '../components/ui/Switch';
+import Button from '../components/ui/Button';
+import IconChip from '../components/IconChip';
+import Segmented from '../components/Segmented';
+import { unitLabel } from '../utils/formatWeight';
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen({ navigation }) {
   const { user, signOut } = useAuth();
-  const { theme } = useTheme();
+  const { theme, scheme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { enabled: notificationsEnabled, setEnabled: setNotificationsEnabled } = useNotificationPref();
+  const { currentLanguage, switchLanguage } = useLanguage();
+  const { unit, setUnit } = useUnits();
   const { t, i18n } = useTranslation(['profile', 'common', 'pets']);
+  // Нормализованный код языка для сегмента (i18n.language может быть 'en-US').
+  const langCode = (currentLanguage || '').startsWith('ru') ? 'ru' : 'en';
 
   // ─── Хуки данных ────────────────────────────────────────
   const { points, loading: loadingPoints, refreshPoints } = useLoyaltyPoints();
@@ -389,7 +237,21 @@ export default function ProfileScreen({ navigation }) {
   const getAvatarUrl = () => {
     if (profile?.avatar_url) return profile.avatar_url;
     if (user?.user_metadata?.avatar_url) return user.user_metadata.avatar_url;
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.email || 'User')}&size=200&background=6C63FF&color=fff`;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.email || 'User')}&size=200&background=56B89F&color=fff`;
+  };
+
+  // Ряд настройки (эталон): иконка accent + label + контрол справа.
+  const SettingRow = ({ icon, label, onPress, children }) => {
+    const inner = (
+      <View style={styles.settingRow}>
+        <Ionicons name={icon} size={20} color={theme.accent} />
+        <Text style={styles.settingLabel} numberOfLines={1}>{label}</Text>
+        {children}
+      </View>
+    );
+    return onPress
+      ? <TouchableOpacity onPress={onPress} activeOpacity={0.7}>{inner}</TouchableOpacity>
+      : inner;
   };
 
   // ─── Render ─────────────────────────────────────────────
@@ -401,97 +263,87 @@ export default function ProfileScreen({ navigation }) {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />
       }
     >
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.avatarContainer}>
-          <Image source={{ uri: getAvatarUrl() }} style={styles.avatar} />
-          <TouchableOpacity
-            style={styles.avatarEditButton}
-            onPress={handleUpdateAvatar}
-            disabled={uploadingAvatar}
-          >
-            {uploadingAvatar
-              ? <ActivityIndicator size="small" color={theme.onAccent} />
-              : <Ionicons name="camera" size={16} color={theme.onAccent} />
-            }
-          </TouchableOpacity>
+      {/* SCREEN TITLE */}
+      <Text style={styles.screenTitle}>{t('profile:title')}</Text>
+
+      {/* HEADER (карточка-ряд, эталон) — аватар+edit сохранены */}
+      <GlassCard variant="decor" style={styles.userCard} padding={18}>
+        <View style={styles.userRow}>
+          <View style={styles.avatarContainer}>
+            <Image source={{ uri: getAvatarUrl() }} style={styles.avatar} />
+            <TouchableOpacity
+              style={styles.avatarEditButton}
+              onPress={handleUpdateAvatar}
+              disabled={uploadingAvatar}
+            >
+              {uploadingAvatar
+                ? <ActivityIndicator size="small" color={theme.onAccent} />
+                : <Ionicons name="camera" size={13} color={theme.onAccent} />
+              }
+            </TouchableOpacity>
+          </View>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName} numberOfLines={1}>{getUserName()}</Text>
+            <Text style={styles.userEmail} numberOfLines={1}>{user?.email}</Text>
+          </View>
         </View>
-        <Text style={styles.userName}>{getUserName()}</Text>
-        <Text style={styles.userEmail}>{user?.email}</Text>
-      </View>
+      </GlassCard>
 
       {/* STATS ROW */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <View style={[styles.statIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="paw" size={24} color={theme.accent} />
-          </View>
+          <IconChip name="paw" color={theme.accent} size={22} />
           <Text style={styles.statValue}>{loadingPoints ? '...' : currentBalance}</Text>
           <Text style={styles.statLabel}>{t('profile:loyalty')}</Text>
         </View>
 
         <View style={styles.statCard}>
-          <View style={[styles.statIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="heart" size={24} color={theme.accent} />
-          </View>
+          <IconChip name="heart" color={theme.accent} size={22} />
           <Text style={styles.statValue}>{loadingCharity ? '...' : totalDonated}</Text>
           <Text style={styles.statLabel}>{t('profile:totalDonated')}</Text>
         </View>
 
         <View style={styles.statCard}>
-          <View style={[styles.statIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="home" size={24} color={theme.accent} />
-          </View>
+          <IconChip name="home" color={theme.accent} size={22} />
           <Text style={styles.statValue}>{loadingCharity ? '...' : shelterCount}</Text>
-          <Text style={styles.statLabel}>
-            {t('profile:settings')}
-          </Text>
+          <Text style={styles.statLabel}>{t('profile:shelters')}</Text>
         </View>
       </View>
 
-      {/* RANK */}
+      {/* RANK (компактная карточка, эталон) — chevron раскрывает список рангов */}
       {(loadingRanks || ranks.length > 0) && (
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🎖️ {t('profile:rank.title')}</Text>
-          </View>
-
           {loadingRanks ? (
             <View style={styles.rankLoading}>
               <ActivityIndicator size="small" color={theme.accent} />
             </View>
           ) : (
-            <>
-          <View style={[styles.rankCard, { borderColor: rankAccent, backgroundColor: rankAccent + '12' }]}>
-            <Text style={styles.rankBadgeIcon}>{currentRank?.icon || '🏅'}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rankName}>{rankName(currentRank) || '—'}</Text>
-              {currentRank?.league ? (
-                <Text style={[styles.rankLeague, { color: rankAccent }]}>
-                  {t(`profile:rank.league.${currentRank.league}`, { defaultValue: currentRank.league })}
-                </Text>
-              ) : null}
-            </View>
-          </View>
+          <GlassCard variant="decor" style={styles.rankCard} radius={theme.radii.r20}>
+            <TouchableOpacity style={styles.rankMain} onPress={() => setRanksExpanded((v) => !v)} activeOpacity={0.7}>
+              <Text style={styles.rankBadgeIcon}>{currentRank?.icon || '🏅'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rankLabel}>{t('profile:rank.title')}</Text>
+                <Text style={styles.rankName} numberOfLines={1}>{rankName(currentRank) || '—'}</Text>
+                {currentRank?.league ? (
+                  <Badge color={rankAccent} style={styles.rankBadge}>
+                    {t(`profile:rank.league.${currentRank.league}`, { defaultValue: currentRank.league })}
+                  </Badge>
+                ) : null}
+              </View>
+              <Ionicons name={ranksExpanded ? 'chevron-up' : 'chevron-forward'} size={20} color={theme.t3} />
+            </TouchableOpacity>
 
-          <View style={styles.rankProgressRow}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <ProgressBar current={rankPct} goal={100} height={8} />
+            <View style={styles.rankProgressRow}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <ProgressBar current={rankPct} goal={100} height={8} />
+              </View>
+              <Text style={styles.rankProgressPct}>{rankPct}%</Text>
             </View>
-            <Text style={styles.rankProgressPct}>{rankPct}%</Text>
-          </View>
-          <Text style={styles.rankToNext}>
-            {nextRank ? t('profile:rank.toNext', { remaining: rankRemaining }) : t('profile:rank.max')}
-          </Text>
-
-          <TouchableOpacity style={styles.rankToggle} onPress={() => setRanksExpanded((v) => !v)} activeOpacity={0.7}>
-            <Text style={styles.rankToggleText}>
-              {ranksExpanded ? t('profile:rank.hideAll') : t('profile:rank.showAll')}
+            <Text style={styles.rankToNext}>
+              {nextRank ? t('profile:rank.toNext', { remaining: rankRemaining }) : t('profile:rank.max')}
             </Text>
-            <Ionicons name={ranksExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={theme.accent} />
-          </TouchableOpacity>
 
-          {ranksExpanded && ranks.map((r) => {
+            {ranksExpanded && ranks.map((r) => {
             const accent = theme.leagueColors[r.league] || theme.accent;
             const isCurrent = currentRank && r.rank_no === currentRank.rank_no;
             return (
@@ -507,7 +359,7 @@ export default function ProfileScreen({ navigation }) {
               </View>
             );
           })}
-            </>
+          </GlassCard>
           )}
         </View>
       )}
@@ -515,7 +367,7 @@ export default function ProfileScreen({ navigation }) {
       {/* PETS */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🐾 {t('pets:title')}</Text>
+          <Text style={styles.sectionTitle}>{t('pets:title')}</Text>
           <TouchableOpacity onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             navigation.navigate('AddPet');
@@ -536,34 +388,39 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.emptySubtext}>{t('pets:addPet')}</Text>
           </View>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.petsScroll}>
-            {pets.map(pet => {
-              const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(pet.name)}&size=200&background=6C63FF&color=fff`;
+          <GlassCard variant="data" style={styles.petsCard} radius={theme.radii.r20}>
+            {pets.map((pet, i) => {
+              const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(pet.name)}&size=200&background=56B89F&color=fff`;
+              const last = i === pets.length - 1;
               return (
                 <TouchableOpacity
                   key={pet.id}
-                  style={styles.petCard}
+                  style={[styles.petRow, !last && styles.petRowDivider]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     navigation.navigate('PetDetail', { petId: pet.id });
                   }}
+                  activeOpacity={0.7}
                 >
                   <Image source={{ uri: pet.avatar_url || fallbackUrl }} style={styles.petAvatar} />
-                  <Text style={styles.petName} numberOfLines={1}>{pet.name}</Text>
-                  <Text style={styles.petBreed} numberOfLines={1}>
-                    {pet.breed || pet.species || t('pets:other')}
-                  </Text>
+                  <View style={styles.petInfo}>
+                    <Text style={styles.petName} numberOfLines={1}>{pet.name}</Text>
+                    <Text style={styles.petBreed} numberOfLines={1}>
+                      {pet.breed || pet.species || t('pets:other')}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={theme.t3} />
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
+          </GlassCard>
         )}
       </View>
 
       {/* CHARITY */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>💝 {t('profile:totalDonated')}</Text>
+          <Text style={styles.sectionTitle}>{t('profile:totalDonated')}</Text>
           <TouchableOpacity onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             navigation.navigate('CharityHistory');
@@ -583,76 +440,69 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </View>
 
-      {/* SETTINGS */}
+      {/* SETTINGS (эталон: GlassCard data + Row-паттерн) */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>
-          ⚙️ {t('profile:settings')}
-        </Text>
+        <Text style={styles.sectionLabel}>{t('profile:settings')}</Text>
+        <GlassCard variant="data" style={styles.settingsCard} radius={theme.radii.r20}>
+          <SettingRow icon="notifications-outline" label={t('profile:notifications')}>
+            <Switch value={notificationsEnabled} onValueChange={onToggleNotifications} />
+          </SettingRow>
+          <View style={styles.settingDivider} />
 
-        {/* ─── Language Switcher ─── */}
-        <LanguageSwitcher />
+          <SettingRow icon="moon-outline" label={t('profile:darkMode')}>
+            <Switch value={scheme === 'dark'} onValueChange={(v) => setThemeMode(v ? 'dark' : 'light')} />
+          </SettingRow>
+          <View style={styles.settingDivider} />
 
-        {/* ─── Units Switcher ─── */}
-        <UnitsSwitcher />
+          <SettingRow icon="barbell-outline" label={t('profile:units.title')}>
+            <View style={styles.settingSeg}>
+              <Segmented
+                options={[{ k: 'kg', label: unitLabel('kg') }, { k: 'lb', label: unitLabel('lb') }]}
+                value={unit}
+                onChange={setUnit}
+              />
+            </View>
+          </SettingRow>
+          <View style={styles.settingDivider} />
 
-        <TouchableOpacity
-          style={styles.settingItem}
-          onPress={openPhoneModal}
-        >
-          <View style={[styles.settingIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="call" size={20} color={theme.accent} />
-          </View>
-          <Text style={styles.settingText}>{t('profile:phone')}</Text>
-          <Text style={styles.settingValue} numberOfLines={1}>{profile?.phone || '—'}</Text>
-        </TouchableOpacity>
+          <SettingRow icon="language-outline" label={t('common:language')}>
+            <View style={styles.settingSeg}>
+              <Segmented
+                options={[{ k: 'en', label: 'EN' }, { k: 'ru', label: 'RU' }]}
+                value={langCode}
+                onChange={switchLanguage}
+              />
+            </View>
+          </SettingRow>
+          <View style={styles.settingDivider} />
 
-        <View style={styles.settingItem}>
-          <View style={[styles.settingIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="notifications" size={20} color={theme.accent} />
-          </View>
-          <Text style={styles.settingText}>{t('profile:notifications')}</Text>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={onToggleNotifications}
-            trackColor={{ true: theme.accent, false: theme.hairline }}
-            thumbColor={theme.onAccent}
-          />
-        </View>
+          <SettingRow icon="call-outline" label={t('profile:phone')} onPress={openPhoneModal}>
+            <Text style={styles.settingValue} numberOfLines={1}>{profile?.phone || '—'}</Text>
+          </SettingRow>
+          <View style={styles.settingDivider} />
 
-        <TouchableOpacity
-          style={styles.settingItem}
-          onPress={() => navigation.navigate('FAQ')}
-        >
-          <View style={[styles.settingIcon, { backgroundColor: theme.accentTint }]}>
-            <Ionicons name="help-circle" size={20} color={theme.accent} />
-          </View>
-          <Text style={styles.settingText}>FAQ</Text>
-          <Ionicons name="chevron-forward" size={20} color={theme.t4} />
-        </TouchableOpacity>
+          <SettingRow icon="help-circle-outline" label="FAQ" onPress={() => navigation.navigate('FAQ')}>
+            <Ionicons name="chevron-forward" size={18} color={theme.t3} />
+          </SettingRow>
+        </GlassCard>
+      </View>
 
-        <TouchableOpacity
-          style={[styles.settingItem, styles.logoutItem]}
-          onPress={handleLogout}
-        >
-          <View style={[styles.settingIcon, { backgroundColor: theme.hairline }]}>
-            <Ionicons name="log-out" size={20} color={theme.t2} />
-          </View>
-          <Text style={[styles.settingText, styles.logoutText]}>{t('profile:logout')}</Text>
-          <Ionicons name="chevron-forward" size={20} color={theme.t4} />
-        </TouchableOpacity>
+      {/* ACCOUNT ACTIONS — bare внизу экрана (эталон), без секц-заголовка */}
+      <View style={styles.actionsWrap}>
+        <Button variant="outline" block icon="log-out-outline" onPress={handleLogout}>
+          {t('profile:logout')}
+        </Button>
 
         <TouchableOpacity
-          style={[styles.settingItem, styles.deleteAccountItem]}
+          style={styles.deleteBtn}
           onPress={handleDeleteAccount}
           disabled={deleting}
+          activeOpacity={0.7}
         >
-          <View style={[styles.settingIcon, { backgroundColor: theme.danger + '22' }]}>
-            {deleting
-              ? <ActivityIndicator size="small" color={theme.danger} />
-              : <Ionicons name="trash-outline" size={20} color={theme.danger} />}
-          </View>
-          <Text style={[styles.settingText, styles.deleteAccountText]}>{t('profile:deleteAccount')}</Text>
-          {!deleting && <Ionicons name="chevron-forward" size={20} color={theme.t4} />}
+          {deleting
+            ? <ActivityIndicator size="small" color={theme.danger} />
+            : <Ionicons name="trash-outline" size={18} color={theme.danger} />}
+          <Text style={styles.deleteText}>{t('profile:deleteAccount')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -703,36 +553,42 @@ export default function ProfileScreen({ navigation }) {
 
 const makeStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
-  header: {
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 24,
-    backgroundColor: theme.surface,
+  screenTitle: {
+    fontSize: 26,
+    fontFamily: theme.font.bold,
+    color: theme.t1,
+    letterSpacing: -0.4,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
-  avatarContainer: { position: 'relative', marginBottom: 16 },
+  userCard: { marginHorizontal: 20, marginBottom: 8 },
+  userRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  userInfo: { flex: 1 },
+  avatarContainer: { position: 'relative' },
   avatar: {
-    width: 100,
-    height: 100,
+    width: 60,
+    height: 60,
     borderRadius: theme.radii.pill999,
-    borderWidth: 4,
+    borderWidth: 2,
     borderColor: theme.accent,
   },
   avatarEditButton: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
+    bottom: -2,
+    right: -2,
     backgroundColor: theme.accentPress,
-    borderRadius: theme.radii.r14,
-    width: 30,
-    height: 30,
+    borderRadius: theme.radii.pill999,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: theme.surface,
   },
   premiumIcon: { fontSize: 14 },
-  userName: { fontSize: 24, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 4 },
-  userEmail: { fontSize: 14, color: theme.t3, marginBottom: 12 },
+  userName: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
+  userEmail: { fontSize: 13, color: theme.t2, marginTop: 2 },
   subscriptionBadge: {
     backgroundColor: theme.accentTint,
     paddingHorizontal: 16,
@@ -750,24 +606,17 @@ const makeStyles = (theme) => StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: theme.surface,
-    borderRadius: theme.radii.md16,
+    borderRadius: theme.radii.r18,
     padding: 16,
     alignItems: 'center',
+    gap: 8,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: theme.radii.sm12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  statValue: { fontSize: 22, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 4 },
+  statValue: { fontSize: 22, fontFamily: theme.font.bold, color: theme.t1 },
   statLabel: { fontSize: 12, color: theme.t3, textAlign: 'center' },
   section: { paddingHorizontal: 20, marginTop: 24 },
   sectionHeader: {
@@ -776,7 +625,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
+  sectionTitle: { fontSize: 13, fontFamily: theme.font.bold, color: theme.t3, textTransform: 'uppercase', letterSpacing: 0.4 },
   seeAll: { fontSize: 14, color: theme.accent, fontFamily: theme.font.semibold },
   nextBadgeCard: {
     backgroundColor: theme.surface,
@@ -793,42 +642,34 @@ const makeStyles = (theme) => StyleSheet.create({
   nextBadgeName: { fontSize: 16, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 12 },
   progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' },
   progressPercent: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.ok, minWidth: 35, textAlign: 'right' },
-  rankCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: theme.surface, borderRadius: theme.radii.md16, borderWidth: 1.5, padding: 16, marginBottom: 12 },
+  rankCard: { marginBottom: 12 },
+  rankMain: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   rankLoading: { paddingVertical: 24, alignItems: 'center' },
-  rankBadgeIcon: { fontSize: 38 },
-  rankName: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
-  rankLeague: { fontSize: 13, fontFamily: theme.font.bold, marginTop: 2, textTransform: 'uppercase' },
-  rankProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rankBadgeIcon: { fontSize: 36 },
+  rankLabel: { fontSize: 12, fontFamily: theme.font.bold, color: theme.t3, textTransform: 'uppercase', letterSpacing: 0.4 },
+  rankName: { fontSize: 17, fontFamily: theme.font.bold, color: theme.t1, marginTop: 1 },
+  rankBadge: { marginTop: 6 },
+  rankProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
   rankProgressPct: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.accent, minWidth: 38, textAlign: 'right' },
   rankToNext: { fontSize: 13, color: theme.t3, marginTop: 6 },
-  rankToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12, marginTop: 4 },
-  rankToggleText: { fontSize: 14, color: theme.accent, fontFamily: theme.font.semibold },
   rankRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surface, borderRadius: theme.radii.sm12, borderWidth: 1, padding: 12, marginBottom: 8 },
   rankRowIcon: { fontSize: 22 },
   rankRowName: { flex: 1, fontSize: 14, color: theme.t1 },
   rankRowNameCurrent: { fontFamily: theme.font.bold },
   rankRowThreshold: { fontSize: 12, color: theme.t3, fontFamily: theme.font.semibold },
   badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  petsScroll: { paddingRight: 20, gap: 12 },
-  petCard: {
-    width: 110,
-    backgroundColor: theme.surface,
-    borderRadius: theme.radii.md16,
-    padding: 12,
-    alignItems: 'center',
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  petAvatar: { width: 70, height: 70, borderRadius: theme.radii.pill999, marginBottom: 8 },
-  petName: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 2 },
-  petBreed: { fontSize: 12, color: theme.t3 },
+  // Питомцы — вертикальный список рядов в одной GlassCard data
+  petsCard: { marginBottom: 8 },
+  petRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+  petRowDivider: { borderBottomWidth: 1, borderBottomColor: theme.hairline },
+  petAvatar: { width: 48, height: 48, borderRadius: theme.radii.pill999 },
+  petInfo: { flex: 1, minWidth: 0 },
+  petName: { fontSize: 16, fontFamily: theme.font.bold, color: theme.t1 },
+  petBreed: { fontSize: 13, color: theme.t2, marginTop: 2 },
   charityCard: {
     backgroundColor: theme.surface,
     padding: 20,
-    borderRadius: theme.radii.md16,
+    borderRadius: theme.radii.r18,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -844,28 +685,20 @@ const makeStyles = (theme) => StyleSheet.create({
   charityTitle: { fontSize: 14, color: theme.t2 },
   charityGoal: { fontSize: 16, fontFamily: theme.font.bold, color: theme.accent },
   charityHint: { fontSize: 12, color: theme.t3, textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.surface,
-    padding: 16,
-    borderRadius: theme.radii.sm12,
+  // Settings (эталон: секц-лейбл uppercase + GlassCard data + Row-паттерн)
+  sectionLabel: {
+    fontSize: 13,
+    fontFamily: theme.font.bold,
+    color: theme.t3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
     marginBottom: 8,
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
-  settingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radii.r10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  settingText: { flex: 1, fontSize: 15, color: theme.t1, fontFamily: theme.font.medium },
+  settingsCard: { marginBottom: 8 },
+  settingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
+  settingLabel: { flex: 1, fontSize: 15, fontFamily: theme.font.medium, color: theme.t1 },
+  settingDivider: { height: 1, backgroundColor: theme.hairline },
+  settingSeg: { width: 128 },
   settingValue: { fontSize: 14, color: theme.t3, maxWidth: 150, textAlign: 'right' },
   phoneModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 24 }, // theme-neutral scrim
   phoneModalCard: { backgroundColor: theme.surface, borderRadius: theme.radii.md16, padding: 20 },
@@ -877,13 +710,13 @@ const makeStyles = (theme) => StyleSheet.create({
   phoneBtnSave: { backgroundColor: theme.accentPress },
   phoneBtnCancelText: { color: theme.t1, fontFamily: theme.font.semibold, fontSize: 15 },
   phoneBtnSaveText: { color: theme.onAccent, fontFamily: theme.font.semibold, fontSize: 15 },
-  logoutItem: { borderWidth: 1, borderColor: theme.hairline },
-  logoutText: { color: theme.t2 },
-  deleteAccountItem: { borderWidth: 1, borderColor: theme.danger },
-  deleteAccountText: { color: theme.danger, fontFamily: theme.font.semibold },
+  // Действия: Logout (ui/Button outline) + Delete (danger text-button)
+  actionsWrap: { marginTop: 24, paddingHorizontal: 20, gap: 12 },
+  deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12 },
+  deleteText: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.danger },
   emptyCard: {
     backgroundColor: theme.surface,
-    borderRadius: theme.radii.md16,
+    borderRadius: theme.radii.r20,
     padding: 24,
     alignItems: 'center',
     shadowColor: theme.shadow.shadowColor,

@@ -272,18 +272,14 @@
   "hub": {
     "title": "AI Pet Assistant",
     "sections": {
-      "ai": "Ask AI",
       "reference": "Reference"
     },
     "knowledgeSubtitle": "Care & health articles",
     "relocationSubtitle": "Relocation checklist",
-    "choosePet": "Choose a pet",
     "subtitleWithPet": "Ask me anything about {{name}}'s care",
     "subtitleNoPet": "Ask me anything about pet care",
     "freeChat": "Start Free Chat",
-    "freeChatSubtitle": "Ask me anything about your pet",
     "photoAnalysis": "Photo Analysis",
-    "photoAnalysisSubtitle": "Check symptoms or identify breed",
     "browseByCategory": "Browse by Category",
     "popularQuestions": "Popular Questions",
     "photoSourceTitle": "📸 Photo Analysis",
@@ -302,49 +298,42 @@
     "categories": {
       "health": {
         "title": "Health & Wellness",
-        "description": "Medical advice, symptoms, and preventive care",
         "q1": "What are signs of illness in dogs?",
         "q2": "How often should I visit the vet?",
         "q3": "Common health issues in cats"
       },
       "nutrition": {
         "title": "Nutrition & Diet",
-        "description": "Feeding guidelines, recipes, and dietary needs",
         "q1": "Best diet for puppies",
         "q2": "How much should my pet eat?",
         "q3": "Foods toxic to pets"
       },
       "behavior": {
         "title": "Behavior & Training",
-        "description": "Training tips, behavioral issues, and socialization",
         "q1": "How to stop excessive barking?",
         "q2": "Litter training for kittens",
         "q3": "Socializing an anxious dog"
       },
       "grooming": {
         "title": "Grooming & Care",
-        "description": "Bathing, nail care, and hygiene tips",
         "q1": "How often to bathe my dog?",
         "q2": "Nail trimming best practices",
         "q3": "Brushing techniques for long hair"
       },
       "emergency": {
         "title": "Emergency Guide",
-        "description": "First aid and emergency response",
         "q1": "What to do if my pet is choking?",
         "q2": "Signs of poisoning",
         "q3": "Emergency vet contacts"
       },
       "relocation": {
         "title": "Relocation & Travel",
-        "description": "Moving abroad or flying with your pet",
         "q1": "What documents do I need to fly with my dog?",
         "q2": "How early should I start preparing for relocation?",
         "q3": "What are the airline rules for pet carriers?"
       },
       "general": {
         "title": "General Questions",
-        "description": "Ask anything about pet care",
         "q1": "Travel tips with pets",
         "q2": "Introducing a new pet to home",
         "q3": "Senior pet care"
@@ -369,7 +358,6 @@
     "emptyTitleWithPet": "{{name}}'s AI Assistant",
     "emptyWelcome": "Hi! I'm your AI pet care assistant. Ask me anything about your pet's health, nutrition, behavior, or general care.",
     "emptyWelcomeWithPet": "Hi! I'm your AI assistant for {{name}}. How can I help you today?",
-    "tryAsking": "Try asking:",
     "suggestedQ1": "What are the signs of illness in pets?",
     "suggestedQ2": "How often should I feed my pet?",
     "suggestedQ3": "What vaccinations does my pet need?",

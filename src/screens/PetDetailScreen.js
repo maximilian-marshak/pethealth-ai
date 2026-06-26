@@ -25,6 +25,9 @@ import { supabase } from '../utils/supabase';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
 import PassportView from '../components/PassportView';
+import IconChip from '../components/IconChip';
+import GlassCard from '../components/GlassCard';
+import Badge from '../components/ui/Badge';
 
 // Тип события/записи → ключ категориальной палитры theme.eventTypes (единая с Medical).
 const EVENT_TYPE_KEY = {
@@ -118,18 +121,19 @@ export default function PetDetailScreen({ route, navigation }) {
         .select('*', { count: 'exact', head: true })
         .eq('pet_id', petId);
 
+      // «Визит» = любая прошедшая медзапись (occurred_at ≤ сейчас); будущие игнорируем.
       const { data: lastVisitData } = await supabase
         .from('medical_records')
-        .select('date')
+        .select('occurred_at')
         .eq('pet_id', petId)
-        .in('record_type', ['checkup', 'surgery', 'diagnosis'])
-        .order('date', { ascending: false })
+        .lte('occurred_at', new Date().toISOString())
+        .order('occurred_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       let daysSince = null;
-      if (lastVisitData?.date) {
-        const diffTime = Date.now() - new Date(lastVisitData.date).getTime();
+      if (lastVisitData?.occurred_at) {
+        const diffTime = Date.now() - new Date(lastVisitData.occurred_at).getTime();
         daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       }
 
@@ -341,17 +345,17 @@ export default function PetDetailScreen({ route, navigation }) {
   const renderStats = () => (
     <View style={styles.statsContainer}>
       <View style={styles.statCard}>
-        <Ionicons name="medkit-outline" size={28} color={theme.accent} />
+        <IconChip name="medkit-outline" color={theme.accent} size={22} />
         <Text style={styles.statValue}>{stats.vaccinations}</Text>
         <Text style={styles.statLabel}>{t('detail.stats.vaccinations')}</Text>
       </View>
       <View style={styles.statCard}>
-        <Ionicons name="document-text-outline" size={28} color={theme.accent} />
+        <IconChip name="document-text-outline" color={theme.accent} size={22} />
         <Text style={styles.statValue}>{stats.medicalRecords}</Text>
         <Text style={styles.statLabel}>{t('detail.stats.records')}</Text>
       </View>
       <View style={styles.statCard}>
-        <Ionicons name="calendar-outline" size={28} color={theme.accent} />
+        <IconChip name="calendar-outline" color={theme.accent} size={22} />
         <Text style={styles.statValue}>
           {stats.daysSinceLastVisit !== null ? stats.daysSinceLastVisit : '—'}
         </Text>
@@ -363,29 +367,30 @@ export default function PetDetailScreen({ route, navigation }) {
   // ─── Слот: events / records / quick-actions (между chronic и info) ─────────
   const renderOverview = () => (
     <>
-      {/* ─── UPCOMING EVENTS ──────────────── */}
+      {/* ─── UPCOMING EVENTS — ряды в одной GlassCard ──────────────── */}
       {upcomingEvents.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('detail.events.section')}</Text>
-          {upcomingEvents.map((event, index) => {
-            const evColor = eventColorFor(theme, event.type);
-            return (
-            <View key={index} style={styles.eventCard}>
-              <View style={[styles.eventIconWrap, { backgroundColor: evColor + '20' }]}>
-                <Ionicons name={event.icon} size={20} color={evColor} />
-              </View>
-              <View style={styles.eventContent}>
-                <Text style={styles.eventTitle}>{event.title}</Text>
-                <Text style={styles.eventDate}>{formatShortDate(event.date)}</Text>
-              </View>
-              <Text style={styles.eventBadge}>{daysUntil(event.date)}</Text>
-            </View>
-            );
-          })}
+          <GlassCard variant="data" radius={theme.radii.r20} padding={0}>
+            {upcomingEvents.map((event, index) => {
+              const evColor = eventColorFor(theme, event.type);
+              const last = index === upcomingEvents.length - 1;
+              return (
+                <View key={index} style={[styles.listRow, !last && styles.listRowDivider]}>
+                  <IconChip name={event.icon} color={evColor} size={18} />
+                  <View style={styles.listText}>
+                    <Text style={styles.listTitle} numberOfLines={1}>{event.title}</Text>
+                    <Text style={styles.listDate}>{formatShortDate(event.date)}</Text>
+                  </View>
+                  <Badge tone="accent">{daysUntil(event.date)}</Badge>
+                </View>
+              );
+            })}
+          </GlassCard>
         </View>
       )}
 
-      {/* ─── RECENT MEDICAL RECORDS ───────── */}
+      {/* ─── RECENT MEDICAL RECORDS — ряды в одной GlassCard ───────── */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('detail.records.section')}</Text>
@@ -405,25 +410,24 @@ export default function PetDetailScreen({ route, navigation }) {
             <Text style={styles.emptyText}>{t('detail.records.empty')}</Text>
           </View>
         ) : (
-          recentRecords.map((record, index) => {
-            const recColor = eventColorFor(theme, record.type);
-            return (
-            <View key={index} style={styles.recordCard}>
-              <View style={[styles.recordIconWrap, { backgroundColor: recColor + '20' }]}>
-                <Ionicons name={record.icon} size={20} color={recColor} />
-              </View>
-              <View style={styles.recordContent}>
-                <Text style={styles.recordTitle}>{record.title}</Text>
-                <Text style={styles.recordDate}>{formatShortDate(record.date)}</Text>
-                {record.description ? (
-                  <Text style={styles.recordDescription} numberOfLines={1}>
-                    {record.description}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-            );
-          })
+          <GlassCard variant="data" radius={theme.radii.r20} padding={0}>
+            {recentRecords.map((record, index) => {
+              const recColor = eventColorFor(theme, record.type);
+              const last = index === recentRecords.length - 1;
+              return (
+                <View key={index} style={[styles.listRow, !last && styles.listRowDivider]}>
+                  <IconChip name={record.icon} color={recColor} size={18} />
+                  <View style={styles.listText}>
+                    <Text style={styles.listTitle} numberOfLines={1}>{record.title}</Text>
+                    <Text style={styles.listDate}>{formatShortDate(record.date)}</Text>
+                    {record.description ? (
+                      <Text style={styles.listDesc} numberOfLines={1}>{record.description}</Text>
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })}
+          </GlassCard>
         )}
       </View>
 
@@ -432,7 +436,7 @@ export default function PetDetailScreen({ route, navigation }) {
         <Text style={styles.sectionTitle}>{t('detail.quickActions.section')}</Text>
         <View style={styles.actionsGrid}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
+            style={styles.actionButton}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.navigate('Assistant', {
@@ -441,31 +445,31 @@ export default function PetDetailScreen({ route, navigation }) {
               });
             }}
           >
-            <Ionicons name="scan-outline" size={28} color={theme.accent} />
+            <IconChip name="scan-outline" color={theme.accent} size={24} />
             <Text style={styles.actionText}>{t('detail.quickActions.aiAnalysis')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
+            style={styles.actionButton}
             onPress={() => navigation.navigate('Medical')}
           >
-            <Ionicons name="document-text-outline" size={28} color={theme.accent} />
+            <IconChip name="document-text-outline" color={theme.accent} size={24} />
             <Text style={styles.actionText}>{t('detail.quickActions.records')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
+            style={styles.actionButton}
             onPress={() => navigation.navigate('Medical')}
           >
-            <Ionicons name="medkit-outline" size={28} color={theme.accent} />
+            <IconChip name="medkit-outline" color={theme.accent} size={24} />
             <Text style={styles.actionText}>{t('detail.quickActions.vaccines')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
+            style={styles.actionButton}
             onPress={() => navigation.navigate('Activity')}
           >
-            <Ionicons name="fitness-outline" size={28} color={theme.accent} />
+            <IconChip name="fitness-outline" color={theme.accent} size={24} />
             <Text style={styles.actionText}>{t('detail.quickActions.activity')}</Text>
           </TouchableOpacity>
         </View>
@@ -488,25 +492,23 @@ export default function PetDetailScreen({ route, navigation }) {
           />
         }
       >
-        {/* ─── HEADER ───────────────────────── */}
+        {/* ─── HEADER (чистый прозрачный: back accent + delete danger; имя — в hero паспорта) ─── */}
         <View style={styles.header}>
           <TouchableOpacity
-            style={styles.backButton}
             onPress={() => navigation.goBack()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="arrow-back" size={24} color={theme.t1} />
+            <Ionicons name="chevron-back" size={26} color={theme.accent} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>{pet.name}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>{t('detail.headerTitle')}</Text>
 
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={[styles.headerButton, styles.deleteButton]}
-              onPress={handleDelete}
-            >
-              <Ionicons name="trash-outline" size={22} color={theme.danger} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={handleDelete}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="trash-outline" size={22} color={theme.danger} />
+          </TouchableOpacity>
         </View>
 
         {/* ─── PASSPORT (hero/вес/аллергии/хроники/инфо + модалки) ───
@@ -549,29 +551,24 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   backBtnText: { color: theme.accentPress, fontFamily: theme.font.semibold },
 
-  // ─── Header ───────────────────────────────────
+  // ─── Header (прозрачный ряд; top safe-area даёт Screen) ───
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 16,
-    backgroundColor: theme.surface,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
-  backButton: {
-    width: 40, height: 40, borderRadius: theme.radii.r20,
-    backgroundColor: theme.surface,
-    justifyContent: 'center', alignItems: 'center',
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontFamily: theme.font.bold,
+    color: theme.t1,
+    letterSpacing: -0.2,
+    marginHorizontal: 8,
   },
-  headerTitle: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
-  headerActions: { flexDirection: 'row', gap: 10 },
-  headerButton: {
-    width: 40, height: 40, borderRadius: theme.radii.r20,
-    backgroundColor: theme.accentTint,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  deleteButton: { backgroundColor: theme.danger + '22' },
 
   // ─── Stats ────────────────────────────────────
   statsContainer: {
@@ -581,8 +578,8 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 12,
   },
   statCard: {
-    flex: 1, backgroundColor: theme.surface, borderRadius: theme.radii.md16,
-    paddingVertical: 16, alignItems: 'center', gap: 6,
+    flex: 1, backgroundColor: theme.surface, borderRadius: theme.radii.r18,
+    paddingVertical: 16, alignItems: 'center', justifyContent: 'center', gap: 8,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
@@ -598,51 +595,22 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 17, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 12,
+    fontSize: 13, fontFamily: theme.font.bold, color: theme.t3,
+    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 12,
   },
   seeAll: { fontSize: 14, color: theme.accentPress, fontFamily: theme.font.semibold },
 
-  // ─── Events ───────────────────────────────────
-  eventCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: theme.surface, padding: 14,
-    borderRadius: theme.radii.r14, marginBottom: 8,
-    shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
-  },
-  eventIconWrap: {
-    width: 40, height: 40, borderRadius: theme.radii.sm12,
-    justifyContent: 'center', alignItems: 'center', marginRight: 12,
-  },
-  eventContent: { flex: 1 },
-  eventTitle:   { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 3 },
-  eventDate:    { fontSize: 12, color: theme.t3 },
-  eventBadge: {
-    backgroundColor: theme.accentTint,
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: theme.radii.r10, fontSize: 11, fontFamily: theme.font.semibold, color: theme.accentPress,
-  },
-
-  // ─── Records ──────────────────────────────────
-  recordCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: theme.surface, padding: 14,
-    borderRadius: theme.radii.r14, marginBottom: 8,
-    shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
-  },
-  recordIconWrap: {
-    width: 40, height: 40, borderRadius: theme.radii.sm12,
-    justifyContent: 'center', alignItems: 'center', marginRight: 12,
-  },
-  recordContent: { flex: 1 },
-  recordTitle:   { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 3 },
-  recordDate:    { fontSize: 12, color: theme.t3, marginBottom: 2 },
-  recordDescription: { fontSize: 12, color: theme.t2 },
+  // ─── Events / Records — ряды в одной GlassCard ───
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
+  listRowDivider: { borderBottomWidth: 1, borderBottomColor: theme.hairline },
+  listText: { flex: 1, minWidth: 0 },
+  listTitle: { fontSize: 14, fontFamily: theme.font.bold, color: theme.t1 },
+  listDate: { fontSize: 12, color: theme.t3, marginTop: 2 },
+  listDesc: { fontSize: 12, color: theme.t2, marginTop: 2 },
 
   // ─── Empty card (shared) ──────────────────────
   emptyCard: {
-    backgroundColor: theme.surface, borderRadius: theme.radii.r14,
+    backgroundColor: theme.surface, borderRadius: theme.radii.r18,
     padding: 24, alignItems: 'center', gap: 8,
   },
   emptyText: { fontSize: 14, color: theme.t3 },
@@ -650,10 +618,11 @@ const makeStyles = (theme) => StyleSheet.create({
   // ─── Actions ──────────────────────────────────
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   actionButton: {
-    width: '47%', aspectRatio: 1.6, borderRadius: theme.radii.md16,
-    justifyContent: 'center', alignItems: 'center', gap: 6,
+    width: '47%', minHeight: 96, paddingVertical: 20,
+    backgroundColor: theme.surface, borderRadius: theme.radii.r18,
+    justifyContent: 'center', alignItems: 'center', gap: 8,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
   actionText: { fontSize: 13, fontFamily: theme.font.semibold, color: theme.t1 },
 

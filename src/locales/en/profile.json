@@ -7,6 +7,7 @@
     "phone": "Phone",
     "language": "Language",
     "notifications": "Notifications",
+    "darkMode": "Dark mode",
     "notifPermDenied": { "title": "Notifications disabled", "message": "Allow notifications in your device settings to turn them on." },
     "logout": "Log Out",
     "deleteAccount": "Delete Account",
@@ -22,14 +23,13 @@
     "settings": "Settings",
     "loyalty": "Loyalty Program",
     "totalDonated": "Total Donated",
+    "shelters": "Shelters",
     "badges": "My Badges",
     "units": { "title": "Weight units", "kg": "kg", "lb": "lb" },
     "rank": {
       "title": "Rank",
       "toNext": "{{remaining}} Paws to the next rank",
       "max": "Max rank reached",
-      "showAll": "Show all ranks",
-      "hideAll": "Hide ranks",
       "threshold": "≥ {{count}} Paws",
       "league": { "bronze": "Bronze", "silver": "Silver", "gold": "Gold", "diamond": "Diamond" }
     }

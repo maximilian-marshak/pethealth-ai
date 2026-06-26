@@ -89,12 +89,13 @@
       "severe": "Severe"
     },
     "pickDate": "Select date",
+    "headerTitle": "Pet Profile",
     "notFound": "Pet not found",
     "stats": {
       "allergies": "Allergies",
       "vaccinations": "Vaccinations",
       "records": "Records",
-      "daysAgo": "Days ago"
+      "daysAgo": "Since last visit"
     },
     "alerts": {
       "deletePet": {

@@ -11,10 +11,11 @@ import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeProvider';
 
-export default function Badge({ children, tone = 'neutral', solid = false, icon, style }) {
+export default function Badge({ children, tone = 'neutral', solid = false, icon, color, style }) {
   const { theme } = useTheme();
   const tones = { accent: theme.accent, ok: theme.ok, warn: theme.warn, danger: theme.danger, neutral: theme.t3 };
-  const c = tones[tone] || tones.neutral;
+  // color (опц.) — произвольный токен-цвет (напр. leagueColors), перекрывает tone.
+  const c = color || tones[tone] || tones.neutral;
   const bg = solid ? c : c + '22';
   const fg = solid ? (tone === 'neutral' ? theme.surface : theme.onAccent) : c;
 
