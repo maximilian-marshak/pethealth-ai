@@ -1,6 +1,21 @@
 {
     "title": "Activity",
-  
+
+    "segments": {
+      "tracker": "Tracker",
+      "summary": "Summary"
+    },
+    "summary": {
+      "weightLabel": "Weight",
+      "noWeight": "Add at least two weight entries to see the trend.",
+      "recentTitle": "Recent Activity",
+      "emptyFeed": "Earn paws by logging your pet's care."
+    },
+    "feed": {
+      "donation": "Donation: {{shelter}}"
+    },
+    "showMore": "Show more",
+
     "stats": {
       "week": "This Week",
       "month": "This Month",

@@ -21,10 +21,31 @@ import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
+import Segmented from '../components/Segmented';
+import IconChip from '../components/IconChip';
+import Badge from '../components/ui/Badge';
+import PawsBalanceCard from '../components/PawsBalanceCard';
+import { usePointsHistory } from '../hooks/usePointsHistory';
+import { useWeightHistory } from '../hooks/useWeightHistory';
+import { parsePointsReason, EVENT_ICONS } from '../utils/pointsFeed';
+import { formatWeightValue, unitLabel } from '../utils/formatWeight';
 
 const { width } = Dimensions.get('window');
 
 // Убраны захардкоженные label — теперь через t('types.walk') и т.д.
+// Эмодзи питомца по виду (как в Hub/Medical) — для pet-chip на «Сводке».
+const SPECIES_EMOJI = {
+  dog: '🐶', собака: '🐶', пёс: '🐶', пес: '🐶',
+  cat: '🐱', кошка: '🐱', кот: '🐱',
+  rabbit: '🐰', кролик: '🐰',
+  bird: '🐦', птица: '🐦',
+  hamster: '🐹', хомяк: '🐹',
+  fish: '🐠', рыба: '🐠', рыбка: '🐠',
+  turtle: '🐢', черепаха: '🐢',
+  snake: '🐍', змея: '🐍',
+};
+const speciesEmoji = (s) => SPECIES_EMOJI[(s || '').toString().trim().toLowerCase()] || '🐾';
+
 const ACTIVITY_TYPES = [
   { value: 'walk', icon: 'walk' },
   { value: 'play', icon: 'american-football' },
@@ -49,6 +70,16 @@ export default function ActivityScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [activityView, setActivityView] = useState('tracker'); // 'tracker' | 'summary'
+
+  // Дата-слой «Сводки» (read-only хуки AT-2). Вес per-pet, фид per-account.
+  const { history: pointsHistory } = usePointsHistory(30);
+  const {
+    history: weightRows,
+    chart: weightChart,
+    trend: weightTrend,
+    unit: weightUnit,
+  } = useWeightHistory(selectedPetId);
 
   const [activityType, setActivityType] = useState('walk');
   const [duration, setDuration] = useState('');
@@ -56,6 +87,10 @@ export default function ActivityScreen() {
   const [notes, setNotes] = useState('');
   const [activityDate, setActivityDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Пагинация по 5 (только отображение): Трекер-история + лента наград Сводки.
+  const [visibleCount, setVisibleCount] = useState(5);
+  const [visibleFeed, setVisibleFeed] = useState(5);
 
 
   useEffect(() => {
@@ -65,6 +100,7 @@ export default function ActivityScreen() {
   useEffect(() => {
     if (selectedPetId) {
       fetchActivities();
+      setVisibleCount(5); // новый питомец — история сначала по 5
     }
   }, [selectedPetId]);
 
@@ -388,33 +424,179 @@ export default function ActivityScreen() {
     };
   });
 
+  // ═══ СВОДКА: бар-чарт веса + лента наград (эталон) ═══
+  const renderSummary = () => {
+    const latestRaw = weightRows[0]?.weight;
+    const trendUp = weightTrend?.type === 'up';
+
+    return (
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.summaryContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Pet-селектор чипами (вес per-pet) */}
+        {pets.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.petRow}
+            contentContainerStyle={styles.petRowContent}
+          >
+            {pets.map((pet) => (
+              <TouchableOpacity
+                key={pet.id}
+                style={[styles.petChip, selectedPetId === pet.id && styles.petChipActive]}
+                onPress={() => setSelectedPetId(pet.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.petChipEmoji}>{speciesEmoji(pet.species)}</Text>
+                <Text style={[styles.petChipText, selectedPetId === pet.id && styles.petChipTextActive]}>
+                  {pet.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Карточка веса */}
+        <View style={styles.summaryCard}>
+          <View style={styles.weightHead}>
+            <View>
+              <Text style={styles.weightLabel}>{t('summary.weightLabel')}</Text>
+              <Text style={styles.weightValue}>
+                {latestRaw != null ? formatWeightValue(latestRaw, weightUnit) : '—'}
+                {latestRaw != null && (
+                  <Text style={styles.weightUnit}> {unitLabel(weightUnit)}</Text>
+                )}
+              </Text>
+            </View>
+            {weightTrend && weightTrend.type !== 'stable' && (
+              <Badge tone={trendUp ? 'ok' : 'warn'} icon={trendUp ? 'trending-up' : 'trending-down'}>
+                {`${weightTrend.diff > 0 ? '+' : ''}${formatWeightValue(weightTrend.diff, weightUnit)} ${unitLabel(weightUnit)}`}
+              </Badge>
+            )}
+          </View>
+
+          {weightChart ? (
+            <View style={styles.weightChartRow}>
+              {weightChart.points.map((p, i) => {
+                const last = i === weightChart.points.length - 1;
+                const h = ((p.value - weightChart.min) / (weightChart.max - weightChart.min)) * 100;
+                return (
+                  <View key={i} style={styles.weightBarCol}>
+                    <Text style={[styles.weightBarValue, last && { color: theme.accentPress }]}>
+                      {Math.round(p.value * 10) / 10}
+                    </Text>
+                    <View style={styles.weightBarTrack}>
+                      <View
+                        style={[
+                          styles.weightBarFill,
+                          { height: `${h}%`, backgroundColor: last ? theme.accent : theme.accentTint },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.weightBarLabel}>{p.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <Text style={styles.summaryHint}>{t('summary.noWeight')}</Text>
+          )}
+        </View>
+
+        {/* Баланс лапок (per-account, общий компонент с Dashboard) */}
+        <PawsBalanceCard />
+
+        {/* Лента наград */}
+        <Text style={styles.summarySectionTitle}>{t('summary.recentTitle')}</Text>
+        {pointsHistory.length === 0 ? (
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryHint}>{t('summary.emptyFeed')}</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.feedCard}>
+              {pointsHistory.slice(0, visibleFeed).map((row, i, arr) => {
+                const parsed = parsePointsReason(row);
+                const last = i === arr.length - 1;
+                const positive = Number(row.points) >= 0;
+                const isDon = parsed.kind === 'donation';
+                const icon = isDon ? 'heart-outline' : (EVENT_ICONS[parsed.eventKey] || 'paw-outline');
+                const title = isDon
+                  ? t('feed.donation', { shelter: parsed.shelter })
+                  : t(`dashboard:paws.events.${parsed.eventKey}`, { defaultValue: parsed.eventKey });
+                return (
+                  <View key={`${row.created_at}-${i}`} style={[styles.feedRow, !last && styles.feedRowDivider]}>
+                    <IconChip name={icon} color={isDon ? theme.danger : theme.accent} size={17} />
+                    <View style={styles.feedText}>
+                      <Text style={styles.feedTitle} numberOfLines={1}>{title}</Text>
+                    </View>
+                    <View style={styles.feedRight}>
+                      <Text style={[styles.feedPaws, !positive && styles.feedPawsNeg]}>
+                        {`${positive ? '+' : ''}${row.points} 🐾`}
+                      </Text>
+                      <Text style={styles.feedWhen}>{formatDate(row.created_at)}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+            {pointsHistory.length > visibleFeed && (
+              <TouchableOpacity
+                style={styles.showMoreBtn}
+                onPress={() => setVisibleFeed((c) => c + 5)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.showMoreText}>{t('showMore')}</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+      </ScrollView>
+    );
+  };
+
   return (
     <Screen>
+      <Text style={styles.screenTitle}>{t('title')}</Text>
+      <View style={styles.segmentWrap}>
+        <Segmented
+          options={[
+            { k: 'tracker', label: t('segments.tracker') },
+            { k: 'summary', label: t('segments.summary') },
+          ]}
+          value={activityView}
+          onChange={setActivityView}
+        />
+      </View>
+
+      {activityView === 'summary' ? (
+        renderSummary()
+      ) : (
     <View style={styles.container}>
       {/* Pet Selector */}
-      <View style={styles.petSelector}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {pets.map((pet) => (
-            <TouchableOpacity
-              key={pet.id}
-              style={[
-                styles.petButton,
-                selectedPetId === pet.id && styles.petButtonActive,
-              ]}
-              onPress={() => setSelectedPetId(pet.id)}
-            >
-              <Text
-                style={[
-                  styles.petButtonText,
-                  selectedPetId === pet.id && styles.petButtonTextActive,
-                ]}
-              >
-                {pet.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.petRow}
+        contentContainerStyle={styles.petRowContent}
+      >
+        {pets.map((pet) => (
+          <TouchableOpacity
+            key={pet.id}
+            style={[styles.petChip, selectedPetId === pet.id && styles.petChipActive]}
+            onPress={() => setSelectedPetId(pet.id)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.petChipEmoji}>{speciesEmoji(pet.species)}</Text>
+            <Text style={[styles.petChipText, selectedPetId === pet.id && styles.petChipTextActive]}>
+              {pet.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       <ScrollView
         style={styles.content}
@@ -490,12 +672,23 @@ export default function ActivityScreen() {
             <Text style={styles.emptySubtext}>{t('empty.subtitle')}</Text>
           </View>
         ) : (
-          <FlatList
-            data={activities}
-            renderItem={renderActivityItem}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-          />
+          <>
+            <FlatList
+              data={activities.slice(0, visibleCount)}
+              renderItem={renderActivityItem}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+            />
+            {activities.length > visibleCount && (
+              <TouchableOpacity
+                style={styles.showMoreBtn}
+                onPress={() => setVisibleCount((c) => c + 5)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.showMoreText}>{t('showMore')}</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -635,6 +828,7 @@ export default function ActivityScreen() {
         </View>
       </Modal>
     </View>
+      )}
     </Screen>
   );
 }
@@ -642,23 +836,91 @@ export default function ActivityScreen() {
 // Styles без изменений — полностью сохранены
 const makeStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
-  petSelector: {
-    backgroundColor: theme.surface,
-    paddingVertical: 12,
+  screenTitle: {
+    fontSize: 26,
+    fontFamily: theme.font.bold,
+    color: theme.t1,
+    letterSpacing: -0.4,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.hairline,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
-  petButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: theme.radii.r20,
-    marginRight: 8,
+  segmentWrap: { paddingHorizontal: 16, paddingBottom: 10 },
+
+  // ─── Сводка ───
+  summaryContent: { paddingBottom: 32 },
+  petRow: { maxHeight: 52, flexGrow: 0 },
+  petRowContent: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
+  petChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: theme.radii.pill999,
+    backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.chipBorder,
+  },
+  petChipActive: { backgroundColor: theme.accentPress, borderColor: theme.accentPress },
+  petChipEmoji: { fontSize: 15 },
+  petChipText: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t2 },
+  petChipTextActive: { color: theme.onAccent },
+
+  summaryCard: {
     backgroundColor: theme.surface,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 18,
+    borderRadius: theme.radii.r20,
+    shadowColor: theme.shadow.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  petButtonActive: { backgroundColor: theme.accentPress },
-  petButtonText: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t2 },
-  petButtonTextActive: { color: theme.onAccent },
+  weightHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+  weightLabel: { fontSize: 12, fontFamily: theme.font.bold, letterSpacing: 0.4, color: theme.t3, textTransform: 'uppercase' },
+  weightValue: { fontSize: 30, fontFamily: theme.font.bold, color: theme.t1, lineHeight: 34 },
+  weightUnit: { fontSize: 16, fontFamily: theme.font.semibold, color: theme.t3 },
+  weightChartRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  weightBarCol: { flex: 1, alignItems: 'center', gap: 6 },
+  weightBarValue: { fontSize: 10, fontFamily: theme.font.bold, color: theme.t3 },
+  weightBarTrack: { height: 100, width: '72%', justifyContent: 'flex-end' },
+  weightBarFill: { width: '100%', borderRadius: theme.radii.sm8, minHeight: 8 },
+  weightBarLabel: { fontSize: 11, fontFamily: theme.font.semibold, color: theme.t3 },
+  summaryHint: { fontSize: 13, color: theme.t3, textAlign: 'center', paddingVertical: 12 },
+  summarySectionTitle: { fontSize: 17, fontFamily: theme.font.bold, color: theme.t1, marginHorizontal: 16, marginTop: 4, marginBottom: 12 },
+  feedCard: {
+    backgroundColor: theme.surface,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: theme.radii.r20,
+    shadowColor: theme.shadow.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  feedRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  feedRowDivider: { borderBottomWidth: 1, borderBottomColor: theme.hairline },
+  feedText: { flex: 1, minWidth: 0 },
+  feedTitle: { fontSize: 14, fontFamily: theme.font.bold, color: theme.t1 },
+  feedRight: { alignItems: 'flex-end' },
+  feedPaws: { fontSize: 13, fontFamily: theme.font.bold, color: theme.accentPress },
+  feedPawsNeg: { color: theme.t3 },
+  feedWhen: { fontSize: 11, color: theme.t4, marginTop: 1 },
+
+  // Единая кнопка «Показать больше» (Трекер-история + лента Сводки)
+  showMoreBtn: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 16,
+    paddingVertical: 12,
+    borderRadius: theme.radii.r14,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.hairline,
+    alignItems: 'center',
+  },
+  showMoreText: { fontSize: 14, fontFamily: theme.font.bold, color: theme.accent },
   content: { flex: 1 },
   statsContainer: { padding: 16, gap: 12 },
   statCard: {
