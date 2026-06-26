@@ -37,18 +37,6 @@ export default function AIAssistantHubScreen({ navigation }) {
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
-  // Читаемая иконка на solid-подложке: белая (onAccent) на тёмных цветах,
-  // тёмная (t1) на светлых — белая держит ≥3:1 только при яркости фона ≤0.30.
-  const iconOn = (hex) => {
-    const h = (hex || '').replace('#', '');
-    if (h.length < 6) return theme.onAccent;
-    const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-    const L = 0.2126 * lin(parseInt(h.slice(0, 2), 16))
-      + 0.7152 * lin(parseInt(h.slice(2, 4), 16))
-      + 0.0722 * lin(parseInt(h.slice(4, 6), 16));
-    return L <= 0.30 ? theme.onAccent : theme.t1;
-  };
-
   // ═══ КАТЕГОРИИ ═══
   const categories = [
     {
@@ -364,8 +352,8 @@ export default function AIAssistantHubScreen({ navigation }) {
             onPress={() => navigation.navigate('KnowledgeBase')}
             activeOpacity={0.8}
           >
-            <View style={[styles.tileChip, { backgroundColor: theme.accent }]}>
-              <Ionicons name="library" size={22} color={iconOn(theme.accent)} />
+            <View style={[styles.tileChip, { backgroundColor: theme.assistantCategories.health }]}>
+              <Ionicons name="library" size={22} color={theme.onAccent} />
             </View>
             <View style={styles.tileText}>
               <Text style={styles.tileTitle}>{t('knowledge.title')}</Text>
