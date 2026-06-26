@@ -8,6 +8,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  ScrollView,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -291,14 +292,17 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   };
 
   // ═══ EMPTY STATE ═══
-  const renderEmptyState = () => {
-    const suggestedQuestions = [
-      t('chat.suggestedQ1'),
-      t('chat.suggestedQ2'),
-      t('chat.suggestedQ3'),
-      t('chat.suggestedQ4'),
-    ];
+  // Подсказки-вопросы: используются и в пустом состоянии, и в quick-replies над вводом.
+  const suggestedQuestions = [
+    t('chat.suggestedQ1'),
+    t('chat.suggestedQ2'),
+    t('chat.suggestedQ3'),
+    t('chat.suggestedQ4'),
+  ];
+  // Индекс первого ассистент-сообщения (glow только у него).
+  const firstAssistantIndex = messages.findIndex((m) => m.role === 'assistant');
 
+  const renderEmptyState = () => {
     return (
       <View style={styles.emptyStateContainer}>
         <View style={[styles.emptyStateIcon, { backgroundColor: catColor }]}>
@@ -332,14 +336,16 @@ export default function AIAssistantChatScreen({ route, navigation }) {
   };
 
   // ═══ РЕНДЕР СООБЩЕНИЯ ═══
-  const renderMessage = ({ item }) => {
+  const renderMessage = ({ item, index }) => {
     const isUser = item.role === 'user';
+    const glow = !isUser && index === firstAssistantIndex;
 
     return (
       <View
         style={[
           styles.messageContainer,
           isUser ? styles.userMessage : styles.assistantMessage,
+          glow && styles.assistantGlow,
           item.isEmergency && styles.emergencyMessage,
           item.isError && styles.errorMessage,
         ]}
@@ -454,11 +460,36 @@ export default function AIAssistantChatScreen({ route, navigation }) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messagesList}
         ListEmptyComponent={renderEmptyState}
+        ListHeaderComponent={
+          messages.length > 0 ? <Text style={styles.dayDivider}>{t('chat.today')}</Text> : null
+        }
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
       />
 
       {isLoading && renderTypingIndicator()}
+
+      {/* Quick-replies — горизонтальные чипы над вводом (из suggestedQuestions) */}
+      {messages.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.quickRow}
+          contentContainerStyle={styles.quickRowContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {suggestedQuestions.map((q, i) => (
+            <TouchableOpacity
+              key={i}
+              style={styles.quickChip}
+              onPress={() => handleSendMessage(q, true)}
+              disabled={isLoading}
+            >
+              <Text style={styles.quickChipText} numberOfLines={1}>{q}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Инпут — glass pill (GlassCard decor) + accent-кнопка */}
       <GlassCard variant="decor" style={styles.inputBar} radius={0} padding={12}>
@@ -520,6 +551,27 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingBottom: 10,
     flexGrow: 1,
   },
+
+  // Разделитель «Сегодня» над лентой
+  dayDivider: {
+    textAlign: 'center',
+    fontSize: 11.5,
+    fontFamily: theme.font.semibold,
+    color: theme.t3,
+    marginBottom: 14,
+  },
+
+  // Quick-replies (горизонтальные чипы над вводом)
+  quickRow: { maxHeight: 48, flexGrow: 0 },
+  quickRowContent: { paddingHorizontal: 16, paddingBottom: 8 },
+  quickChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: theme.radii.pill999,
+    backgroundColor: theme.accentTint,
+    marginRight: 8,
+  },
+  quickChipText: { fontSize: 13, fontFamily: theme.font.bold, color: theme.accentPress },
 
   // Empty State
   emptyStateContainer: {
@@ -583,24 +635,29 @@ const makeStyles = (theme) => StyleSheet.create({
 
   // Messages
   messageContainer: {
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: theme.radii.md16,
-    maxWidth: '80%',
+    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: theme.radii.r20,
   },
   // user-бабл — accentPress-заливка (белый на accent ≈2.4:1 не AA; accentPress лучше)
   userMessage: {
     backgroundColor: theme.accentPress,
     alignSelf: 'flex-end',
-    borderBottomRightRadius: theme.radii.xs4,
+    maxWidth: '82%',
+    borderBottomRightRadius: theme.radii.sm8,
   },
-  // bot-бабл — surface + свечение glow-accent (по §6.2); текст t1
+  // bot-бабл — data-стекло (surfaceGlassData) + hairline; текст t1
   assistantMessage: {
-    backgroundColor: theme.surface,
+    backgroundColor: theme.surfaceGlassData.bg,
     alignSelf: 'flex-start',
-    borderBottomLeftRadius: theme.radii.xs4,
+    maxWidth: '88%',
+    borderBottomLeftRadius: theme.radii.sm8,
     borderWidth: 1,
     borderColor: theme.hairline,
+  },
+  // glow-accent — только у первого ассистент-сообщения (по §6.2)
+  assistantGlow: {
     shadowColor: theme.glowAccent.shadowColor,
     shadowOpacity: theme.glowAccent.shadowOpacity,
     shadowRadius: theme.glowAccent.shadowRadius,
@@ -642,8 +699,8 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   
   messageText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14.5,
+    lineHeight: 21,
   },
   userText: {
     color: theme.onAccent,
