@@ -514,7 +514,7 @@ export default function PassportView({ pet: petProp, refreshSignal, renderStatsS
                 source={{
                   uri:
                     pet.avatar_url ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(pet.name)}&size=400&background=6C63FF&color=fff`,
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(pet.name)}&size=400&background=56B89F&color=fff`,
                 }}
                 style={styles.heroAvatar}
               />

@@ -23,14 +23,13 @@
     "settings": "Настройки",
     "loyalty": "Программа лояльности",
     "totalDonated": "Всего пожертвовано",
+    "shelters": "Приюты",
     "badges": "Мои достижения",
     "units": { "title": "Единицы веса", "kg": "кг", "lb": "фунт" },
     "rank": {
       "title": "Ранг",
       "toNext": "До следующего ранга {{remaining}} Paws",
       "max": "Максимальный ранг",
-      "showAll": "Показать все ранги",
-      "hideAll": "Скрыть ранги",
       "threshold": "≥ {{count}} Paws",
       "league": { "bronze": "Бронза", "silver": "Серебро", "gold": "Золото", "diamond": "Бриллиант" }
     }

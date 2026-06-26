@@ -237,7 +237,7 @@ export default function ProfileScreen({ navigation }) {
   const getAvatarUrl = () => {
     if (profile?.avatar_url) return profile.avatar_url;
     if (user?.user_metadata?.avatar_url) return user.user_metadata.avatar_url;
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.email || 'User')}&size=200&background=6C63FF&color=fff`;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.email || 'User')}&size=200&background=56B89F&color=fff`;
   };
 
   // Ряд настройки (эталон): иконка accent + label + контрол справа.
@@ -306,7 +306,7 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.statCard}>
           <IconChip name="home" color={theme.accent} size={22} />
           <Text style={styles.statValue}>{loadingCharity ? '...' : shelterCount}</Text>
-          <Text style={styles.statLabel}>{t('profile:settings')}</Text>
+          <Text style={styles.statLabel}>{t('profile:shelters')}</Text>
         </View>
       </View>
 
@@ -390,7 +390,7 @@ export default function ProfileScreen({ navigation }) {
         ) : (
           <GlassCard variant="data" style={styles.petsCard} radius={theme.radii.r20}>
             {pets.map((pet, i) => {
-              const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(pet.name)}&size=200&background=6C63FF&color=fff`;
+              const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(pet.name)}&size=200&background=56B89F&color=fff`;
               const last = i === pets.length - 1;
               return (
                 <TouchableOpacity

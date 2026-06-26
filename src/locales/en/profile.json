@@ -23,14 +23,13 @@
     "settings": "Settings",
     "loyalty": "Loyalty Program",
     "totalDonated": "Total Donated",
+    "shelters": "Shelters",
     "badges": "My Badges",
     "units": { "title": "Weight units", "kg": "kg", "lb": "lb" },
     "rank": {
       "title": "Rank",
       "toNext": "{{remaining}} Paws to the next rank",
       "max": "Max rank reached",
-      "showAll": "Show all ranks",
-      "hideAll": "Hide ranks",
       "threshold": "≥ {{count}} Paws",
       "league": { "bronze": "Bronze", "silver": "Silver", "gold": "Gold", "diamond": "Diamond" }
     }
