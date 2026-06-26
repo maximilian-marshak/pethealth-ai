@@ -578,7 +578,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   statCard: {
     flex: 1, backgroundColor: theme.surface, borderRadius: theme.radii.r18,
-    paddingVertical: 16, alignItems: 'center', gap: 8,
+    paddingVertical: 16, alignItems: 'center', justifyContent: 'center', gap: 8,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
@@ -617,7 +617,8 @@ const makeStyles = (theme) => StyleSheet.create({
   // ─── Actions ──────────────────────────────────
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   actionButton: {
-    width: '47%', aspectRatio: 1.6, backgroundColor: theme.surface, borderRadius: theme.radii.r18,
+    width: '47%', minHeight: 96, paddingVertical: 20,
+    backgroundColor: theme.surface, borderRadius: theme.radii.r18,
     justifyContent: 'center', alignItems: 'center', gap: 8,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,

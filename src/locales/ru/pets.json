@@ -95,7 +95,7 @@
       "allergies": "Аллергии",
       "vaccinations": "Прививки",
       "records": "Записи",
-      "daysAgo": "Дней назад"
+      "daysAgo": "С последнего визита"
     },
     "alerts": {
       "deletePet": {

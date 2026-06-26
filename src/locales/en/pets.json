@@ -95,7 +95,7 @@
       "allergies": "Allergies",
       "vaccinations": "Vaccinations",
       "records": "Records",
-      "daysAgo": "Days ago"
+      "daysAgo": "Since last visit"
     },
     "alerts": {
       "deletePet": {
