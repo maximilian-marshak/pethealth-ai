@@ -485,24 +485,25 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="chevron-forward" size={18} color={theme.t3} />
           </SettingRow>
         </GlassCard>
+      </View>
 
-        <View style={styles.actionsWrap}>
-          <Button variant="outline" block icon="log-out-outline" onPress={handleLogout}>
-            {t('profile:logout')}
-          </Button>
+      {/* ACCOUNT ACTIONS — bare внизу экрана (эталон), без секц-заголовка */}
+      <View style={styles.actionsWrap}>
+        <Button variant="outline" block icon="log-out-outline" onPress={handleLogout}>
+          {t('profile:logout')}
+        </Button>
 
-          <TouchableOpacity
-            style={styles.deleteBtn}
-            onPress={handleDeleteAccount}
-            disabled={deleting}
-            activeOpacity={0.7}
-          >
-            {deleting
-              ? <ActivityIndicator size="small" color={theme.danger} />
-              : <Ionicons name="trash-outline" size={18} color={theme.danger} />}
-            <Text style={styles.deleteText}>{t('profile:deleteAccount')}</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={handleDeleteAccount}
+          disabled={deleting}
+          activeOpacity={0.7}
+        >
+          {deleting
+            ? <ActivityIndicator size="small" color={theme.danger} />
+            : <Ionicons name="trash-outline" size={18} color={theme.danger} />}
+          <Text style={styles.deleteText}>{t('profile:deleteAccount')}</Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.versionText}>PetHealth AI v1.0.0</Text>
@@ -710,7 +711,7 @@ const makeStyles = (theme) => StyleSheet.create({
   phoneBtnCancelText: { color: theme.t1, fontFamily: theme.font.semibold, fontSize: 15 },
   phoneBtnSaveText: { color: theme.onAccent, fontFamily: theme.font.semibold, fontSize: 15 },
   // Действия: Logout (ui/Button outline) + Delete (danger text-button)
-  actionsWrap: { marginTop: 8, gap: 12 },
+  actionsWrap: { marginTop: 24, paddingHorizontal: 20, gap: 12 },
   deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12 },
   deleteText: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.danger },
   emptyCard: {
