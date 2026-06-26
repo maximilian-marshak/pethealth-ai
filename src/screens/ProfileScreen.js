@@ -31,6 +31,8 @@ import { useNotificationPref } from '../hooks/useNotificationPref';
 import { requestNotificationPermission, cancelAllScheduled } from '../utils/notificationsSetup';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
+import GlassCard from '../components/GlassCard';
+import Badge from '../components/ui/Badge';
 
 // ─── Language Switcher Component ──────────────────────────────────────────────
 const LanguageSwitcher = () => {
@@ -401,24 +403,31 @@ export default function ProfileScreen({ navigation }) {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />
       }
     >
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.avatarContainer}>
-          <Image source={{ uri: getAvatarUrl() }} style={styles.avatar} />
-          <TouchableOpacity
-            style={styles.avatarEditButton}
-            onPress={handleUpdateAvatar}
-            disabled={uploadingAvatar}
-          >
-            {uploadingAvatar
-              ? <ActivityIndicator size="small" color={theme.onAccent} />
-              : <Ionicons name="camera" size={16} color={theme.onAccent} />
-            }
-          </TouchableOpacity>
+      {/* SCREEN TITLE */}
+      <Text style={styles.screenTitle}>{t('profile:title')}</Text>
+
+      {/* HEADER (карточка-ряд, эталон) — аватар+edit сохранены */}
+      <GlassCard variant="decor" style={styles.userCard} padding={18}>
+        <View style={styles.userRow}>
+          <View style={styles.avatarContainer}>
+            <Image source={{ uri: getAvatarUrl() }} style={styles.avatar} />
+            <TouchableOpacity
+              style={styles.avatarEditButton}
+              onPress={handleUpdateAvatar}
+              disabled={uploadingAvatar}
+            >
+              {uploadingAvatar
+                ? <ActivityIndicator size="small" color={theme.onAccent} />
+                : <Ionicons name="camera" size={13} color={theme.onAccent} />
+              }
+            </TouchableOpacity>
+          </View>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName} numberOfLines={1}>{getUserName()}</Text>
+            <Text style={styles.userEmail} numberOfLines={1}>{user?.email}</Text>
+          </View>
         </View>
-        <Text style={styles.userName}>{getUserName()}</Text>
-        <Text style={styles.userEmail}>{user?.email}</Text>
-      </View>
+      </GlassCard>
 
       {/* STATS ROW */}
       <View style={styles.statsContainer}>
@@ -449,49 +458,40 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </View>
 
-      {/* RANK */}
+      {/* RANK (компактная карточка, эталон) — chevron раскрывает список рангов */}
       {(loadingRanks || ranks.length > 0) && (
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🎖️ {t('profile:rank.title')}</Text>
-          </View>
-
           {loadingRanks ? (
             <View style={styles.rankLoading}>
               <ActivityIndicator size="small" color={theme.accent} />
             </View>
           ) : (
-            <>
-          <View style={[styles.rankCard, { borderColor: rankAccent, backgroundColor: rankAccent + '12' }]}>
-            <Text style={styles.rankBadgeIcon}>{currentRank?.icon || '🏅'}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rankName}>{rankName(currentRank) || '—'}</Text>
-              {currentRank?.league ? (
-                <Text style={[styles.rankLeague, { color: rankAccent }]}>
-                  {t(`profile:rank.league.${currentRank.league}`, { defaultValue: currentRank.league })}
-                </Text>
-              ) : null}
-            </View>
-          </View>
+          <GlassCard variant="decor" style={styles.rankCard} radius={theme.radii.r20}>
+            <TouchableOpacity style={styles.rankMain} onPress={() => setRanksExpanded((v) => !v)} activeOpacity={0.7}>
+              <Text style={styles.rankBadgeIcon}>{currentRank?.icon || '🏅'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rankLabel}>{t('profile:rank.title')}</Text>
+                <Text style={styles.rankName} numberOfLines={1}>{rankName(currentRank) || '—'}</Text>
+                {currentRank?.league ? (
+                  <Badge color={rankAccent} style={styles.rankBadge}>
+                    {t(`profile:rank.league.${currentRank.league}`, { defaultValue: currentRank.league })}
+                  </Badge>
+                ) : null}
+              </View>
+              <Ionicons name={ranksExpanded ? 'chevron-up' : 'chevron-forward'} size={20} color={theme.t3} />
+            </TouchableOpacity>
 
-          <View style={styles.rankProgressRow}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <ProgressBar current={rankPct} goal={100} height={8} />
+            <View style={styles.rankProgressRow}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <ProgressBar current={rankPct} goal={100} height={8} />
+              </View>
+              <Text style={styles.rankProgressPct}>{rankPct}%</Text>
             </View>
-            <Text style={styles.rankProgressPct}>{rankPct}%</Text>
-          </View>
-          <Text style={styles.rankToNext}>
-            {nextRank ? t('profile:rank.toNext', { remaining: rankRemaining }) : t('profile:rank.max')}
-          </Text>
-
-          <TouchableOpacity style={styles.rankToggle} onPress={() => setRanksExpanded((v) => !v)} activeOpacity={0.7}>
-            <Text style={styles.rankToggleText}>
-              {ranksExpanded ? t('profile:rank.hideAll') : t('profile:rank.showAll')}
+            <Text style={styles.rankToNext}>
+              {nextRank ? t('profile:rank.toNext', { remaining: rankRemaining }) : t('profile:rank.max')}
             </Text>
-            <Ionicons name={ranksExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={theme.accent} />
-          </TouchableOpacity>
 
-          {ranksExpanded && ranks.map((r) => {
+            {ranksExpanded && ranks.map((r) => {
             const accent = theme.leagueColors[r.league] || theme.accent;
             const isCurrent = currentRank && r.rank_no === currentRank.rank_no;
             return (
@@ -507,7 +507,7 @@ export default function ProfileScreen({ navigation }) {
               </View>
             );
           })}
-            </>
+          </GlassCard>
           )}
         </View>
       )}
@@ -703,36 +703,42 @@ export default function ProfileScreen({ navigation }) {
 
 const makeStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
-  header: {
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 24,
-    backgroundColor: theme.surface,
+  screenTitle: {
+    fontSize: 26,
+    fontFamily: theme.font.bold,
+    color: theme.t1,
+    letterSpacing: -0.4,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
-  avatarContainer: { position: 'relative', marginBottom: 16 },
+  userCard: { marginHorizontal: 20, marginBottom: 8 },
+  userRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  userInfo: { flex: 1 },
+  avatarContainer: { position: 'relative' },
   avatar: {
-    width: 100,
-    height: 100,
+    width: 60,
+    height: 60,
     borderRadius: theme.radii.pill999,
-    borderWidth: 4,
+    borderWidth: 2,
     borderColor: theme.accent,
   },
   avatarEditButton: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
+    bottom: -2,
+    right: -2,
     backgroundColor: theme.accentPress,
-    borderRadius: theme.radii.r14,
-    width: 30,
-    height: 30,
+    borderRadius: theme.radii.pill999,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: theme.surface,
   },
   premiumIcon: { fontSize: 14 },
-  userName: { fontSize: 24, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 4 },
-  userEmail: { fontSize: 14, color: theme.t3, marginBottom: 12 },
+  userName: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
+  userEmail: { fontSize: 13, color: theme.t2, marginTop: 2 },
   subscriptionBadge: {
     backgroundColor: theme.accentTint,
     paddingHorizontal: 16,
@@ -793,16 +799,16 @@ const makeStyles = (theme) => StyleSheet.create({
   nextBadgeName: { fontSize: 16, fontFamily: theme.font.semibold, color: theme.t1, marginBottom: 12 },
   progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' },
   progressPercent: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.ok, minWidth: 35, textAlign: 'right' },
-  rankCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: theme.surface, borderRadius: theme.radii.md16, borderWidth: 1.5, padding: 16, marginBottom: 12 },
+  rankCard: { marginBottom: 12 },
+  rankMain: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   rankLoading: { paddingVertical: 24, alignItems: 'center' },
-  rankBadgeIcon: { fontSize: 38 },
-  rankName: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
-  rankLeague: { fontSize: 13, fontFamily: theme.font.bold, marginTop: 2, textTransform: 'uppercase' },
-  rankProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rankBadgeIcon: { fontSize: 36 },
+  rankLabel: { fontSize: 12, fontFamily: theme.font.bold, color: theme.t3, textTransform: 'uppercase', letterSpacing: 0.4 },
+  rankName: { fontSize: 17, fontFamily: theme.font.bold, color: theme.t1, marginTop: 1 },
+  rankBadge: { marginTop: 6 },
+  rankProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
   rankProgressPct: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.accent, minWidth: 38, textAlign: 'right' },
   rankToNext: { fontSize: 13, color: theme.t3, marginTop: 6 },
-  rankToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12, marginTop: 4 },
-  rankToggleText: { fontSize: 14, color: theme.accent, fontFamily: theme.font.semibold },
   rankRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surface, borderRadius: theme.radii.sm12, borderWidth: 1, padding: 12, marginBottom: 8 },
   rankRowIcon: { fontSize: 22 },
   rankRowName: { flex: 1, fontSize: 14, color: theme.t1 },
