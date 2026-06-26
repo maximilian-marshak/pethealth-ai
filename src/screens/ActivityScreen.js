@@ -24,6 +24,7 @@ import Screen from '../components/Screen';
 import Segmented from '../components/Segmented';
 import IconChip from '../components/IconChip';
 import Badge from '../components/ui/Badge';
+import PawsBalanceCard from '../components/PawsBalanceCard';
 import { usePointsHistory } from '../hooks/usePointsHistory';
 import { useWeightHistory } from '../hooks/useWeightHistory';
 import { parsePointsReason, EVENT_ICONS } from '../utils/pointsFeed';
@@ -504,6 +505,9 @@ export default function ActivityScreen() {
             <Text style={styles.summaryHint}>{t('summary.noWeight')}</Text>
           )}
         </View>
+
+        {/* Баланс лапок (per-account, общий компонент с Dashboard) */}
+        <PawsBalanceCard />
 
         {/* Лента наград */}
         <Text style={styles.summarySectionTitle}>{t('summary.recentTitle')}</Text>
