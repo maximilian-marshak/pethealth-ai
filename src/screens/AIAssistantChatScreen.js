@@ -486,6 +486,7 @@ export default function AIAssistantChatScreen({ route, navigation }) {
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
+        style={styles.messagesFlex}
         contentContainerStyle={styles.messagesList}
         ListEmptyComponent={renderEmptyState}
         ListHeaderComponent={<Text style={styles.dayDivider}>{t('chat.today')}</Text>}
@@ -577,6 +578,11 @@ const makeStyles = (theme) => StyleSheet.create({
   chatHeaderTitle: { fontSize: 15.5, fontFamily: theme.font.bold, color: theme.t1 },
   chatHeaderStatus: { fontSize: 12, fontFamily: theme.font.semibold, color: theme.ok, marginTop: 1 },
 
+  // Лента берёт свободное место колонки и скроллит внутри (иначе раздувается
+  // под контент и выдавливает quickRow + input при непустой истории).
+  messagesFlex: {
+    flex: 1,
+  },
   messagesList: {
     paddingHorizontal: 16,
     paddingTop: 20,
@@ -594,7 +600,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
 
   // Quick-replies (горизонтальные чипы над вводом)
-  quickRow: { maxHeight: 48, flexGrow: 0 },
+  quickRow: { maxHeight: 48, flexGrow: 0, flexShrink: 0 },
   quickRowContent: { paddingHorizontal: 16, paddingBottom: 8 },
   quickChip: {
     paddingHorizontal: 14,
@@ -754,6 +760,7 @@ const makeStyles = (theme) => StyleSheet.create({
   // Input Bar — glass pill (GlassCard decor), низ экрана
   inputBar: {
     marginHorizontal: 0,
+    flexShrink: 0,
     borderTopWidth: 1,
     borderTopColor: theme.hairline,
   },
