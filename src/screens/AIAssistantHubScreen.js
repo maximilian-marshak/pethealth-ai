@@ -27,6 +27,18 @@ export default function AIAssistantHubScreen({ navigation }) {
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const [pickerVisible, setPickerVisible] = useState(false);
 
+  // Читаемая иконка на solid-подложке: белая (onAccent) на тёмных цветах,
+  // тёмная (t1) на светлых — белая держит ≥3:1 только при яркости фона ≤0.30.
+  const iconOn = (hex) => {
+    const h = (hex || '').replace('#', '');
+    if (h.length < 6) return theme.onAccent;
+    const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    const L = 0.2126 * lin(parseInt(h.slice(0, 2), 16))
+      + 0.7152 * lin(parseInt(h.slice(2, 4), 16))
+      + 0.0722 * lin(parseInt(h.slice(4, 6), 16));
+    return L <= 0.30 ? theme.onAccent : theme.t1;
+  };
+
   const handleSelectPet = async (petId) => {
     await selectPet(petId);
     setPickerVisible(false);
@@ -260,7 +272,7 @@ export default function AIAssistantHubScreen({ navigation }) {
         <View style={styles.actionTiles}>
           <TouchableOpacity style={styles.tileBtn} onPress={handleStartFreeChat} activeOpacity={0.8}>
             <View style={[styles.tileChip, { backgroundColor: theme.accent }]}>
-              <Ionicons name="chatbubbles" size={22} color={theme.onAccent} />
+              <Ionicons name="chatbubbles" size={22} color={iconOn(theme.accent)} />
             </View>
             <View style={styles.tileText}>
               <Text style={styles.tileTitle}>{t('hub.freeChat')}</Text>
@@ -271,7 +283,7 @@ export default function AIAssistantHubScreen({ navigation }) {
 
           <TouchableOpacity style={styles.tileBtn} onPress={handlePhotoAnalysis} activeOpacity={0.8}>
             <View style={[styles.tileChip, { backgroundColor: theme.assistantCategories.general }]}>
-              <Ionicons name="camera" size={22} color={theme.onAccent} />
+              <Ionicons name="camera" size={22} color={iconOn(theme.assistantCategories.general)} />
             </View>
             <View style={styles.tileText}>
               <Text style={styles.tileTitle}>{t('hub.photoAnalysis')}</Text>
@@ -281,7 +293,7 @@ export default function AIAssistantHubScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ═══ CATEGORIES GRID ═══ */}
+        {/* ═══ CATEGORIES GRID — 2 колонки квадратов (эталон) ═══ */}
         <Text style={styles.sectionTitle}>{t('hub.browseByCategory')}</Text>
         <View style={styles.categoriesGrid}>
           {categories.map((category) => {
@@ -289,18 +301,14 @@ export default function AIAssistantHubScreen({ navigation }) {
             return (
             <TouchableOpacity
               key={category.id}
-              style={[styles.categoryCard, { borderLeftColor: catColor }]}
+              style={styles.categoryCard}
               onPress={() => handleCategoryPress(category)}
               activeOpacity={0.7}
             >
-              <View style={[styles.categoryIcon, { backgroundColor: catColor + '20' }]}>
-                <Ionicons name={category.icon} size={28} color={catColor} />
+              <View style={[styles.categoryChip, { backgroundColor: catColor }]}>
+                <Ionicons name={category.icon} size={20} color={iconOn(catColor)} />
               </View>
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryTitle}>{category.title}</Text>
-                <Text style={styles.categoryDescription}>{category.description}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={theme.t3} />
+              <Text style={styles.categoryTitle}>{category.title}</Text>
             </TouchableOpacity>
           ); })}
         </View>
@@ -574,42 +582,39 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 16,
   },
   categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
   },
   categoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: '48%',
+    minHeight: 108,
     backgroundColor: theme.surface,
-    padding: 16,
-    borderRadius: theme.radii.md16,
+    borderWidth: 1,
+    borderColor: theme.hairline,
+    borderRadius: theme.radii.r18,
+    padding: 14,
     marginBottom: 12,
-    borderLeftWidth: 4,
+    gap: 10,
     shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1,
   },
-  categoryIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: theme.radii.md16,
+  categoryChip: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radii.r14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  categoryContent: {
-    flex: 1,
   },
   categoryTitle: {
-    fontSize: 16,
-    fontFamily: theme.font.semibold,
+    fontSize: 14,
+    fontFamily: theme.font.bold,
     color: theme.t1,
-    marginBottom: 4,
-  },
-  categoryDescription: {
-    fontSize: 13,
-    color: theme.t2,
+    lineHeight: 18,
   },
   quickQuestionsSection: {
     marginHorizontal: 20,
