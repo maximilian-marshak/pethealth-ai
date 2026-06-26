@@ -121,11 +121,12 @@ export default function PetDetailScreen({ route, navigation }) {
         .select('*', { count: 'exact', head: true })
         .eq('pet_id', petId);
 
+      // «Визит» = любая прошедшая медзапись (occurred_at ≤ сейчас); будущие игнорируем.
       const { data: lastVisitData } = await supabase
         .from('medical_records')
         .select('occurred_at')
         .eq('pet_id', petId)
-        .in('record_type', ['checkup', 'surgery', 'diagnosis'])
+        .lte('occurred_at', new Date().toISOString())
         .order('occurred_at', { ascending: false })
         .limit(1)
         .maybeSingle();
