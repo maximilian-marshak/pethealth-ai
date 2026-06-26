@@ -18,7 +18,6 @@ import { usePetContext } from '../context/PetContext';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
-import GlassCard from '../components/GlassCard';
 
 export default function AIAssistantHubScreen({ navigation }) {
   const { selectedPet, pets, selectPet } = usePetContext();
@@ -337,41 +336,39 @@ export default function AIAssistantHubScreen({ navigation }) {
           </View>
         ); })}
 
-        {/* ═══ SECTION: REFERENCE (статика, без AI) ═══ */}
+        {/* ═══ SECTION: REFERENCE (статика, без AI) — tileBtn ═══ */}
         <Text style={styles.sectionTitle}>{t('hub.sections.reference')}</Text>
-        <GlassCard variant="decor" style={styles.freeChatCard}>
+        <View style={styles.referenceTiles}>
           <TouchableOpacity
-            style={styles.freeChatInner}
+            style={styles.tileBtn}
             onPress={() => navigation.navigate('KnowledgeBase')}
             activeOpacity={0.8}
           >
-            <View style={[styles.freeChatIcon, { backgroundColor: theme.accentPress }]}>
-              <Ionicons name="library" size={28} color={theme.onAccent} />
+            <View style={[styles.tileChip, { backgroundColor: theme.accent }]}>
+              <Ionicons name="library" size={22} color={iconOn(theme.accent)} />
             </View>
-            <View style={styles.freeChatContent}>
-              <Text style={styles.freeChatTitle}>{t('knowledge.title')}</Text>
-              <Text style={styles.freeChatSubtitle}>{t('hub.knowledgeSubtitle')}</Text>
+            <View style={styles.tileText}>
+              <Text style={styles.tileTitle}>{t('knowledge.title')}</Text>
+              <Text style={styles.tileSubtitle}>{t('hub.knowledgeSubtitle')}</Text>
             </View>
-            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+            <Ionicons name="chevron-forward" size={18} color={theme.t3} />
           </TouchableOpacity>
-        </GlassCard>
 
-        <GlassCard variant="decor" style={styles.freeChatCard}>
           <TouchableOpacity
-            style={styles.freeChatInner}
+            style={styles.tileBtn}
             onPress={() => navigation.navigate('Relocation')}
             activeOpacity={0.8}
           >
-            <View style={[styles.freeChatIcon, { backgroundColor: theme.accentPress }]}>
-              <Ionicons name="airplane" size={26} color={theme.onAccent} />
+            <View style={[styles.tileChip, { backgroundColor: theme.assistantCategories.relocation }]}>
+              <Ionicons name="airplane" size={22} color={iconOn(theme.assistantCategories.relocation)} />
             </View>
-            <View style={styles.freeChatContent}>
-              <Text style={styles.freeChatTitle}>{t('relocation.title')}</Text>
-              <Text style={styles.freeChatSubtitle}>{t('hub.relocationSubtitle')}</Text>
+            <View style={styles.tileText}>
+              <Text style={styles.tileTitle}>{t('relocation.title')}</Text>
+              <Text style={styles.tileSubtitle}>{t('hub.relocationSubtitle')}</Text>
             </View>
-            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+            <Ionicons name="chevron-forward" size={18} color={theme.t3} />
           </TouchableOpacity>
-        </GlassCard>
+        </View>
 
         <View style={styles.footerSpacing} />
       </ScrollView>
@@ -541,37 +538,10 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.t2,
     marginTop: 2,
   },
-  freeChatCard: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: theme.radii.r20,
-  },
-  freeChatInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // Справочник — те же tileBtn, что и экшн-плитки (AH-1)
+  referenceTiles: {
+    paddingHorizontal: 20,
     gap: 12,
-  },
-  freeChatIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: theme.radii.xl28,
-    backgroundColor: theme.onAccent + '33',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  freeChatContent: {
-    flex: 1,
-  },
-  freeChatTitle: {
-    fontSize: 18,
-    fontFamily: theme.font.bold,
-    color: theme.t1,
-    marginBottom: 4,
-  },
-  freeChatSubtitle: {
-    fontSize: 14,
-    color: theme.t2,
   },
   sectionTitle: {
     fontSize: 20,
@@ -630,7 +600,9 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.surface,
     padding: 14,
-    borderRadius: theme.radii.sm12,
+    borderRadius: theme.radii.r14,
+    borderWidth: 1,
+    borderColor: theme.hairline,
     marginBottom: 8,
     shadowColor: theme.shadow.shadowColor,
     shadowOffset: { width: 0, height: 1 },
