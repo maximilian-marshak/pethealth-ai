@@ -267,28 +267,28 @@ export default function AIAssistantHubScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ═══ ЭКШН-ПЛИТКИ: Free Chat + Photo (эталон tileBtn) ═══ */}
+        {/* ═══ ЭКШН-ПЛИТКИ: Free Chat + Photo — крупные квадраты с заливкой ═══ */}
         <View style={styles.actionTiles}>
-          <TouchableOpacity style={styles.tileBtn} onPress={handleStartFreeChat} activeOpacity={0.8}>
-            <View style={[styles.tileChip, { backgroundColor: theme.accent }]}>
-              <Ionicons name="chatbubbles" size={22} color={iconOn(theme.accent)} />
+          <TouchableOpacity
+            style={[styles.actionTile, { backgroundColor: theme.assistantCategories.health }]}
+            onPress={handleStartFreeChat}
+            activeOpacity={0.85}
+          >
+            <View style={styles.actionTileIcon}>
+              <Ionicons name="chatbubbles" size={26} color={theme.onAccent} />
             </View>
-            <View style={styles.tileText}>
-              <Text style={styles.tileTitle}>{t('hub.freeChat')}</Text>
-              <Text style={styles.tileSubtitle}>{t('hub.freeChatSubtitle')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.t3} />
+            <Text style={styles.actionTileTitle}>{t('hub.freeChat')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tileBtn} onPress={handlePhotoAnalysis} activeOpacity={0.8}>
-            <View style={[styles.tileChip, { backgroundColor: theme.assistantCategories.general }]}>
-              <Ionicons name="camera" size={22} color={theme.onAccent} />
+          <TouchableOpacity
+            style={[styles.actionTile, { backgroundColor: theme.assistantCategories.general }]}
+            onPress={handlePhotoAnalysis}
+            activeOpacity={0.85}
+          >
+            <View style={styles.actionTileIcon}>
+              <Ionicons name="camera" size={26} color={theme.onAccent} />
             </View>
-            <View style={styles.tileText}>
-              <Text style={styles.tileTitle}>{t('hub.photoAnalysis')}</Text>
-              <Text style={styles.tileSubtitle}>{t('hub.photoAnalysisSubtitle')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.t3} />
+            <Text style={styles.actionTileTitle}>{t('hub.photoAnalysis')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -497,12 +497,41 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 14,
     color: theme.t2,
   },
-  // Экшн-плитки Free Chat / Photo (эталон tileBtn)
+  // Экшн-плитки Free Chat / Photo — 2 крупных квадрата с заливкой, белый текст/иконка
   actionTiles: {
+    flexDirection: 'row',
+    gap: 12,
     paddingHorizontal: 20,
     marginTop: 16,
-    gap: 12,
   },
+  actionTile: {
+    flex: 1,
+    minHeight: 132,
+    borderRadius: theme.radii.r18,
+    padding: 16,
+    justifyContent: 'space-between',
+    shadowColor: theme.shadow.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  actionTileIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.radii.pill999,
+    backgroundColor: theme.onAccent + '26', // полупрозрачный белый круг на заливке
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionTileTitle: {
+    fontSize: 20,
+    fontFamily: theme.font.bold,
+    color: theme.onAccent,
+    lineHeight: 24,
+    marginTop: 12,
+  },
+  // Reference-плитки (Справочник) — компактные строки tileBtn
   tileBtn: {
     flexDirection: 'row',
     alignItems: 'center',
