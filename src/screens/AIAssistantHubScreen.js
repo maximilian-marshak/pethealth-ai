@@ -236,88 +236,50 @@ export default function AIAssistantHubScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ═══ HEADER ═══ */}
+        {/* ═══ HEADER (плоский, эталон) — subtitle/имя tappable → pet-picker ═══ */}
         <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View style={styles.headerIcon}>
-              <Ionicons name="chatbubbles" size={32} color={theme.onAccent} />
-            </View>
-            <TouchableOpacity
-              style={styles.photoButton}
-              onPress={handlePhotoAnalysis}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="camera" size={24} color={theme.onAccent} />
-            </TouchableOpacity>
-          </View>
           <Text style={styles.headerTitle}>{t('hub.title')}</Text>
-          <Text style={styles.headerSubtitle}>
-            {selectedPet
-              ? t('hub.subtitleWithPet', { name: selectedPet.name })
-              : t('hub.subtitleNoPet')}
-          </Text>
-        </View>
-
-        {/* ═══ SELECTED PET INFO (тап → выбор питомца) ═══ */}
-        {selectedPet && (
           <TouchableOpacity
-            style={styles.petInfoCard}
+            style={styles.subtitleRow}
             onPress={() => setPickerVisible(true)}
+            disabled={!selectedPet}
             activeOpacity={0.7}
           >
-            <Ionicons name="paw" size={24} color={theme.accent} />
-            <View style={styles.petInfoText}>
-              <Text style={styles.petName}>{selectedPet.name}</Text>
-              <Text style={styles.petDetails}>
-                {selectedPet.breed} • {selectedPet.age != null
-                  ? t('common:yearsOld', { count: selectedPet.age })
-                  : t('chat.unknownAge')}
-              </Text>
-            </View>
-            {pets.length > 1 && (
-              <Ionicons name="chevron-down" size={20} color={theme.t3} />
+            <Text style={styles.headerSubtitle}>
+              {selectedPet
+                ? t('hub.subtitleWithPet', { name: selectedPet.name })
+                : t('hub.subtitleNoPet')}
+            </Text>
+            {selectedPet && pets.length > 1 && (
+              <Ionicons name="chevron-down" size={16} color={theme.t3} />
             )}
           </TouchableOpacity>
-        )}
+        </View>
 
-        {/* ═══ SECTION: ASK AI ═══ */}
-        <Text style={styles.sectionTitle}>{t('hub.sections.ai')}</Text>
-
-        {/* ═══ FREE CHAT CARD ═══ */}
-        <GlassCard variant="decor" style={styles.freeChatCard}>
-          <TouchableOpacity
-            style={styles.freeChatInner}
-            onPress={handleStartFreeChat}
-            activeOpacity={0.8}
-          >
-            <View style={styles.freeChatIcon}>
-              <Ionicons name="chatbubble-ellipses" size={28} color={theme.onAccent} />
+        {/* ═══ ЭКШН-ПЛИТКИ: Free Chat + Photo (эталон tileBtn) ═══ */}
+        <View style={styles.actionTiles}>
+          <TouchableOpacity style={styles.tileBtn} onPress={handleStartFreeChat} activeOpacity={0.8}>
+            <View style={[styles.tileChip, { backgroundColor: theme.accent }]}>
+              <Ionicons name="chatbubbles" size={22} color={theme.onAccent} />
             </View>
-            <View style={styles.freeChatContent}>
-              <Text style={styles.freeChatTitle}>{t('hub.freeChat')}</Text>
-              <Text style={styles.freeChatSubtitle}>{t('hub.freeChatSubtitle')}</Text>
+            <View style={styles.tileText}>
+              <Text style={styles.tileTitle}>{t('hub.freeChat')}</Text>
+              <Text style={styles.tileSubtitle}>{t('hub.freeChatSubtitle')}</Text>
             </View>
-            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+            <Ionicons name="chevron-forward" size={18} color={theme.t3} />
           </TouchableOpacity>
-        </GlassCard>
 
-        {/* ═══ PHOTO ANALYSIS CARD ═══ */}
-        <GlassCard variant="decor" style={styles.photoAnalysisCard}>
-          <TouchableOpacity
-            style={styles.photoAnalysisInner}
-            onPress={handlePhotoAnalysis}
-            activeOpacity={0.8}
-          >
-            <View style={styles.photoAnalysisIcon}>
-              <Ionicons name="camera" size={28} color={theme.onAccent} />
+          <TouchableOpacity style={styles.tileBtn} onPress={handlePhotoAnalysis} activeOpacity={0.8}>
+            <View style={[styles.tileChip, { backgroundColor: theme.assistantCategories.general }]}>
+              <Ionicons name="camera" size={22} color={theme.onAccent} />
             </View>
-            <View style={styles.photoAnalysisContent}>
-              <Text style={styles.photoAnalysisTitle}>{t('hub.photoAnalysis')}</Text>
-              <Text style={styles.photoAnalysisSubtitle}>{t('hub.photoAnalysisSubtitle')}</Text>
+            <View style={styles.tileText}>
+              <Text style={styles.tileTitle}>{t('hub.photoAnalysis')}</Text>
+              <Text style={styles.tileSubtitle}>{t('hub.photoAnalysisSubtitle')}</Text>
             </View>
-            <Ionicons name="arrow-forward-circle" size={32} color={theme.accent} />
+            <Ionicons name="chevron-forward" size={18} color={theme.t3} />
           </TouchableOpacity>
-        </GlassCard>
+        </View>
 
         {/* ═══ CATEGORIES GRID ═══ */}
         <Text style={styles.sectionTitle}>{t('hub.browseByCategory')}</Text>
@@ -406,15 +368,6 @@ export default function AIAssistantHubScreen({ navigation }) {
         <View style={styles.footerSpacing} />
       </ScrollView>
 
-      {/* ═══ FAB ═══ */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={handleStartFreeChat}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="chatbubbles" size={28} color={theme.onAccent} />
-      </TouchableOpacity>
-
       {/* ═══ PET PICKER MODAL ═══ */}
       <Modal
         visible={pickerVisible}
@@ -469,7 +422,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 24,
   },
   pickerOverlay: {
     flex: 1,
@@ -517,79 +470,66 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.t2,
     marginTop: 2,
   },
+  // Плоский заголовок (эталон)
   header: {
-    backgroundColor: theme.accentPress,
-    paddingTop: 20,
-    paddingBottom: 30,
+    paddingTop: 8,
+    paddingBottom: 4,
     paddingHorizontal: 20,
-    alignItems: 'center',
-    borderBottomLeftRadius: theme.radii.xl28,
-    borderBottomRightRadius: theme.radii.xl28,
-  },
-  headerTop: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    position: 'relative',
-  },
-  headerIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: theme.radii.pill999,
-    backgroundColor: theme.onAccent + '33',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photoButton: {
-    position: 'absolute',
-    right: 0,
-    width: 48,
-    height: 48,
-    borderRadius: theme.radii.lg24,
-    backgroundColor: theme.onAccent + '33',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: theme.onAccent + '4D',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontFamily: theme.font.bold,
-    color: theme.onAccent,
-    marginBottom: 8,
+    color: theme.t1,
+    letterSpacing: -0.4,
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: theme.onAccent + 'E6',
-    textAlign: 'center',
-  },
-  petInfoCard: {
+  subtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    marginHorizontal: 20,
-    marginTop: -20,
-    padding: 16,
-    borderRadius: theme.radii.md16,
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    gap: 4,
+    marginTop: 2,
   },
-  petInfoText: {
-    marginLeft: 12,
+  headerSubtitle: {
+    fontSize: 14,
+    color: theme.t2,
+  },
+  // Экшн-плитки Free Chat / Photo (эталон tileBtn)
+  actionTiles: {
+    paddingHorizontal: 20,
+    marginTop: 16,
+    gap: 12,
+  },
+  tileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.hairline,
+    borderRadius: theme.radii.r18,
+    shadowColor: theme.shadow.shadowColor,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  tileChip: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radii.r14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileText: {
     flex: 1,
   },
-  petName: {
-    fontSize: 18,
+  tileTitle: {
+    fontSize: 15,
     fontFamily: theme.font.bold,
     color: theme.t1,
   },
-  petDetails: {
-    fontSize: 14,
+  tileSubtitle: {
+    fontSize: 12,
     color: theme.t2,
     marginTop: 2,
   },
@@ -622,38 +562,6 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 4,
   },
   freeChatSubtitle: {
-    fontSize: 14,
-    color: theme.t2,
-  },
-  photoAnalysisCard: {
-    marginHorizontal: 20,
-    marginTop: 12,
-    borderRadius: theme.radii.r20,
-  },
-  photoAnalysisInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  photoAnalysisIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: theme.radii.xl28,
-    backgroundColor: theme.onAccent + '33',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  photoAnalysisContent: {
-    flex: 1,
-  },
-  photoAnalysisTitle: {
-    fontSize: 18,
-    fontFamily: theme.font.bold,
-    color: theme.t1,
-    marginBottom: 4,
-  },
-  photoAnalysisSubtitle: {
     fontSize: 14,
     color: theme.t2,
   },
@@ -733,21 +641,5 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   footerSpacing: {
     height: 40,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    width: 64,
-    height: 64,
-    borderRadius: theme.radii.pill999,
-    backgroundColor: theme.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: theme.shadow.shadowColor,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
   },
 });
