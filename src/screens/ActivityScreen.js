@@ -434,8 +434,8 @@ export default function ActivityScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.summaryPetRow}
-            contentContainerStyle={styles.summaryPetRowContent}
+            style={styles.petRow}
+            contentContainerStyle={styles.petRowContent}
           >
             {pets.map((pet) => (
               <TouchableOpacity
@@ -557,29 +557,26 @@ export default function ActivityScreen() {
       ) : (
     <View style={styles.container}>
       {/* Pet Selector */}
-      <View style={styles.petSelector}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {pets.map((pet) => (
-            <TouchableOpacity
-              key={pet.id}
-              style={[
-                styles.petButton,
-                selectedPetId === pet.id && styles.petButtonActive,
-              ]}
-              onPress={() => setSelectedPetId(pet.id)}
-            >
-              <Text
-                style={[
-                  styles.petButtonText,
-                  selectedPetId === pet.id && styles.petButtonTextActive,
-                ]}
-              >
-                {pet.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.petRow}
+        contentContainerStyle={styles.petRowContent}
+      >
+        {pets.map((pet) => (
+          <TouchableOpacity
+            key={pet.id}
+            style={[styles.petChip, selectedPetId === pet.id && styles.petChipActive]}
+            onPress={() => setSelectedPetId(pet.id)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.petChipEmoji}>{speciesEmoji(pet.species)}</Text>
+            <Text style={[styles.petChipText, selectedPetId === pet.id && styles.petChipTextActive]}>
+              {pet.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       <ScrollView
         style={styles.content}
@@ -821,8 +818,8 @@ const makeStyles = (theme) => StyleSheet.create({
 
   // ─── Сводка ───
   summaryContent: { paddingBottom: 32 },
-  summaryPetRow: { maxHeight: 52, flexGrow: 0 },
-  summaryPetRowContent: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
+  petRow: { maxHeight: 52, flexGrow: 0 },
+  petRowContent: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
   petChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 6,
@@ -879,23 +876,6 @@ const makeStyles = (theme) => StyleSheet.create({
   feedPaws: { fontSize: 13, fontFamily: theme.font.bold, color: theme.accentPress },
   feedPawsNeg: { color: theme.t3 },
   feedWhen: { fontSize: 11, color: theme.t4, marginTop: 1 },
-  petSelector: {
-    backgroundColor: theme.surface,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.hairline,
-  },
-  petButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: theme.radii.r20,
-    marginRight: 8,
-    backgroundColor: theme.surface,
-  },
-  petButtonActive: { backgroundColor: theme.accentPress },
-  petButtonText: { fontSize: 14, fontFamily: theme.font.semibold, color: theme.t2 },
-  petButtonTextActive: { color: theme.onAccent },
   content: { flex: 1 },
   statsContainer: { padding: 16, gap: 12 },
   statCard: {
