@@ -435,7 +435,7 @@ export default function PetDetailScreen({ route, navigation }) {
         <Text style={styles.sectionTitle}>{t('detail.quickActions.section')}</Text>
         <View style={styles.actionsGrid}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
+            style={styles.actionButton}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.navigate('Assistant', {
@@ -444,31 +444,31 @@ export default function PetDetailScreen({ route, navigation }) {
               });
             }}
           >
-            <Ionicons name="scan-outline" size={28} color={theme.accent} />
+            <IconChip name="scan-outline" color={theme.accent} size={24} />
             <Text style={styles.actionText}>{t('detail.quickActions.aiAnalysis')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
+            style={styles.actionButton}
             onPress={() => navigation.navigate('Medical')}
           >
-            <Ionicons name="document-text-outline" size={28} color={theme.accent} />
+            <IconChip name="document-text-outline" color={theme.accent} size={24} />
             <Text style={styles.actionText}>{t('detail.quickActions.records')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
+            style={styles.actionButton}
             onPress={() => navigation.navigate('Medical')}
           >
-            <Ionicons name="medkit-outline" size={28} color={theme.accent} />
+            <IconChip name="medkit-outline" color={theme.accent} size={24} />
             <Text style={styles.actionText}>{t('detail.quickActions.vaccines')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.accentTint }]}
+            style={styles.actionButton}
             onPress={() => navigation.navigate('Activity')}
           >
-            <Ionicons name="fitness-outline" size={28} color={theme.accent} />
+            <IconChip name="fitness-outline" color={theme.accent} size={24} />
             <Text style={styles.actionText}>{t('detail.quickActions.activity')}</Text>
           </TouchableOpacity>
         </View>
@@ -594,7 +594,8 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 17, fontFamily: theme.font.bold, color: theme.t1, marginBottom: 12,
+    fontSize: 13, fontFamily: theme.font.bold, color: theme.t3,
+    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 12,
   },
   seeAll: { fontSize: 14, color: theme.accentPress, fontFamily: theme.font.semibold },
 
@@ -616,10 +617,10 @@ const makeStyles = (theme) => StyleSheet.create({
   // ─── Actions ──────────────────────────────────
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   actionButton: {
-    width: '47%', aspectRatio: 1.6, borderRadius: theme.radii.md16,
-    justifyContent: 'center', alignItems: 'center', gap: 6,
+    width: '47%', aspectRatio: 1.6, backgroundColor: theme.surface, borderRadius: theme.radii.r18,
+    justifyContent: 'center', alignItems: 'center', gap: 8,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
   actionText: { fontSize: 13, fontFamily: theme.font.semibold, color: theme.t1 },
 
