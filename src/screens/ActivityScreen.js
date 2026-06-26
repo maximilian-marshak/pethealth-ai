@@ -21,6 +21,7 @@ import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
+import Segmented from '../components/Segmented';
 
 const { width } = Dimensions.get('window');
 
@@ -49,6 +50,7 @@ export default function ActivityScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [activityView, setActivityView] = useState('tracker'); // 'tracker' | 'summary'
 
   const [activityType, setActivityType] = useState('walk');
   const [duration, setDuration] = useState('');
@@ -390,6 +392,24 @@ export default function ActivityScreen() {
 
   return (
     <Screen>
+      <Text style={styles.screenTitle}>{t('title')}</Text>
+      <View style={styles.segmentWrap}>
+        <Segmented
+          options={[
+            { k: 'tracker', label: t('segments.tracker') },
+            { k: 'summary', label: t('segments.summary') },
+          ]}
+          value={activityView}
+          onChange={setActivityView}
+        />
+      </View>
+
+      {activityView === 'summary' ? (
+        <View style={styles.summaryPlaceholder}>
+          <Ionicons name="sparkles-outline" size={40} color={theme.t4} />
+          <Text style={styles.summaryText}>{t('summary.comingSoon')}</Text>
+        </View>
+      ) : (
     <View style={styles.container}>
       {/* Pet Selector */}
       <View style={styles.petSelector}>
@@ -635,6 +655,7 @@ export default function ActivityScreen() {
         </View>
       </Modal>
     </View>
+      )}
     </Screen>
   );
 }
@@ -642,6 +663,18 @@ export default function ActivityScreen() {
 // Styles без изменений — полностью сохранены
 const makeStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
+  screenTitle: {
+    fontSize: 26,
+    fontFamily: theme.font.bold,
+    color: theme.t1,
+    letterSpacing: -0.4,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 10,
+  },
+  segmentWrap: { paddingHorizontal: 16, paddingBottom: 10 },
+  summaryPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 48, gap: 12 },
+  summaryText: { fontSize: 15, fontFamily: theme.font.semibold, color: theme.t3, textAlign: 'center' },
   petSelector: {
     backgroundColor: theme.surface,
     paddingVertical: 12,

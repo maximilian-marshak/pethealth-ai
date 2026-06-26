@@ -1,6 +1,14 @@
 {
     "title": "Активность",
-  
+
+    "segments": {
+      "tracker": "Трекер",
+      "summary": "Сводка"
+    },
+    "summary": {
+      "comingSoon": "Скоро"
+    },
+
     "stats": {
       "week": "За неделю",
       "month": "За месяц",

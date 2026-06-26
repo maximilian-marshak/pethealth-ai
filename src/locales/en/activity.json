@@ -1,6 +1,14 @@
 {
     "title": "Activity",
-  
+
+    "segments": {
+      "tracker": "Tracker",
+      "summary": "Summary"
+    },
+    "summary": {
+      "comingSoon": "Coming soon"
+    },
+
     "stats": {
       "week": "This Week",
       "month": "This Month",
