@@ -22,6 +22,8 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
 import Segmented from '../components/Segmented';
+import { usePointsHistory } from '../hooks/usePointsHistory';
+import { useWeightHistory } from '../hooks/useWeightHistory';
 
 const { width } = Dimensions.get('window');
 
@@ -51,6 +53,10 @@ export default function ActivityScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [activityView, setActivityView] = useState('tracker'); // 'tracker' | 'summary'
+
+  // AT-2 (временно): дата-слой «Сводки» для проверки пайплайна. AT-3 заменит на UI.
+  const { history: pointsHistory } = usePointsHistory(30);
+  const { chart: weightChart } = useWeightHistory(selectedPetId);
 
   const [activityType, setActivityType] = useState('walk');
   const [duration, setDuration] = useState('');
@@ -408,6 +414,10 @@ export default function ActivityScreen() {
         <View style={styles.summaryPlaceholder}>
           <Ionicons name="sparkles-outline" size={40} color={theme.t4} />
           <Text style={styles.summaryText}>{t('summary.comingSoon')}</Text>
+          {/* AT-2 temp: проверка дата-слоя (AT-3 заменит на бар-чарт + ленту) */}
+          <Text style={styles.summaryText}>
+            {`weight: ${weightChart ? weightChart.points.length : 0} pts · paws: ${pointsHistory.length}`}
+          </Text>
         </View>
       ) : (
     <View style={styles.container}>

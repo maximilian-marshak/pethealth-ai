@@ -8,6 +8,9 @@
     "summary": {
       "comingSoon": "Coming soon"
     },
+    "feed": {
+      "donation": "Donation: {{shelter}}"
+    },
 
     "stats": {
       "week": "This Week",
