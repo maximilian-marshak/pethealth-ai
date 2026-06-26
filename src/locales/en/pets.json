@@ -89,6 +89,7 @@
       "severe": "Severe"
     },
     "pickDate": "Select date",
+    "headerTitle": "Pet Profile",
     "notFound": "Pet not found",
     "stats": {
       "allergies": "Allergies",

@@ -25,6 +25,7 @@ import { supabase } from '../utils/supabase';
 import { useTheme } from '../theme/ThemeProvider';
 import Screen from '../components/Screen';
 import PassportView from '../components/PassportView';
+import IconChip from '../components/IconChip';
 
 // Тип события/записи → ключ категориальной палитры theme.eventTypes (единая с Medical).
 const EVENT_TYPE_KEY = {
@@ -341,17 +342,17 @@ export default function PetDetailScreen({ route, navigation }) {
   const renderStats = () => (
     <View style={styles.statsContainer}>
       <View style={styles.statCard}>
-        <Ionicons name="medkit-outline" size={28} color={theme.accent} />
+        <IconChip name="medkit-outline" color={theme.accent} size={22} />
         <Text style={styles.statValue}>{stats.vaccinations}</Text>
         <Text style={styles.statLabel}>{t('detail.stats.vaccinations')}</Text>
       </View>
       <View style={styles.statCard}>
-        <Ionicons name="document-text-outline" size={28} color={theme.accent} />
+        <IconChip name="document-text-outline" color={theme.accent} size={22} />
         <Text style={styles.statValue}>{stats.medicalRecords}</Text>
         <Text style={styles.statLabel}>{t('detail.stats.records')}</Text>
       </View>
       <View style={styles.statCard}>
-        <Ionicons name="calendar-outline" size={28} color={theme.accent} />
+        <IconChip name="calendar-outline" color={theme.accent} size={22} />
         <Text style={styles.statValue}>
           {stats.daysSinceLastVisit !== null ? stats.daysSinceLastVisit : '—'}
         </Text>
@@ -488,25 +489,23 @@ export default function PetDetailScreen({ route, navigation }) {
           />
         }
       >
-        {/* ─── HEADER ───────────────────────── */}
+        {/* ─── HEADER (чистый прозрачный: back accent + delete danger; имя — в hero паспорта) ─── */}
         <View style={styles.header}>
           <TouchableOpacity
-            style={styles.backButton}
             onPress={() => navigation.goBack()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="arrow-back" size={24} color={theme.t1} />
+            <Ionicons name="chevron-back" size={26} color={theme.accent} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>{pet.name}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>{t('detail.headerTitle')}</Text>
 
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={[styles.headerButton, styles.deleteButton]}
-              onPress={handleDelete}
-            >
-              <Ionicons name="trash-outline" size={22} color={theme.danger} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={handleDelete}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="trash-outline" size={22} color={theme.danger} />
+          </TouchableOpacity>
         </View>
 
         {/* ─── PASSPORT (hero/вес/аллергии/хроники/инфо + модалки) ───
@@ -549,29 +548,24 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   backBtnText: { color: theme.accentPress, fontFamily: theme.font.semibold },
 
-  // ─── Header ───────────────────────────────────
+  // ─── Header (прозрачный ряд; top safe-area даёт Screen) ───
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 16,
-    backgroundColor: theme.surface,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
-  backButton: {
-    width: 40, height: 40, borderRadius: theme.radii.r20,
-    backgroundColor: theme.surface,
-    justifyContent: 'center', alignItems: 'center',
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontFamily: theme.font.bold,
+    color: theme.t1,
+    letterSpacing: -0.2,
+    marginHorizontal: 8,
   },
-  headerTitle: { fontSize: 18, fontFamily: theme.font.bold, color: theme.t1 },
-  headerActions: { flexDirection: 'row', gap: 10 },
-  headerButton: {
-    width: 40, height: 40, borderRadius: theme.radii.r20,
-    backgroundColor: theme.accentTint,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  deleteButton: { backgroundColor: theme.danger + '22' },
 
   // ─── Stats ────────────────────────────────────
   statsContainer: {
@@ -581,8 +575,8 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 12,
   },
   statCard: {
-    flex: 1, backgroundColor: theme.surface, borderRadius: theme.radii.md16,
-    paddingVertical: 16, alignItems: 'center', gap: 6,
+    flex: 1, backgroundColor: theme.surface, borderRadius: theme.radii.r18,
+    paddingVertical: 16, alignItems: 'center', gap: 8,
     shadowColor: theme.shadow.shadowColor, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },

@@ -89,6 +89,7 @@
       "severe": "Тяжёлая"
     },
     "pickDate": "Выберите дату",
+    "headerTitle": "Карточка питомца",
     "notFound": "Питомец не найден",
     "stats": {
       "allergies": "Аллергии",
